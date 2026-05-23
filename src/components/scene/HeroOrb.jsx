@@ -7,6 +7,7 @@ import {
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 
 const R = 1.70
+const ORB_X = 1.9   // world-space X offset: puts left edge just past screen centre
 
 const { vertices, edges, hexCenters } = buildSoccerBall()
 
@@ -155,7 +156,7 @@ function InteractiveMiniOrbs() {
   const tex = getGlowDotTexture()
   const { camera, size, gl } = useThree()
   const raycaster = useMemo(() => new THREE.Raycaster(), [])
-  const sphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(), R), [])
+  const sphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(ORB_X, 0, 0), R), [])
   const hit = useMemo(() => new THREE.Vector3(), [])
   const ndc = useMemo(() => new THREE.Vector2(2, 2), [])
 
@@ -491,11 +492,13 @@ function IconPlane({ center, texIndex }) {
 export default function HeroOrb() {
   const groupRef = useRef()
   const isDragging = useRef(false)
+  const snappingBack = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     const onDown = (e) => {
       isDragging.current = true
+      snappingBack.current = false
       lastPointer.current = { x: e.clientX, y: e.clientY }
     }
     const onMove = (e) => {
@@ -506,7 +509,12 @@ export default function HeroOrb() {
       groupRef.current.rotation.y += dx * 0.008
       groupRef.current.rotation.x += dy * 0.008
     }
-    const onUp = () => { isDragging.current = false }
+    const onUp = () => {
+      if (isDragging.current) {
+        isDragging.current = false
+        snappingBack.current = true
+      }
+    }
     window.addEventListener('pointerdown', onDown)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
@@ -518,13 +526,24 @@ export default function HeroOrb() {
   }, [])
 
   useFrame((_, delta) => {
-    if (groupRef.current && !isDragging.current) {
-      groupRef.current.rotation.y += delta * 0.044
+    if (!groupRef.current) return
+    if (isDragging.current) return
+    // Auto-rotate around Y continuously
+    groupRef.current.rotation.y += delta * 0.044
+    // Snap X and Z back to 0 (north/south pole upright) after drag release
+    if (snappingBack.current) {
+      const rot = groupRef.current.rotation
+      rot.x += (0 - rot.x) * Math.min(1, delta * 3.5)
+      rot.z += (0 - rot.z) * Math.min(1, delta * 3.5)
+      if (Math.abs(rot.x) < 0.001 && Math.abs(rot.z) < 0.001) {
+        rot.x = 0; rot.z = 0
+        snappingBack.current = false
+      }
     }
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} position={[ORB_X, 0, 0]}>
       <DepthOccluder />
       <VolumeField />
       <InteractiveMiniOrbs />
