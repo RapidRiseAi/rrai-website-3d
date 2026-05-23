@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import {
@@ -169,10 +169,29 @@ const MINI_FRAG = `
 
 function InteractiveMiniOrbs() {
   const tex = getGlowDotTexture()
-  const { camera, size, pointer } = useThree()
+  const { camera, size, gl } = useThree()
   const raycaster = useMemo(() => new THREE.Raycaster(), [])
   const sphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(), R), [])
   const hit = useMemo(() => new THREE.Vector3(), [])
+  // Cursor NDC, written by a window-level listener so it works even when DOM
+  // overlays (e.g. .hero-section with pointer-events:auto) sit on top of the canvas.
+  const ndc = useMemo(() => new THREE.Vector2(2, 2), [])
+
+  useEffect(() => {
+    const canvas = gl.domElement
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect()
+      ndc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1
+      ndc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1
+    }
+    const onLeave = () => ndc.set(2, 2)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerleave', onLeave)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerleave', onLeave)
+    }
+  }, [gl, ndc])
 
   const { positions, sizes, seeds } = useMemo(() => {
     // Cube-face subdivision projected onto sphere = uniform square grid pattern.
@@ -225,10 +244,10 @@ function InteractiveMiniOrbs() {
   }), [tex, size.height])
 
   useFrame(({ clock }) => {
-    // Manual ray-vs-sphere — bypasses R3F event system entirely. Works even
-    // while the orb group rotates because both the hit point and the orbs'
-    // world positions are in world space.
-    raycaster.setFromCamera(pointer, camera)
+    // Manual ray-vs-sphere using window-level NDC (R3F's own `pointer` is
+    // unreliable here — the .hero-section overlay swallows mouse events
+    // before they reach the canvas).
+    raycaster.setFromCamera(ndc, camera)
     if (raycaster.ray.intersectSphere(sphere, hit)) {
       material.uniforms.uMouse.value.copy(hit)
     } else {
