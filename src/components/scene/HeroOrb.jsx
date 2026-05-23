@@ -7,7 +7,12 @@ import {
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 
 const R = 1.70
-const ORB_X = 1.9   // world-space X offset: puts left edge just past screen centre
+const ORB_X = 1.9          // start: right side of viewport
+const END_X = -1.5         // end: left side of viewport (after scroll)
+const END_SCALE = 0.55     // end: shrink so cube corners stay on-screen
+
+// Single page → one HeroOrb instance, module-level scroll state is fine
+const scrollState = { progress: 0 }
 
 const { vertices, edges, hexCenters } = buildSoccerBall()
 
@@ -20,7 +25,6 @@ const ICON_CENTERS = (() => {
   return pts
 })()
 
-// 6 nearest verts so one degenerate tangent gets filtered while still yielding 5 visible spokes
 const ICON_NEAR_VERTS = ICON_CENTERS.map(ic =>
   vertices
     .map((v, i) => ({ i, d: ic.distanceTo(v) }))
@@ -94,12 +98,19 @@ const MINI_VERT = `
   uniform float uScale;
   uniform vec3 uCursorWorld;
   uniform float uCursorActive;
+  uniform float uMorph;
+  attribute vec3 aPosCube;
   attribute float aSize;
   attribute float aSeed;
   varying float vGlow;
 
   void main() {
-    vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    // Morph each particle from its sphere position to its cube position
+    vec3 basePos = mix(position, aPosCube, uMorph);
+    vec3 worldPos = (modelMatrix * vec4(basePos, 1.0)).xyz;
+
+    // Glow + wind fade out as the morph progresses
+    float interactive = 1.0 - uMorph;
 
     // Glow: max age-weighted contribution across the full trail buffer
     float maxG = 0.0;
@@ -110,22 +121,23 @@ const MINI_VERT = `
       float g = (1.0 - smoothstep(0.0, uRadius, d)) * ageFactor;
       maxG = max(maxG, g);
     }
+    maxG *= interactive;
     float g = pow(maxG, 1.5);
     float tw = 0.22 * sin(uTime * 1.6 + aSeed * 12.566);
-    vGlow = clamp(g + tw * 0.5, 0.0, 1.6);
+    vGlow = clamp(g + tw * 0.5 * interactive, 0.0, 1.6);
 
-    // Wind: each orb has a unique seed-based push direction — no ring, no looping
+    // Wind: each orb has a unique seed-based push direction
     float cd = distance(worldPos, uCursorWorld);
-    float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive;
+    float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive * interactive;
 
-    vec3 localNorm = normalize(position);
+    vec3 localNorm = normalize(basePos);
     vec3 tangentRef = abs(localNorm.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     vec3 T1 = normalize(cross(localNorm, tangentRef));
     vec3 T2 = cross(localNorm, T1);
     float pushAngle = aSeed * 6.2832;
     vec3 pushDir = T1 * cos(pushAngle) + T2 * sin(pushAngle);
     float strengthMult = 0.15 + aSeed * 0.45;
-    vec3 displacedPos = position + pushDir * windProx * strengthMult;
+    vec3 displacedPos = basePos + pushDir * windProx * strengthMult;
 
     vec4 mv = modelViewMatrix * vec4(displacedPos, 1.0);
     gl_PointSize = aSize * (1.0 + vGlow * 6.6) * (uScale / -mv.z);
@@ -172,9 +184,10 @@ function InteractiveMiniOrbs() {
     }
   }, [gl, ndc])
 
-  const { positions, sizes, seeds } = useMemo(() => {
+  const { positions, posCube, sizes, seeds } = useMemo(() => {
     const N = 54
-    const pts = []
+    const sphPts = []
+    const cubePts = []
     for (const [axis, sign] of [[0,1],[0,-1],[1,1],[1,-1],[2,1],[2,-1]]) {
       for (let i = 0; i < N; i++) {
         for (let j = 0; j < N; j++) {
@@ -186,19 +199,22 @@ function InteractiveMiniOrbs() {
           else                 { x = u; y = v; z = sign }
           const len = Math.sqrt(x*x + y*y + z*z)
           const r = R * (0.998 + Math.random() * 0.005)
-          pts.push(x/len*r, y/len*r, z/len*r)
+          sphPts.push(x/len*r, y/len*r, z/len*r)
+          // Cube position: keep the (x,y,z) face-grid coords, scaled to R
+          cubePts.push(x * R, y * R, z * R)
         }
       }
     }
-    const count = pts.length / 3
-    const p = new Float32Array(pts)
+    const count = sphPts.length / 3
+    const p = new Float32Array(sphPts)
+    const pc = new Float32Array(cubePts)
     const s = new Float32Array(count)
     const sd = new Float32Array(count)
     for (let i = 0; i < count; i++) {
       s[i] = 0.013 + Math.random() * 0.005
       sd[i] = Math.random()
     }
-    return { positions: p, sizes: s, seeds: sd }
+    return { positions: p, posCube: pc, sizes: s, seeds: sd }
   }, [])
 
   const trail = useMemo(() => Array.from({ length: TRAIL_LEN },
@@ -222,12 +238,24 @@ function InteractiveMiniOrbs() {
       uOpacity:       { value: 1.0 },
       uCursorWorld:   { value: new THREE.Vector3() },
       uCursorActive:  { value: 0.0 },
+      uMorph:         { value: 0.0 },
     },
     vertexShader: MINI_VERT,
     fragmentShader: MINI_FRAG,
   }), [tex, size.height, trail])
 
   useFrame(({ clock }, delta) => {
+    // Drive the morph from scroll progress
+    material.uniforms.uMorph.value = scrollState.progress
+    material.uniforms.uTime.value = clock.getElapsedTime()
+    material.uniforms.uScale.value = size.height / 2
+
+    // Once the user starts scrolling we stop interactive cursor processing
+    if (scrollState.progress > 0.05) {
+      material.uniforms.uCursorActive.value = 0.0
+      return
+    }
+
     for (let i = 0; i < TRAIL_LEN; i++) {
       trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
     }
@@ -243,8 +271,6 @@ function InteractiveMiniOrbs() {
     } else {
       material.uniforms.uCursorActive.value = 0.0
     }
-    material.uniforms.uTime.value = clock.getElapsedTime()
-    material.uniforms.uScale.value = size.height / 2
   })
 
   return (
@@ -252,6 +278,8 @@ function InteractiveMiniOrbs() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={positions.length / 3}
           array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-aPosCube" count={posCube.length / 3}
+          array={posCube} itemSize={3} />
         <bufferAttribute attach="attributes-aSize" count={sizes.length}
           array={sizes} itemSize={1} />
         <bufferAttribute attach="attributes-aSeed" count={seeds.length}
@@ -263,28 +291,42 @@ function InteractiveMiniOrbs() {
 }
 
 function DepthOccluder() {
+  const meshRef = useRef()
   const mat = useMemo(() => {
     const m = new THREE.MeshBasicMaterial({ side: THREE.FrontSide })
     m.colorWrite = false
     return m
   }, [])
+  useFrame(() => {
+    if (!meshRef.current) return
+    // Shrink the occluder to nothing as the sphere morphs into a cube
+    const s = Math.max(0.001, 1.0 - scrollState.progress * 1.8)
+    meshRef.current.scale.setScalar(s)
+  })
   return (
-    <mesh renderOrder={-5}>
+    <mesh ref={meshRef} renderOrder={-5}>
       <sphereGeometry args={[R * 0.992, 64, 64]} />
       <primitive object={mat} attach="material" />
     </mesh>
   )
 }
 
-function Particles({ positions, size, color, opacity, renderOrder = 4 }) {
+// Particles cloud with optional scroll-driven fade
+function Particles({ positions, size, color, opacity, renderOrder = 4, fade = false }) {
   const tex = getGlowDotTexture()
   const count = positions.length / 3
+  const matRef = useRef()
+  useFrame(() => {
+    if (!matRef.current || !fade) return
+    const t = Math.min(1, Math.max(0, scrollState.progress / 0.6))
+    matRef.current.opacity = opacity * (1 - t)
+  })
   return (
     <points renderOrder={renderOrder}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={size} map={tex} color={color} sizeAttenuation transparent
+      <pointsMaterial ref={matRef} size={size} map={tex} color={color} sizeAttenuation transparent
         opacity={opacity} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false}
         alphaTest={0.01} />
     </points>
@@ -294,14 +336,14 @@ function Particles({ positions, size, color, opacity, renderOrder = 4 }) {
 function SoccerGridParticles() {
   return (
     <>
-      <Particles positions={SOCCER_EDGE_POSITIONS} size={0.066} color="#58b8f8" opacity={0.88} renderOrder={4} />
-      <Particles positions={SOCCER_EDGE_GLOW}      size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} />
+      <Particles positions={SOCCER_EDGE_POSITIONS} size={0.066} color="#58b8f8" opacity={0.88} renderOrder={4} fade />
+      <Particles positions={SOCCER_EDGE_GLOW}      size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} fade />
     </>
   )
 }
 
 function CardinalSpokeParticles() {
-  return <Particles positions={CARDINAL_SPOKE_POSITIONS} size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} />
+  return <Particles positions={CARDINAL_SPOKE_POSITIONS} size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} fade />
 }
 
 function VolumeField() {
@@ -318,7 +360,7 @@ function VolumeField() {
     }
     return out
   }, [])
-  return <Particles positions={arr} size={0.014} color="#183060" opacity={0.45} renderOrder={1} />
+  return <Particles positions={arr} size={0.014} color="#183060" opacity={0.45} renderOrder={1} fade />
 }
 
 function JunctionDots() {
@@ -333,9 +375,9 @@ function JunctionDots() {
   }, [])
   return (
     <>
-      <Particles positions={vertexArr} size={0.18} color="#d8f0ff" opacity={0.92} renderOrder={7} />
-      <Particles positions={hexArr}    size={0.10} color="#90d0ff" opacity={0.78} renderOrder={6} />
-      <Particles positions={pentArr}   size={0.32} color="#ffffff" opacity={0.95} renderOrder={9} />
+      <Particles positions={vertexArr} size={0.18} color="#d8f0ff" opacity={0.92} renderOrder={7} fade />
+      <Particles positions={hexArr}    size={0.10} color="#90d0ff" opacity={0.78} renderOrder={6} fade />
+      <Particles positions={pentArr}   size={0.32} color="#ffffff" opacity={0.95} renderOrder={9} fade />
     </>
   )
 }
@@ -348,7 +390,7 @@ function NodeHaloRings() {
     })
     return new Float32Array(iPts)
   }, [])
-  return <Particles positions={inner} size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} />
+  return <Particles positions={inner} size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} fade />
 }
 
 function NodeClusterParticles() {
@@ -378,7 +420,9 @@ function NodeClusterParticles() {
 
   const matRef = useRef()
   useFrame(({ clock }) => {
-    if (matRef.current) matRef.current.opacity = 0.55 + 0.22 * Math.sin(clock.getElapsedTime() * 1.35)
+    if (!matRef.current) return
+    const fade = Math.max(0, 1 - scrollState.progress / 0.5)
+    matRef.current.opacity = (0.55 + 0.22 * Math.sin(clock.getElapsedTime() * 1.35)) * fade
   })
 
   return (
@@ -404,7 +448,9 @@ function PulsatingRings() {
   }, [])
   const matRef = useRef()
   useFrame(({ clock }) => {
-    if (matRef.current) matRef.current.opacity = 0.12 + 0.32 * (0.5 + 0.5 * Math.sin(clock.getElapsedTime() * 0.9))
+    if (!matRef.current) return
+    const fade = Math.max(0, 1 - scrollState.progress / 0.5)
+    matRef.current.opacity = (0.12 + 0.32 * (0.5 + 0.5 * Math.sin(clock.getElapsedTime() * 0.9))) * fade
   })
   return (
     <points renderOrder={9}>
@@ -424,6 +470,7 @@ function FlowParticles() {
   const posBuffer = useRef(new Float32Array(NUM_FLOW * 3))
   const geomRef = useRef()
   const stateRef = useRef(null)
+  const matRef = useRef()
 
   if (!stateRef.current && FLOW_ARCS.length > 0) {
     stateRef.current = Array.from({ length: NUM_FLOW }, () => ({
@@ -436,6 +483,10 @@ function FlowParticles() {
   const tex = getGlowDotTexture()
 
   useFrame((_, delta) => {
+    if (matRef.current) {
+      const fade = Math.max(0, 1 - scrollState.progress / 0.4)
+      matRef.current.opacity = 0.96 * fade
+    }
     if (!stateRef.current || !geomRef.current) return
     const pos = posBuffer.current
     stateRef.current.forEach((p, i) => {
@@ -459,14 +510,13 @@ function FlowParticles() {
         <bufferAttribute attach="attributes-position" count={NUM_FLOW}
           array={posBuffer.current} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={0.16} map={tex} color="#ffffff" sizeAttenuation transparent
+      <pointsMaterial ref={matRef} size={0.16} map={tex} color="#ffffff" sizeAttenuation transparent
         opacity={0.96} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false}
         alphaTest={0.01} />
     </points>
   )
 }
 
-// Build icon quaternion using a consistent up-vector so icons don't appear rolled/tilted
 function makeIconQuaternion(center) {
   const forward = center.clone().normalize()
   let worldUp = new THREE.Vector3(0, 1, 0)
@@ -481,10 +531,18 @@ function IconPlane({ center, texIndex }) {
   const tex = useMemo(() => createIconTexture(texIndex), [texIndex])
   const position = useMemo(() => center.clone().multiplyScalar(R * 1.006), [center])
   const quaternion = useMemo(() => makeIconQuaternion(center), [center])
+  const meshRef = useRef()
+  const matRef = useRef()
+  useFrame(() => {
+    // Icons shrink + fade out faster than the rest of the orb (gone by ~33% scroll)
+    const fade = Math.max(0, 1 - scrollState.progress / 0.33)
+    if (meshRef.current) meshRef.current.scale.setScalar(fade)
+    if (matRef.current) matRef.current.opacity = fade
+  })
   return (
-    <mesh position={position.toArray()} quaternion={quaternion.toArray()} renderOrder={8}>
+    <mesh ref={meshRef} position={position.toArray()} quaternion={quaternion.toArray()} renderOrder={8}>
       <planeGeometry args={[0.73, 0.73]} />
-      <meshBasicMaterial map={tex} transparent alphaTest={0.01}
+      <meshBasicMaterial ref={matRef} map={tex} transparent alphaTest={0.01}
         depthTest={true} depthWrite={false} side={THREE.FrontSide}
         blending={THREE.NormalBlending} />
     </mesh>
@@ -498,18 +556,29 @@ export default function HeroOrb() {
   const snappingBack = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
   const dragRaycaster = useMemo(() => new THREE.Raycaster(), [])
-  // Slightly larger than R so the grab feels forgiving at the edges
   const dragSphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(ORB_X, 0, 0), R * 1.05), [])
   const tmpNdc = useMemo(() => new THREE.Vector2(), [])
+
+  // Track scroll progress (0 = top of page, 1 = scrolled one viewport)
+  useEffect(() => {
+    const onScroll = () => {
+      const max = window.innerHeight
+      scrollState.progress = Math.min(1, Math.max(0, window.scrollY / max))
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     const canvas = gl.domElement
     const onDown = (e) => {
+      // Drag only while the orb is in its initial sphere state
+      if (scrollState.progress > 0.05) return
       const rect = canvas.getBoundingClientRect()
       tmpNdc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1
       tmpNdc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1
       dragRaycaster.setFromCamera(tmpNdc, camera)
-      // Only start drag when the click was actually on the orb sphere
       if (!dragRaycaster.ray.intersectsSphere(dragSphere)) return
       e.preventDefault()
       isDragging.current = true
@@ -546,10 +615,22 @@ export default function HeroOrb() {
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
+
+    // Drive position + scale from scroll progress
+    const p = scrollState.progress
+    const targetX = ORB_X + (END_X - ORB_X) * p
+    const targetScale = 1.0 + (END_SCALE - 1.0) * p
+    // Smoothly approach target so scroll feels eased rather than 1:1 jittery
+    const lerpAmt = Math.min(1, delta * 8)
+    groupRef.current.position.x += (targetX - groupRef.current.position.x) * lerpAmt
+    const curS = groupRef.current.scale.x
+    const newS = curS + (targetScale - curS) * lerpAmt
+    groupRef.current.scale.setScalar(newS)
+
     if (isDragging.current) return
+
     // Auto-rotate around Y continuously
     groupRef.current.rotation.y += delta * 0.044
-    // Snap X and Z back to 0 (north/south pole upright) after drag release
     if (snappingBack.current) {
       const rot = groupRef.current.rotation
       rot.x += (0 - rot.x) * Math.min(1, delta * 3.5)
