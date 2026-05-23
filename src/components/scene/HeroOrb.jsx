@@ -128,21 +128,34 @@ const CARDINAL_SPOKE_POSITIONS = (() => {
 })()
 
 // ── INTERACTIVE MINI ORB SHADER ───────────────────────────────────────────────
+// ── INTERACTIVE MINI ORB SHADER ───────────────────────────────────────────────
+// Trail buffer: each slot is vec4(x, y, z, age). Shader takes the max glow
+// contribution from any slot, weighted by (1 - age/lifetime) — so the
+// cursor's recent path fades over ~1 second rather than disappearing instantly.
+const TRAIL_LEN = 24
+const TRAIL_LIFETIME = 1.0
+
 const MINI_VERT = `
-  uniform vec3 uMouse;
+  uniform vec4 uTrail[${TRAIL_LEN}];
+  uniform float uTrailLifetime;
   uniform float uTime;
   uniform float uRadius;
   uniform float uScale;
-  uniform float uGlowDecay;
   attribute float aSize;
   attribute float aSeed;
   varying float vGlow;
 
   void main() {
     vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-    float d = distance(worldPos, uMouse);
-    float g = 1.0 - smoothstep(0.0, uRadius, d);
-    g = pow(g, 1.5) * uGlowDecay;
+    float maxG = 0.0;
+    for (int i = 0; i < ${TRAIL_LEN}; i++) {
+      vec4 t = uTrail[i];
+      float ageFactor = max(0.0, 1.0 - (t.w / uTrailLifetime));
+      float d = distance(worldPos, t.xyz);
+      float g = (1.0 - smoothstep(0.0, uRadius, d)) * ageFactor;
+      maxG = max(maxG, g);
+    }
+    float g = pow(maxG, 1.5);
 
     float tw = 0.22 * sin(uTime * 1.6 + aSeed * 12.566);
     vGlow = clamp(g + tw * 0.5, 0.0, 1.6);
@@ -225,7 +238,11 @@ function InteractiveMiniOrbs() {
     return { positions: p, sizes: s, seeds: sd }
   }, [])
 
-  const glowDecay = useRef(0)
+  // Trail buffer of recent cursor positions. Each Vector4: xyz = world position,
+  // w = age in seconds (initialized "expired" so nothing glows at startup).
+  const trail = useMemo(() => Array.from({ length: TRAIL_LEN },
+    () => new THREE.Vector4(1000, 1000, 1000, TRAIL_LIFETIME + 1)
+  ), [])
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
@@ -233,31 +250,37 @@ function InteractiveMiniOrbs() {
     depthTest: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uMouse:     { value: new THREE.Vector3(1000, 1000, 1000) },
-      uTime:      { value: 0 },
-      uRadius:    { value: 0.68 },
-      uScale:     { value: size.height / 2 },
-      uGlowDecay: { value: 0 },
-      uMap:       { value: tex },
-      uColorBase: { value: new THREE.Color('#82c8f0') },
-      uColorHot:  { value: new THREE.Color('#ffffff') },
-      uOpacity:   { value: 1.0 },
+      uTrail:         { value: trail },
+      uTrailLifetime: { value: TRAIL_LIFETIME },
+      uTime:          { value: 0 },
+      uRadius:        { value: 0.68 },
+      uScale:         { value: size.height / 2 },
+      uMap:           { value: tex },
+      uColorBase:     { value: new THREE.Color('#82c8f0') },
+      uColorHot:      { value: new THREE.Color('#ffffff') },
+      uOpacity:       { value: 1.0 },
     },
     vertexShader: MINI_VERT,
     fragmentShader: MINI_FRAG,
-  }), [tex, size.height])
+  }), [tex, size.height, trail])
 
   useFrame(({ clock }, delta) => {
+    // Age every existing trail entry
+    for (let i = 0; i < TRAIL_LEN; i++) {
+      trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
+    }
+
+    // If the cursor hits the sphere, drop a fresh trail point into the slot
+    // with the highest age — overwriting the oldest sample.
     raycaster.setFromCamera(ndc, camera)
     if (raycaster.ray.intersectSphere(sphere, hit)) {
-      material.uniforms.uMouse.value.copy(hit)
-      // Snap glow on quickly when cursor enters
-      glowDecay.current = Math.min(1.0, glowDecay.current + delta * 10)
-    } else {
-      // Fade out over ~1 second when cursor leaves — keeps orbs glowing briefly
-      glowDecay.current = Math.max(0.0, glowDecay.current - delta * 1.1)
+      let oldestIdx = 0, oldestAge = -1
+      for (let i = 0; i < TRAIL_LEN; i++) {
+        if (trail[i].w > oldestAge) { oldestAge = trail[i].w; oldestIdx = i }
+      }
+      trail[oldestIdx].set(hit.x, hit.y, hit.z, 0)
     }
-    material.uniforms.uGlowDecay.value = glowDecay.current
+
     material.uniforms.uTime.value = clock.getElapsedTime()
     material.uniforms.uScale.value = size.height / 2
   })
