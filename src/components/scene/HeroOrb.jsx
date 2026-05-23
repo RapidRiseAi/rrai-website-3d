@@ -536,7 +536,7 @@ function SoccerGridParticles() {
   return (
     <>
       <MorphParticles posSphere={SOCCER_EDGE_POSITIONS} posCube={SOCCER_EDGE_POSITIONS_CUBE}
-        size={0.066} color="#58b8f8" opacity={0.88} renderOrder={4} />
+        size={0.079} color="#2e88d8" opacity={0.88} renderOrder={4} />
       <MorphParticles posSphere={SOCCER_EDGE_GLOW} posCube={SOCCER_EDGE_GLOW_CUBE}
         size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} />
     </>
