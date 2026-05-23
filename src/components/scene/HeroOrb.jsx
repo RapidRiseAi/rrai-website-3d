@@ -114,20 +114,18 @@ const MINI_VERT = `
     float tw = 0.22 * sin(uTime * 1.6 + aSeed * 12.566);
     vGlow = clamp(g + tw * 0.5, 0.0, 1.6);
 
-    // Wind: derived ONLY from the current cursor world position (stable, no looping)
+    // Wind: each orb has a unique seed-based push direction — no ring, no looping
     float cd = distance(worldPos, uCursorWorld);
     float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive;
-    vec3 windWorldDir = cd > 0.001 ? (worldPos - uCursorWorld) / cd : vec3(0.0);
-
-    vec3 windLocalDir = vec3(
-      dot(windWorldDir, vec3(modelMatrix[0][0], modelMatrix[1][0], modelMatrix[2][0])),
-      dot(windWorldDir, vec3(modelMatrix[0][1], modelMatrix[1][1], modelMatrix[2][1])),
-      dot(windWorldDir, vec3(modelMatrix[0][2], modelMatrix[1][2], modelMatrix[2][2]))
-    );
 
     vec3 localNorm = normalize(position);
-    vec3 tangentWind = windLocalDir - localNorm * dot(windLocalDir, localNorm);
-    vec3 displacedPos = position + tangentWind * windProx * 0.30;
+    vec3 tangentRef = abs(localNorm.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 T1 = normalize(cross(localNorm, tangentRef));
+    vec3 T2 = cross(localNorm, T1);
+    float pushAngle = aSeed * 6.2832;
+    vec3 pushDir = T1 * cos(pushAngle) + T2 * sin(pushAngle);
+    float strengthMult = 0.15 + aSeed * 0.45;
+    vec3 displacedPos = position + pushDir * windProx * strengthMult;
 
     vec4 mv = modelViewMatrix * vec4(displacedPos, 1.0);
     gl_PointSize = aSize * (1.0 + vGlow * 6.6) * (uScale / -mv.z);
