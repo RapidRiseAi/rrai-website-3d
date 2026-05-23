@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import {
-  buildSoccerBall, greatCircleArc, circleOnSphere, fibonacciSphere,
+  buildSoccerBall, greatCircleArc, circleOnSphere,
 } from '../../utils/soccerBall'
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 
@@ -18,7 +18,7 @@ const pentNeighborVerts = pentagonCenters.map(pc =>
     .map(x => x.i)
 )
 
-// ── Antipodal pentagon pairs: every pentagon has an exact opposite ────────────
+// ── Antipodal pentagon pairs ──────────────────────────────────────────────────
 const ANTIPODAL_PAIRS = (() => {
   const pairs = []
   const used = new Set()
@@ -36,7 +36,7 @@ const ANTIPODAL_PAIRS = (() => {
   return pairs
 })()
 
-// Pick 4 antipodal pairs (8 icons) using greedy max-min for best spread
+// Pick 4 antipodal pairs (8 icons) via greedy max-min spread
 const ICON_INDICES = (() => {
   const selPairs = [0]
   while (selPairs.length < 4) {
@@ -75,49 +75,8 @@ function sampleArc(arcPts, spacing) {
   return result
 }
 
-// ── Per-icon basis vectors + cardinal points (4 on outer halo ring) ─────────
-// Halo rings sit just outside the icon plate (plate angular radius ≈ 0.139).
-const ICON_HALO_INNER  = 0.150
-const ICON_HALO_OUTER  = 0.180
-const SPOKE_OUTER_ALPHA = 0.380   // where spokes terminate (angular dist from icon center)
-
-const ICON_BASIS = ICON_CENTERS.map(c => {
-  const norm = c.clone().normalize()
-  const ref = Math.abs(norm.y) > 0.85 ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,1,0)
-  const e1 = new THREE.Vector3().crossVectors(norm, ref).normalize()
-  const e2 = new THREE.Vector3().crossVectors(e1, norm).normalize()
-  return { norm, e1, e2 }
-})
-
-const ICON_CARDINAL_POINTS = ICON_BASIS.map(({ norm, e1, e2 }) => {
-  const four = []
-  for (let k = 0; k < 4; k++) {
-    const phi = k * Math.PI / 2
-    const pt = norm.clone()
-      .multiplyScalar(Math.cos(ICON_HALO_OUTER))
-      .addScaledVector(e1, Math.sin(ICON_HALO_OUTER) * Math.cos(phi))
-      .addScaledVector(e2, Math.sin(ICON_HALO_OUTER) * Math.sin(phi))
-      .normalize()
-    four.push(pt)
-  }
-  return four
-})
-
-// Spoke endpoints in same 4 cardinal directions but at SPOKE_OUTER_ALPHA — gives
-// truly radial spokes that visually point back toward the icon center.
-const ICON_SPOKE_ENDPOINTS = ICON_BASIS.map(({ norm, e1, e2 }) => {
-  const four = []
-  for (let k = 0; k < 4; k++) {
-    const phi = k * Math.PI / 2
-    const pt = norm.clone()
-      .multiplyScalar(Math.cos(SPOKE_OUTER_ALPHA))
-      .addScaledVector(e1, Math.sin(SPOKE_OUTER_ALPHA) * Math.cos(phi))
-      .addScaledVector(e2, Math.sin(SPOKE_OUTER_ALPHA) * Math.sin(phi))
-      .normalize()
-    four.push(pt)
-  }
-  return four
-})
+// Inner halo ring — angular radius just outside the icon plate (plate ≈ 0.139 rad)
+const ICON_HALO_INNER = 0.150
 
 // ── Soccer-ball edge positions (the primary grid) ─────────────────────────────
 const FLOW_ARCS = []
@@ -139,26 +98,36 @@ const SOCCER_EDGE_GLOW = (() => {
   return new Float32Array(pts)
 })()
 
-// Cardinal spokes: PURELY RADIAL — same cardinal direction extended outward
-// from the icon's outer halo ring to the spoke endpoint. Visually, every spoke
-// points straight back to the icon center.
+// Spokes: inner halo ring edge → actual pentagon vertices (5 per icon).
+// Start point sits on the inner halo circle in the direction of each vertex,
+// so every spoke visually radiates outward from the icon plate edge to the real grid.
 const CARDINAL_SPOKE_POSITIONS = (() => {
   const pts = []
   ICON_CENTERS.forEach((c, idx) => {
-    for (let k = 0; k < 4; k++) {
-      const start = ICON_CARDINAL_POINTS[idx][k]
-      const end   = ICON_SPOKE_ENDPOINTS[idx][k]
-      const arc = greatCircleArc(start, end, R * 1.002, 16)
+    const norm = c.clone().normalize()
+    const nearVerts = pentNeighborVerts[idx].map(vi => vertices[vi])
+
+    nearVerts.forEach(v => {
+      // Tangent-plane direction from icon center toward this vertex
+      const tangent = v.clone().sub(norm.clone().multiplyScalar(v.dot(norm)))
+      if (tangent.length() < 1e-6) return
+      tangent.normalize()
+
+      // Start: point on inner halo ring in direction of this vertex
+      const startPt = norm.clone()
+        .multiplyScalar(Math.cos(ICON_HALO_INNER))
+        .addScaledVector(tangent, Math.sin(ICON_HALO_INNER))
+        .normalize()
+
+      const arc = greatCircleArc(startPt, v, R * 1.002, 16)
       FLOW_ARCS.push(arc)
-      sampleArc(arc, 0.024).forEach(p => pts.push(p[0], p[1], p[2]))
-    }
+      sampleArc(arc, 0.022).forEach(p => pts.push(p[0], p[1], p[2]))
+    })
   })
   return new Float32Array(pts)
 })()
 
 // ── INTERACTIVE MINI ORB SHADER ───────────────────────────────────────────────
-// Per-particle world position is compared to cursor hit point.
-// Particles within uRadius brighten and grow. Subtle time-based twinkle.
 const MINI_VERT = `
   uniform vec3 uMouse;
   uniform float uTime;
@@ -174,7 +143,6 @@ const MINI_VERT = `
     float g = 1.0 - smoothstep(0.0, uRadius, d);
     g = pow(g, 1.5);
 
-    // Independent twinkle per particle (seed-driven)
     float tw = 0.22 * sin(uTime * 1.6 + aSeed * 12.566);
     vGlow = clamp(g + tw * 0.5, 0.0, 1.6);
 
@@ -207,32 +175,13 @@ function InteractiveMiniOrbs() {
   const hit = useMemo(() => new THREE.Vector3(), [])
 
   const { positions, sizes, seeds } = useMemo(() => {
-    // Two combined distributions for thorough fill:
-    //   8000 Fibonacci (uniform sphere coverage)
-    //   3000 random (breaks up any visible Fibonacci pattern)
-    const fibCount = 8000
-    const randCount = 3000
-    const count = fibCount + randCount
+    const count = 11000
     const p = new Float32Array(count * 3)
     const s = new Float32Array(count)
     const sd = new Float32Array(count)
-    const golden = Math.PI * (3 - Math.sqrt(5))
 
-    for (let i = 0; i < fibCount; i++) {
-      const y = 1 - (i / (fibCount - 1)) * 2
-      const rad = Math.sqrt(Math.max(0, 1 - y * y))
-      const theta = golden * i * 2.618
-      const r = R * (0.997 + Math.random() * 0.012)
-      p[i * 3]     = Math.cos(theta) * rad * r
-      p[i * 3 + 1] = y * r
-      p[i * 3 + 2] = Math.sin(theta) * rad * r
-      s[i] = Math.random() < 0.20
-        ? 0.085 + Math.random() * 0.040
-        : 0.050 + Math.random() * 0.028
-      sd[i] = Math.random()
-    }
-    for (let i = fibCount; i < count; i++) {
-      // Random uniform on sphere via cube rejection + normalize
+    // Pure random uniform sphere (cube-rejection) — no Fibonacci spiral artifacts
+    for (let i = 0; i < count; i++) {
       let x, y, z, n
       do {
         x = Math.random() * 2 - 1
@@ -240,11 +189,13 @@ function InteractiveMiniOrbs() {
         z = Math.random() * 2 - 1
         n = Math.sqrt(x*x + y*y + z*z)
       } while (n > 1 || n < 0.0001)
-      const r = R * (0.998 + Math.random() * 0.010)
+      const r = R * (0.997 + Math.random() * 0.012)
       p[i * 3]     = x / n * r
       p[i * 3 + 1] = y / n * r
       p[i * 3 + 2] = z / n * r
-      s[i] = 0.035 + Math.random() * 0.025
+      s[i] = Math.random() < 0.20
+        ? 0.085 + Math.random() * 0.040
+        : 0.050 + Math.random() * 0.028
       sd[i] = Math.random()
     }
     return { positions: p, sizes: s, seeds: sd }
@@ -337,8 +288,7 @@ function SoccerGridParticles() {
   )
 }
 
-// Cardinal spokes: start at cardinal junction dots, extend OUTWARD to the
-// nearest pentagon corner. Icon plate is never crossed.
+// Spokes from inner halo ring edge outward to the 5 surrounding grid vertices
 function CardinalSpokeParticles() {
   return <Particles positions={CARDINAL_SPOKE_POSITIONS} size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} />
 }
@@ -381,49 +331,16 @@ function JunctionDots() {
   )
 }
 
-// ── Node halo rings — tight, hugging the icon plate edge ─────────────────────
+// ── Single halo ring hugging the icon plate edge ──────────────────────────────
 function NodeHaloRings() {
-  const { inner, outer } = useMemo(() => {
-    const iPts = [], oPts = []
+  const inner = useMemo(() => {
+    const iPts = []
     ICON_CENTERS.forEach(c => {
       circleOnSphere(c, ICON_HALO_INNER, R * 1.003, 84).forEach(p => iPts.push(p[0], p[1], p[2]))
-      circleOnSphere(c, ICON_HALO_OUTER, R * 1.004, 100).forEach(p => oPts.push(p[0], p[1], p[2]))
     })
-    return { inner: new Float32Array(iPts), outer: new Float32Array(oPts) }
+    return new Float32Array(iPts)
   }, [])
-  return (
-    <>
-      <Particles positions={inner} size={0.034} color="#a8e8ff" opacity={0.90} renderOrder={8} />
-      <Particles positions={outer} size={0.024} color="#68c4f8" opacity={0.65} renderOrder={7} />
-    </>
-  )
-}
-
-// ── Bright junction dots at the 4 spoke endpoints per icon ───────────────────
-function SpokeEndpointDots() {
-  const positions = useMemo(() => {
-    const r = R * 1.004
-    const pts = []
-    ICON_SPOKE_ENDPOINTS.forEach(four => {
-      four.forEach(p => pts.push(p.x * r, p.y * r, p.z * r))
-    })
-    return new Float32Array(pts)
-  }, [])
-  return <Particles positions={positions} size={0.16} color="#ffffff" opacity={0.92} renderOrder={9} />
-}
-
-// ── 4 cardinal junction dots on each icon's outer halo ───────────────────────
-// Use the same precomputed cardinal points as the spokes so they line up exactly.
-function IconCardinalDots() {
-  const positions = useMemo(() => {
-    const r = R * 1.005
-    const pts = []
-    ICON_CARDINAL_POINTS.forEach(four => {
-      four.forEach(pt => pts.push(pt.x * r, pt.y * r, pt.z * r))
-    })
-    return new Float32Array(pts)
-  }, [])
-  return <Particles positions={positions} size={0.20} color="#ffffff" opacity={0.95} renderOrder={9} />
+  return <Particles positions={inner} size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} />
 }
 
 // ── Dense animated hub clusters ──────────────────────────────────────────────
@@ -469,13 +386,13 @@ function NodeClusterParticles() {
   )
 }
 
-// ── Pulsating breathing rings ────────────────────────────────────────────────
+// ── Pulsating breathing rings ─────────────────────────────────────────────────
 function PulsatingRings() {
   const tex = getGlowDotTexture()
   const { positions, count } = useMemo(() => {
     const pts = []
     ICON_CENTERS.forEach(c => {
-      circleOnSphere(c, 0.195, R * 1.006, 80).forEach(p => pts.push(p[0], p[1], p[2]))
+      circleOnSphere(c, 0.165, R * 1.006, 80).forEach(p => pts.push(p[0], p[1], p[2]))
     })
     return { positions: new Float32Array(pts), count: pts.length / 3 }
   }, [])
@@ -577,26 +494,20 @@ export default function HeroOrb() {
 
       <VolumeField />
 
-      {/* Interactive mini orbs — react to cursor position */}
+      {/* Interactive mini orbs — pure random uniform sphere, cursor-reactive */}
       <InteractiveMiniOrbs />
 
       {/* Soccer ball grid */}
       <SoccerGridParticles />
 
-      {/* Cardinal spokes — start at icon halo junctions, extend outward (no icon overlap) */}
+      {/* Spokes from icon halo ring to surrounding grid vertices */}
       <CardinalSpokeParticles />
 
       {/* Junction dots */}
       <JunctionDots />
 
-      {/* Icon halos */}
+      {/* Single halo ring tight against each icon */}
       <NodeHaloRings />
-
-      {/* 4 cardinal junction dots on each icon halo */}
-      <IconCardinalDots />
-
-      {/* Bright dots at spoke endpoints — where spokes meet the larger grid */}
-      <SpokeEndpointDots />
 
       {/* Hub clusters */}
       <NodeClusterParticles />
