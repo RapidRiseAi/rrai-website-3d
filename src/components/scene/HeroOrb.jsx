@@ -7,29 +7,72 @@ import {
 } from '../../utils/soccerBall'
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 
-const R = 2.1
+const R = 2.0
 
 // ── Build all geometry once at module level ───────────────────────────────────
-const { vertices, edges, adj, vertexTriangles, pentagonCenters, hexCenters } = buildSoccerBall()
+const { vertices, edges, vertexTriangles, pentagonCenters, hexCenters } = buildSoccerBall()
 
-// ── Glow sprite ───────────────────────────────────────────────────────────────
+// ── Fresnel rim shell — bright at edges, transparent at center ────────────────
+function FresnelRim({ radius, color, power, intensity, scale = 1 }) {
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.FrontSide,
+    uniforms: {
+      glowColor: { value: new THREE.Color(color) },
+      power:     { value: power },
+      intensity: { value: intensity },
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vView;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vNormal = normalize(normalMatrix * normal);
+        vView   = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3  glowColor;
+      uniform float power;
+      uniform float intensity;
+      varying vec3  vNormal;
+      varying vec3  vView;
+      void main() {
+        float rim = 1.0 - max(dot(vNormal, vView), 0.0);
+        rim = pow(rim, power) * intensity;
+        gl_FragColor = vec4(glowColor, rim);
+      }
+    `,
+  }), [color, power, intensity])
+
+  return (
+    <mesh scale={scale} renderOrder={2}>
+      <sphereGeometry args={[radius, 64, 64]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  )
+}
+
+// ── Tight sprite glow centered on orb — controlled, not page-bathing ─────────
 function OrbGlow() {
   const tex = useMemo(() => {
     const c = document.createElement('canvas'); c.width = c.height = 512
     const ctx = c.getContext('2d')
     const g = ctx.createRadialGradient(256, 256, 0, 256, 256, 256)
-    g.addColorStop(0,    'rgba(0, 150, 255, 1.00)')
-    g.addColorStop(0.10, 'rgba(0, 120, 255, 0.85)')
-    g.addColorStop(0.25, 'rgba(0,  90, 230, 0.55)')
-    g.addColorStop(0.45, 'rgba(0,  55, 180, 0.28)')
-    g.addColorStop(0.68, 'rgba(0,  28, 120, 0.10)')
-    g.addColorStop(1,    'rgba(0,   8,  55, 0.00)')
+    g.addColorStop(0,    'rgba(0, 130, 255, 0.55)')
+    g.addColorStop(0.16, 'rgba(0, 100, 230, 0.32)')
+    g.addColorStop(0.35, 'rgba(0,  60, 170, 0.15)')
+    g.addColorStop(0.60, 'rgba(0,  24,  90, 0.05)')
+    g.addColorStop(1,    'rgba(0,   0,  20, 0.00)')
     ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512)
     return new THREE.CanvasTexture(c)
   }, [])
-  const s = R * 6.5
+  const s = R * 3.1
   return (
-    <sprite scale={[s, s, 1]}>
+    <sprite scale={[s, s, 1]} position={[0, 0, -0.5]}>
       <spriteMaterial
         map={tex}
         transparent
@@ -41,53 +84,26 @@ function OrbGlow() {
   )
 }
 
-// Secondary softer glow halo — wider, dimmer
-function OrbHalo() {
-  const tex = useMemo(() => {
-    const c = document.createElement('canvas'); c.width = c.height = 256
-    const ctx = c.getContext('2d')
-    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128)
-    g.addColorStop(0,    'rgba(0, 80, 200, 0.30)')
-    g.addColorStop(0.40, 'rgba(0, 50, 160, 0.12)')
-    g.addColorStop(0.75, 'rgba(0, 20,  90, 0.04)')
-    g.addColorStop(1,    'rgba(0,  0,  30, 0.00)')
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256)
-    return new THREE.CanvasTexture(c)
-  }, [])
-  const s = R * 10.5
-  return (
-    <sprite scale={[s, s, 1]}>
-      <spriteMaterial
-        map={tex}
-        transparent
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        depthTest={false}
-      />
-    </sprite>
-  )
-}
-
-// ── Soccer ball edge grid — all 90 edges as great circle arcs ────────────────
+// ── Main soccer ball edge grid ────────────────────────────────────────────────
 function SoccerGrid() {
   const { positions, count } = useMemo(() => {
     const pts = []
     edges.forEach(([i, j]) => {
-      const arc = greatCircleArc(vertices[i], vertices[j], R, 32)
+      const arc = greatCircleArc(vertices[i], vertices[j], R, 36)
       for (let k = 0; k < arc.length - 1; k++) pts.push(...arc[k], ...arc[k + 1])
     })
     return { positions: new Float32Array(pts), count: pts.length / 3 }
   }, [])
 
   return (
-    <lineSegments renderOrder={1}>
+    <lineSegments renderOrder={3}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
       <lineBasicMaterial
-        color="#00aaff"
+        color="#7fd8ff"
         transparent
-        opacity={0.85}
+        opacity={0.55}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -95,34 +111,7 @@ function SoccerGrid() {
   )
 }
 
-// Brighter, thicker secondary grid pass for the primary lines (adds glow depth)
-function SoccerGridBright() {
-  const { positions, count } = useMemo(() => {
-    const pts = []
-    edges.forEach(([i, j]) => {
-      const arc = greatCircleArc(vertices[i], vertices[j], R * 1.001, 20)
-      for (let k = 0; k < arc.length - 1; k++) pts.push(...arc[k], ...arc[k + 1])
-    })
-    return { positions: new Float32Array(pts), count: pts.length / 3 }
-  }, [])
-
-  return (
-    <lineSegments renderOrder={2}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
-      </bufferGeometry>
-      <lineBasicMaterial
-        color="#55ddff"
-        transparent
-        opacity={0.30}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </lineSegments>
-  )
-}
-
-// ── Vertex triangles — inner web of 60 small triangles at each vertex ─────────
+// Inner web of vertex triangles — subtle, lighter
 function VertexTriangleGrid() {
   const { positions, count } = useMemo(() => {
     const pts = []
@@ -134,7 +123,7 @@ function VertexTriangleGrid() {
         const arc = greatCircleArc(
           a.clone().multiplyScalar(R),
           b.clone().multiplyScalar(R),
-          R, 16
+          R, 14
         )
         for (let m = 0; m < arc.length - 1; m++) pts.push(...arc[m], ...arc[m + 1])
       }
@@ -143,14 +132,14 @@ function VertexTriangleGrid() {
   }, [])
 
   return (
-    <lineSegments renderOrder={1}>
+    <lineSegments renderOrder={3}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
       <lineBasicMaterial
-        color="#0077cc"
+        color="#3a9fdc"
         transparent
-        opacity={0.50}
+        opacity={0.28}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -158,66 +147,76 @@ function VertexTriangleGrid() {
   )
 }
 
-// ── Pentagon node rings ────────────────────────────────────────────────────────
-function NodeRings() {
+// ── Pentagon icon node halos — small, embedded, not big rings ────────────────
+function NodeHalos() {
   const ringLines = useMemo(() =>
     pentagonCenters.flatMap((c, idx) => [
-      { key: `${idx}a`, pts: circleOnSphere(c, 0.175, R),    color: '#00ccff', w: 2.2 },
-      { key: `${idx}b`, pts: circleOnSphere(c, 0.310, R),    color: '#0099dd', w: 1.2 },
-      { key: `${idx}c`, pts: circleOnSphere(c, 0.340, R * 1.001), color: '#0055aa', w: 0.8 },
+      { key: `${idx}a`, pts: circleOnSphere(c, 0.155, R * 1.001), color: '#7fe4ff', w: 1.5, op: 0.85 },
+      { key: `${idx}b`, pts: circleOnSphere(c, 0.205, R * 1.001), color: '#2a8fd0', w: 0.7, op: 0.40 },
     ])
   , [])
 
   return (
     <group>
-      {ringLines.map(({ key, pts, color, w }) => (
+      {ringLines.map(({ key, pts, color, w, op }) => (
         <Line
           key={key}
           points={pts}
           color={color}
           lineWidth={w}
           transparent
-          opacity={0.92}
+          opacity={op}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
-          renderOrder={3}
+          renderOrder={4}
         />
       ))}
     </group>
   )
 }
 
-// ── Hexagon center subtle rings ────────────────────────────────────────────────
-function HexRings() {
-  const rings = useMemo(() =>
-    hexCenters.map((c, idx) => ({
-      key: `h${idx}`,
-      pts: circleOnSphere(c, 0.18, R),
-    }))
-  , [])
-
+// Dotted ring of fine particles around each icon (the "halo dust" look)
+function NodeHaloDots() {
+  const tex = getGlowDotTexture()
+  const arr = useMemo(() => {
+    const perRing = 36
+    const out = new Float32Array(pentagonCenters.length * perRing * 3)
+    let o = 0
+    pentagonCenters.forEach(c => {
+      const ring = circleOnSphere(c, 0.255, R * 1.002, perRing - 1)
+      for (let k = 0; k < perRing; k++) {
+        const idx = k % ring.length
+        out[o++] = ring[idx][0]
+        out[o++] = ring[idx][1]
+        out[o++] = ring[idx][2]
+      }
+    })
+    return out
+  }, [])
+  const count = arr.length / 3
   return (
-    <group>
-      {rings.map(({ key, pts }) => (
-        <Line
-          key={key}
-          points={pts}
-          color="#003d7a"
-          lineWidth={0.6}
-          transparent
-          opacity={0.55}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          renderOrder={1}
-        />
-      ))}
-    </group>
+    <points renderOrder={4}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={arr} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.045}
+        map={tex}
+        color="#9be7ff"
+        sizeAttenuation
+        transparent
+        opacity={0.85}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        alphaTest={0.01}
+      />
+    </points>
   )
 }
 
 // ── Multi-layer dot field ──────────────────────────────────────────────────────
 
-// Large bright vertex glow dots
+// Bright vertex glow dots
 function VertexGlowDots() {
   const tex = getGlowDotTexture()
   const arr = useMemo(() => {
@@ -228,14 +227,14 @@ function VertexGlowDots() {
     return out
   }, [])
   return (
-    <points renderOrder={4}>
+    <points renderOrder={5}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={vertices.length} array={arr} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.38}
+        size={0.22}
         map={tex}
-        color="#aaeeff"
+        color="#ddf4ff"
         sizeAttenuation
         transparent
         opacity={1}
@@ -258,17 +257,17 @@ function PentagonDots() {
     return out
   }, [])
   return (
-    <points renderOrder={5}>
+    <points renderOrder={6}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={pentagonCenters.length} array={arr} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.52}
+        size={0.30}
         map={tex}
         color="#ffffff"
         sizeAttenuation
         transparent
-        opacity={0.95}
+        opacity={0.92}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         alphaTest={0.01}
@@ -277,7 +276,37 @@ function PentagonDots() {
   )
 }
 
-// Edge midpoint fine dots
+// Hexagon center fine dots
+function HexCenterDots() {
+  const tex = getGlowDotTexture()
+  const arr = useMemo(() => {
+    const out = new Float32Array(hexCenters.length * 3)
+    hexCenters.forEach((p, i) => {
+      out[i * 3] = p.x * R; out[i * 3 + 1] = p.y * R; out[i * 3 + 2] = p.z * R
+    })
+    return out
+  }, [])
+  return (
+    <points renderOrder={5}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={hexCenters.length} array={arr} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.13}
+        map={tex}
+        color="#7fc8ff"
+        sizeAttenuation
+        transparent
+        opacity={0.80}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        alphaTest={0.01}
+      />
+    </points>
+  )
+}
+
+// Edge midpoint connector dots
 function EdgeMidpointDots() {
   const tex = getGlowDotTexture()
   const arr = useMemo(() => {
@@ -290,17 +319,17 @@ function EdgeMidpointDots() {
   }, [])
   const count = arr.length / 3
   return (
-    <points renderOrder={3}>
+    <points renderOrder={4}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={arr} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.15}
+        size={0.08}
         map={tex}
-        color="#55bbff"
+        color="#5fb4ff"
         sizeAttenuation
         transparent
-        opacity={0.80}
+        opacity={0.70}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         alphaTest={0.01}
@@ -309,20 +338,20 @@ function EdgeMidpointDots() {
   )
 }
 
-// Dense Fibonacci surface haze dots
+// Dense Fibonacci surface haze — the "data point matrix" wrapping the sphere
 function SurfaceDots() {
   const tex = getGlowDotTexture()
-  const arr = useMemo(() => fibonacciSphere(420, R), [])
+  const arr = useMemo(() => fibonacciSphere(900, R * 1.001), [])
   const count = arr.length / 3
   return (
-    <points renderOrder={1}>
+    <points renderOrder={2}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={arr} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.06}
+        size={0.035}
         map={tex}
-        color="#0066bb"
+        color="#4f9fd4"
         sizeAttenuation
         transparent
         opacity={0.55}
@@ -334,15 +363,15 @@ function SurfaceDots() {
   )
 }
 
-// Inner volume particle cloud — gives depth and volume
-function InnerParticles() {
+// Sparse inner volume dots — gives 3D depth WITHOUT filling the center
+function InnerDepthDots() {
   const tex = getGlowDotTexture()
   const arr = useMemo(() => {
-    const count = 600
+    const count = 220
     const out = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      // Uniform random inside sphere of radius R*0.92
-      const r = Math.cbrt(Math.random()) * R * 0.92
+      // Bias toward middle radii (not too central, not on surface)
+      const r = (0.35 + Math.random() * 0.55) * R
       const phi = Math.acos(2 * Math.random() - 1)
       const theta = Math.random() * Math.PI * 2
       out[i * 3]     = r * Math.sin(phi) * Math.cos(theta)
@@ -353,17 +382,17 @@ function InnerParticles() {
   }, [])
   const count = arr.length / 3
   return (
-    <points renderOrder={0}>
+    <points renderOrder={1}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={arr} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.05}
+        size={0.028}
         map={tex}
-        color="#003d88"
+        color="#1a4a88"
         sizeAttenuation
         transparent
-        opacity={0.45}
+        opacity={0.40}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         alphaTest={0.01}
@@ -372,12 +401,12 @@ function InnerParticles() {
   )
 }
 
-// ── Icon planes — true 3D geometry on sphere surface ─────────────────────────
+// ── Icon planes — small, embedded, premium ────────────────────────────────────
 function IconPlane({ center, texIndex }) {
   const tex = useMemo(() => createIconTexture(texIndex), [texIndex])
 
   const position = useMemo(() =>
-    center.clone().multiplyScalar(R * 0.940)
+    center.clone().multiplyScalar(R * 1.005)
   , [center])
 
   const quaternion = useMemo(() => {
@@ -390,41 +419,40 @@ function IconPlane({ center, texIndex }) {
     <mesh
       position={position.toArray()}
       quaternion={quaternion.toArray()}
-      renderOrder={6}
+      renderOrder={7}
     >
-      <planeGeometry args={[0.92, 0.92]} />
+      <planeGeometry args={[0.62, 0.62]} />
       <meshBasicMaterial
         map={tex}
         transparent
         alphaTest={0.01}
-        depthTest={true}
-        depthWrite={true}
+        depthTest={false}
+        depthWrite={false}
         side={THREE.FrontSide}
+        blending={THREE.NormalBlending}
       />
     </mesh>
   )
 }
 
-// ── Animated pulse ring at each pentagon — draws attention to icon nodes ──────
-function PulsatingNodeRings() {
+// Subtle animated breathing on icon halos
+function PulsatingNodeHalos() {
   const groupRef = useRef()
-  const ringsData = useMemo(() => pentagonCenters.map((c, i) => ({
-    center: c,
-    phase: (i / pentagonCenters.length) * Math.PI * 2,
-  })), [])
+  const phases = useMemo(() =>
+    pentagonCenters.map((_, i) => (i / pentagonCenters.length) * Math.PI * 2)
+  , [])
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return
     const t = clock.getElapsedTime()
     groupRef.current.children.forEach((child, i) => {
-      const { phase } = ringsData[i]
-      const pulse = 0.5 + 0.5 * Math.sin(t * 1.4 + phase)
-      child.material.opacity = pulse * 0.6
+      const pulse = 0.5 + 0.5 * Math.sin(t * 1.1 + phases[i])
+      child.material.opacity = 0.15 + pulse * 0.35
     })
   })
 
   const ringPts = useMemo(() =>
-    pentagonCenters.map(c => circleOnSphere(c, 0.230, R))
+    pentagonCenters.map(c => circleOnSphere(c, 0.180, R * 1.003))
   , [])
 
   return (
@@ -433,46 +461,13 @@ function PulsatingNodeRings() {
         <Line
           key={i}
           points={pts}
-          color="#00ffff"
-          lineWidth={1.4}
+          color="#aaf0ff"
+          lineWidth={1.0}
           transparent
-          opacity={0.4}
+          opacity={0.3}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
-          renderOrder={4}
-        />
-      ))}
-    </group>
-  )
-}
-
-// ── Equatorial band accent rings ───────────────────────────────────────────────
-function AccentRings() {
-  const rings = useMemo(() => [
-    { center: new THREE.Vector3(0, 1, 0), alpha: Math.PI / 2,   color: '#003399', w: 0.7, opacity: 0.35 },
-    { center: new THREE.Vector3(1, 0, 0), alpha: Math.PI / 2,   color: '#002288', w: 0.5, opacity: 0.25 },
-    { center: new THREE.Vector3(0, 0, 1), alpha: Math.PI / 2,   color: '#002288', w: 0.5, opacity: 0.25 },
-  ], [])
-
-  const lines = useMemo(() => rings.map((r, i) => ({
-    ...r,
-    pts: circleOnSphere(r.center, r.alpha, R * 1.002),
-    key: `ar${i}`,
-  })), [rings])
-
-  return (
-    <group>
-      {lines.map(({ key, pts, color, w, opacity }) => (
-        <Line
-          key={key}
-          points={pts}
-          color={color}
-          lineWidth={w}
-          transparent
-          opacity={opacity}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          renderOrder={0}
+          renderOrder={5}
         />
       ))}
     </group>
@@ -484,41 +479,44 @@ export default function HeroOrb() {
   const groupRef = useRef()
 
   useFrame((_, delta) => {
-    if (groupRef.current) groupRef.current.rotation.y += delta * 0.065
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.055
   })
 
   return (
     <group>
-      {/* Glows outside the rotating group so they stay stationary */}
-      <OrbHalo />
+      {/* Soft localized glow behind the orb only — does not flood the page */}
       <OrbGlow />
 
       <group ref={groupRef}>
-        {/* Main soccer ball edge grid */}
-        <SoccerGrid />
-        <SoccerGridBright />
+        {/* Fresnel rim — the key to "transparent glass with bright edge" look */}
+        <FresnelRim radius={R} color="#00aaff" power={2.6} intensity={1.35} />
+        <FresnelRim radius={R * 1.012} color="#bff0ff" power={5.5} intensity={1.6} />
+        <FresnelRim radius={R * 1.025} color="#0066cc" power={1.6} intensity={0.45} scale={1.0} />
 
-        {/* Inner vertex triangle web */}
+        {/* Inner volume depth */}
+        <InnerDepthDots />
+
+        {/* Surface particle matrix */}
+        <SurfaceDots />
+
+        {/* Grid structure */}
+        <SoccerGrid />
         <VertexTriangleGrid />
 
-        {/* Hexagon and pentagon rings */}
-        <HexRings />
-        <NodeRings />
-
-        {/* Equatorial accent circles */}
-        <AccentRings />
-
-        {/* Dot layers — from inner to outer */}
-        <InnerParticles />
-        <SurfaceDots />
+        {/* Junction dots */}
         <EdgeMidpointDots />
+        <HexCenterDots />
         <VertexGlowDots />
+
+        {/* Icon node halos */}
+        <NodeHalos />
+        <NodeHaloDots />
+        <PulsatingNodeHalos />
+
+        {/* Bright pentagon anchors */}
         <PentagonDots />
 
-        {/* Pulsating rings behind icons */}
-        <PulsatingNodeRings />
-
-        {/* Icons embedded as flat planes on sphere surface */}
+        {/* Embedded service icons */}
         {pentagonCenters.map((c, i) => (
           <IconPlane key={i} center={c} texIndex={i} />
         ))}

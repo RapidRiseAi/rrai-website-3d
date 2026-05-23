@@ -3,14 +3,14 @@ import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import HeroOrb from './HeroOrb'
 
-function SubtleStarfield() {
+function FaintBackdropDots() {
   const positions = useMemo(() => {
-    const count = 500
+    const count = 160
     const arr = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      arr[i * 3]     = (Math.random() - 0.5) * 30
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 30
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 30 - 5
+      arr[i * 3]     = (Math.random() - 0.5) * 38
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 38
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 16 - 12
     }
     return arr
   }, [])
@@ -26,11 +26,11 @@ function SubtleStarfield() {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.018}
-        color="#113355"
+        size={0.012}
+        color="#0a1a30"
         sizeAttenuation
         transparent
-        opacity={0.5}
+        opacity={0.45}
         depthWrite={false}
       />
     </points>
@@ -40,16 +40,17 @@ function SubtleStarfield() {
 export default function Scene() {
   return (
     <Canvas
-      camera={{ position: [0, 0.2, 5.8], fov: 50 }}
+      camera={{ position: [0, 0.15, 7.4], fov: 42 }}
       gl={{
         antialias: true,
         alpha: false,
         toneMapping: THREE.NoToneMapping,
+        powerPreference: 'high-performance',
       }}
       dpr={[1, 2]}
     >
       <color attach="background" args={['#000000']} />
-      <SubtleStarfield />
+      <FaintBackdropDots />
       <Suspense fallback={null}>
         <HeroOrb />
       </Suspense>

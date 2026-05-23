@@ -3,7 +3,7 @@ import * as THREE from 'three'
 const DRAW = [
   // 0 Analytics
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.fillStyle = ctx.strokeStyle
     ctx.fillRect(3, 14, 4, 7); ctx.fillRect(10, 9, 4, 12); ctx.fillRect(17, 5, 4, 16)
     ctx.beginPath(); ctx.moveTo(2, 21); ctx.lineTo(22, 21)
@@ -11,7 +11,7 @@ const DRAW = [
   },
   // 1 IoT / Chip
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.strokeRect(7, 7, 10, 10)
     for (const y of [9, 12, 15]) {
       ctx.beginPath(); ctx.moveTo(3, y); ctx.lineTo(7, y); ctx.stroke()
@@ -22,11 +22,11 @@ const DRAW = [
       ctx.beginPath(); ctx.moveTo(x, 17); ctx.lineTo(x, 21); ctx.stroke()
     }
     ctx.fillStyle = ctx.strokeStyle
-    ctx.beginPath(); ctx.arc(12, 12, 1.5, 0, Math.PI * 2); ctx.fill()
+    ctx.beginPath(); ctx.arc(12, 12, 1.4, 0, Math.PI * 2); ctx.fill()
   },
   // 2 Identity
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.strokeRect(2, 5, 20, 14)
     ctx.beginPath(); ctx.arc(8, 12, 2.5, 0, Math.PI * 2); ctx.stroke()
     ctx.beginPath()
@@ -35,9 +35,9 @@ const DRAW = [
     ctx.moveTo(13, 16); ctx.lineTo(16, 16)
     ctx.stroke()
   },
-  // 3 Integrations (nodes connected)
+  // 3 Integrations
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     for (const [x, y] of [[3,3],[17,3],[3,17],[17,17]]) ctx.strokeRect(x, y, 4, 4)
     ctx.beginPath(); ctx.arc(12, 12, 2, 0, Math.PI * 2); ctx.stroke()
     ctx.beginPath()
@@ -47,7 +47,7 @@ const DRAW = [
   },
   // 4 Automation (gear)
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 10
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 6
     ctx.beginPath(); ctx.arc(12, 12, 7, 0, Math.PI * 2); ctx.stroke()
     ctx.beginPath(); ctx.arc(12, 12, 3, 0, Math.PI * 2); ctx.stroke()
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
@@ -59,7 +59,7 @@ const DRAW = [
   },
   // 5 Code
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.beginPath()
     ctx.moveTo(15, 18); ctx.lineTo(21, 12); ctx.lineTo(15, 6); ctx.stroke()
     ctx.beginPath()
@@ -68,7 +68,7 @@ const DRAW = [
   },
   // 6 Web Platform
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.strokeRect(2, 3, 20, 15)
     ctx.beginPath(); ctx.moveTo(2, 7); ctx.lineTo(22, 7); ctx.stroke()
     ctx.fillStyle = ctx.strokeStyle
@@ -83,9 +83,9 @@ const DRAW = [
     ctx.beginPath(); ctx.moveTo(8, 21); ctx.lineTo(16, 21)
     ctx.moveTo(12, 18); ctx.lineTo(12, 21); ctx.stroke()
   },
-  // 7 AI / Robot
+  // 7 AI Assistant
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 10
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 6
     ctx.strokeRect(3, 8, 18, 11)
     ctx.beginPath()
     ctx.moveTo(8, 8); ctx.lineTo(8, 5); ctx.lineTo(16, 5); ctx.lineTo(16, 8); ctx.stroke()
@@ -98,7 +98,7 @@ const DRAW = [
   },
   // 8 Database
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     for (const y of [5, 12, 19]) {
       ctx.beginPath(); ctx.ellipse(12, y, 8, 2.5, 0, 0, Math.PI * 2); ctx.stroke()
     }
@@ -106,9 +106,9 @@ const DRAW = [
     ctx.moveTo(4, 5); ctx.lineTo(4, 19)
     ctx.moveTo(20, 5); ctx.lineTo(20, 19); ctx.stroke()
   },
-  // 9 Cloud / Server
+  // 9 Cloud
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     ctx.beginPath()
     ctx.moveTo(8, 19); ctx.lineTo(5, 19)
     ctx.arc(5, 15, 4, Math.PI * 0.5, Math.PI * 1.5)
@@ -117,9 +117,9 @@ const DRAW = [
     ctx.arc(18, 14, 4, -0.4, Math.PI * 0.5)
     ctx.lineTo(8, 19); ctx.stroke()
   },
-  // 10 Shield / Security
+  // 10 Security
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 10
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 6
     ctx.beginPath()
     ctx.moveTo(12, 2); ctx.lineTo(20, 6); ctx.lineTo(20, 13)
     ctx.quadraticCurveTo(20, 20, 12, 23)
@@ -128,9 +128,9 @@ const DRAW = [
     ctx.beginPath()
     ctx.moveTo(8.5, 12.5); ctx.lineTo(11, 15.5); ctx.lineTo(15.5, 9.5); ctx.stroke()
   },
-  // 11 Workflow / Pipeline
+  // 11 Workflow
   ctx => {
-    ctx.shadowColor = '#44ddff'; ctx.shadowBlur = 8
+    ctx.shadowColor = '#aaf0ff'; ctx.shadowBlur = 5
     for (const x of [2, 10, 18]) ctx.strokeRect(x, 9, 5, 6)
     ctx.beginPath()
     ctx.moveTo(7, 12); ctx.lineTo(10, 12)
@@ -153,10 +153,11 @@ function makeGlowDotTexture() {
   const c = document.createElement('canvas'); c.width = c.height = S
   const ctx = c.getContext('2d')
   const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
-  g.addColorStop(0, 'rgba(255,255,255,1)')
-  g.addColorStop(0.2, 'rgba(100,220,255,0.9)')
-  g.addColorStop(0.5, 'rgba(0,120,255,0.4)')
-  g.addColorStop(1, 'rgba(0,0,0,0)')
+  g.addColorStop(0,    'rgba(255,255,255,1)')
+  g.addColorStop(0.18, 'rgba(180,235,255,0.95)')
+  g.addColorStop(0.45, 'rgba(60,170,255,0.45)')
+  g.addColorStop(0.75, 'rgba(0,80,200,0.12)')
+  g.addColorStop(1,    'rgba(0,0,0,0)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, S, S)
   return new THREE.CanvasTexture(c)
 }
@@ -167,52 +168,52 @@ export function getGlowDotTexture() {
   return _glowDotTex
 }
 
+// Icon texture: small dark plate + crisp glowing icon — premium embedded node
 export function createIconTexture(index) {
   const S = 256
   const c = document.createElement('canvas'); c.width = c.height = S
   const ctx = c.getContext('2d')
   ctx.clearRect(0, 0, S, S)
 
-  // Soft dark navy radial background — fades to transparent at edges
-  const bg = ctx.createRadialGradient(128, 128, 0, 128, 128, 128)
-  bg.addColorStop(0,    'rgba(0, 8, 35, 0.95)')
-  bg.addColorStop(0.45, 'rgba(0, 5, 25, 0.88)')
-  bg.addColorStop(0.75, 'rgba(0, 3, 15, 0.60)')
-  bg.addColorStop(1,    'rgba(0,  0, 10, 0)')
+  // Background plate — small, contained, transparent at edges
+  const plateR = 78
+  const bg = ctx.createRadialGradient(128, 128, 0, 128, 128, plateR)
+  bg.addColorStop(0,    'rgba(0,  10, 28, 0.78)')
+  bg.addColorStop(0.55, 'rgba(0,   6, 20, 0.62)')
+  bg.addColorStop(0.85, 'rgba(0,   3, 12, 0.20)')
+  bg.addColorStop(1,    'rgba(0,   0,  6, 0)')
   ctx.fillStyle = bg
-  ctx.beginPath(); ctx.arc(128, 128, 128, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(128, 128, plateR, 0, Math.PI * 2); ctx.fill()
 
-  // Inner glow halo
-  const halo = ctx.createRadialGradient(128, 128, 50, 128, 128, 115)
-  halo.addColorStop(0,    'rgba(0, 80, 200, 0.18)')
-  halo.addColorStop(0.5,  'rgba(0, 60, 180, 0.10)')
-  halo.addColorStop(1,    'rgba(0, 30, 100, 0)')
+  // Subtle inner glow halo
+  const halo = ctx.createRadialGradient(128, 128, 30, 128, 128, plateR - 4)
+  halo.addColorStop(0,    'rgba(0,  90, 220, 0.10)')
+  halo.addColorStop(1,    'rgba(0,  20,  80, 0)')
   ctx.fillStyle = halo
-  ctx.beginPath(); ctx.arc(128, 128, 115, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(128, 128, plateR - 4, 0, Math.PI * 2); ctx.fill()
 
-  // Outer border ring with glow
-  ctx.shadowColor = '#00aaff'; ctx.shadowBlur = 12
-  ctx.strokeStyle = '#0088cc'; ctx.lineWidth = 3.5
-  ctx.beginPath(); ctx.arc(128, 128, 108, 0, Math.PI * 2); ctx.stroke()
+  // Crisp thin rim
+  ctx.shadowColor = '#7fd8ff'; ctx.shadowBlur = 7
+  ctx.strokeStyle = 'rgba(150, 220, 255, 0.85)'; ctx.lineWidth = 1.6
+  ctx.beginPath(); ctx.arc(128, 128, plateR - 2, 0, Math.PI * 2); ctx.stroke()
   ctx.shadowBlur = 0
 
-  // Inner decorative ring
-  ctx.strokeStyle = 'rgba(0, 150, 220, 0.35)'; ctx.lineWidth = 1.5
-  ctx.beginPath(); ctx.arc(128, 128, 88, 0, Math.PI * 2); ctx.stroke()
-
-  // Icon in center with glow
-  const margin = 52
-  const scale = (S - 2 * margin) / 24
+  // Icon centered — refined, bright blue-white
+  const iconRadius = plateR - 18
+  const margin = 128 - iconRadius
+  const scale = (iconRadius * 2) / 24
   ctx.save()
   ctx.translate(margin, margin)
   ctx.scale(scale, scale)
-  ctx.strokeStyle = '#66eeff'
-  ctx.fillStyle = '#66eeff'
-  ctx.lineWidth = 1.6 / scale
+  ctx.strokeStyle = '#cfeeff'
+  ctx.fillStyle = '#cfeeff'
+  ctx.lineWidth = 1.5 / scale
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   if (index < DRAW.length) DRAW[index](ctx)
   ctx.restore()
 
-  return new THREE.CanvasTexture(c)
+  const tex = new THREE.CanvasTexture(c)
+  tex.anisotropy = 8
+  return tex
 }
