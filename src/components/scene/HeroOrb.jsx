@@ -10,6 +10,7 @@ const R = 2.0
 
 const { vertices, edges, pentagonCenters, hexCenters } = buildSoccerBall()
 
+// Per-pentagon: 5 nearest vertices (pentagon corners)
 const pentNeighborVerts = pentagonCenters.map(pc =>
   vertices
     .map((v, i) => ({ i, d: pc.distanceTo(v) }))
@@ -18,7 +19,26 @@ const pentNeighborVerts = pentagonCenters.map(pc =>
     .map(x => x.i)
 )
 
-// ── Arc sampling: place particles at regular spatial intervals ────────────────
+// ── Select 8 maximally-spread icon positions from 12 pentagon centers ─────────
+// Greedy max-min algorithm: each step picks the candidate farthest from the
+// already-selected set, ensuring even distribution across the sphere.
+const ICON_INDICES = (() => {
+  const sel = [0]
+  while (sel.length < 8) {
+    let best = -1, bestD = -1
+    for (let i = 0; i < pentagonCenters.length; i++) {
+      if (sel.includes(i)) continue
+      let minD = Infinity
+      for (const j of sel) minD = Math.min(minD, pentagonCenters[i].distanceTo(pentagonCenters[j]))
+      if (minD > bestD) { bestD = minD; best = i }
+    }
+    sel.push(best)
+  }
+  return sel
+})()
+const ICON_CENTERS = ICON_INDICES.map(i => pentagonCenters[i])
+
+// ── Arc sampling ──────────────────────────────────────────────────────────────
 function sampleArc(arcPts, spacing) {
   if (arcPts.length < 2) return arcPts
   const result = [arcPts[0]]
@@ -31,64 +51,36 @@ function sampleArc(arcPts, spacing) {
   return result
 }
 
-const yAxis = new THREE.Vector3(0, 1, 0)
-const north = new THREE.Vector3(0, 1, 0)
-const south = new THREE.Vector3(0, -1, 0)
+// ── Pre-compute all geometry at module level ──────────────────────────────────
 
-// ── Pre-compute all arc paths at module level ─────────────────────────────────
-
-// Latitude ring particle positions (8 rings)
-const LAT_POSITIONS = (() => {
+// Soccer-ball edges (90 edges of the truncated icosahedron) — the primary grid
+const FLOW_ARCS = []
+const SOCCER_EDGE_POSITIONS = (() => {
   const pts = []
-  const alphas = [0.36, 0.68, 0.98, 1.28, Math.PI - 0.98, Math.PI - 0.68, Math.PI - 0.36, Math.PI * 0.5]
-  alphas.forEach(alpha => {
-    const ring = circleOnSphere(yAxis, alpha, R * 1.001, 220)
-    sampleArc(ring, 0.040).forEach(p => pts.push(p[0], p[1], p[2]))
+  edges.forEach(([i, j]) => {
+    const arc = greatCircleArc(vertices[i], vertices[j], R * 1.001, 28)
+    FLOW_ARCS.push(arc)
+    sampleArc(arc, 0.038).forEach(p => pts.push(p[0], p[1], p[2]))
   })
   return new Float32Array(pts)
 })()
 
-// Meridian particle positions (12 meridians)
-const MERIDIAN_POSITIONS = (() => {
+// Wider glow pass for the same edges (slightly offset radius)
+const SOCCER_EDGE_GLOW = (() => {
   const pts = []
-  for (let i = 0; i < 12; i++) {
-    const phi = (i / 12) * Math.PI * 2
-    const eq = new THREE.Vector3(Math.cos(phi), 0, Math.sin(phi))
-    const arc1 = greatCircleArc(north, eq, R * 1.001, 48)
-    const arc2 = greatCircleArc(eq, south, R * 1.001, 48)
-    sampleArc([...arc1, ...arc2.slice(1)], 0.048).forEach(p => pts.push(p[0], p[1], p[2]))
-  }
+  edges.forEach(([i, j]) => {
+    const arc = greatCircleArc(vertices[i], vertices[j], R * 1.004, 16)
+    sampleArc(arc, 0.10).forEach(p => pts.push(p[0], p[1], p[2]))
+  })
   return new Float32Array(pts)
 })()
 
-// Adjacent pentagon connection paths + stored for flow animation
-const FLOW_ARCS = []
-const CONNECTION_POSITIONS = (() => {
-  const pts = []
-  let minD = Infinity
-  for (let i = 0; i < pentagonCenters.length; i++)
-    for (let j = i + 1; j < pentagonCenters.length; j++) {
-      const d = pentagonCenters[i].distanceTo(pentagonCenters[j])
-      if (d < minD) minD = d
-    }
-  for (let i = 0; i < pentagonCenters.length; i++) {
-    for (let j = i + 1; j < pentagonCenters.length; j++) {
-      if (pentagonCenters[i].distanceTo(pentagonCenters[j]) < minD * 1.08) {
-        const arc = greatCircleArc(pentagonCenters[i], pentagonCenters[j], R * 1.003, 40)
-        FLOW_ARCS.push(arc)
-        sampleArc(arc, 0.038).forEach(p => pts.push(p[0], p[1], p[2]))
-      }
-    }
-  }
-  return new Float32Array(pts)
-})()
-
-// Spoke paths from icon centers to corner vertices
+// Spokes: each of the 8 icons to its 5 pentagon corner vertices
 const SPOKE_POSITIONS = (() => {
   const pts = []
-  pentagonCenters.forEach((pc, pi) => {
+  ICON_INDICES.forEach(pi => {
     pentNeighborVerts[pi].forEach(vi => {
-      const arc = greatCircleArc(pc, vertices[vi], R * 1.002, 18)
+      const arc = greatCircleArc(pentagonCenters[pi], vertices[vi], R * 1.002, 18)
       FLOW_ARCS.push(arc)
       sampleArc(arc, 0.028).forEach(p => pts.push(p[0], p[1], p[2]))
     })
@@ -96,7 +88,24 @@ const SPOKE_POSITIONS = (() => {
   return new Float32Array(pts)
 })()
 
-// ── Invisible depth occluder so back-face icons are hidden ────────────────────
+// Mini glowing orbs scattered across the sphere surface between grid lines
+const BETWEEN_POSITIONS = (() => {
+  const count = 700
+  const out = new Float32Array(count * 3)
+  const golden = Math.PI * (3 - Math.sqrt(5))
+  for (let i = 0; i < count; i++) {
+    const y = 1 - (i / (count - 1)) * 2
+    const rad = Math.sqrt(Math.max(0, 1 - y * y))
+    const theta = golden * i * 2.618 // offset from other fibonacci distributions
+    const r = R * (0.999 + Math.random() * 0.006)
+    out[i * 3]     = Math.cos(theta) * rad * r
+    out[i * 3 + 1] = y * r
+    out[i * 3 + 2] = Math.sin(theta) * rad * r
+  }
+  return out
+})()
+
+// ── Invisible depth occluder: writes depth only, no color ────────────────────
 function DepthOccluder() {
   const mat = useMemo(() => {
     const m = new THREE.MeshBasicMaterial({ side: THREE.FrontSide })
@@ -111,7 +120,7 @@ function DepthOccluder() {
   )
 }
 
-// ── Reusable particle point cloud ─────────────────────────────────────────────
+// ── Reusable particle cloud ───────────────────────────────────────────────────
 function Particles({ positions, size, color, opacity, renderOrder = 4 }) {
   const tex = getGlowDotTexture()
   const count = positions.length / 3
@@ -127,93 +136,64 @@ function Particles({ positions, size, color, opacity, renderOrder = 4 }) {
   )
 }
 
-// ── GRID: particle streams along arcs (no line geometry) ──────────────────────
-
-function LatGridParticles() {
-  // Faint second glow pass for richness
-  const glow = useMemo(() => {
-    const pts = []
-    const alphas = [0.36, 0.68, 0.98, 1.28, Math.PI - 0.98, Math.PI - 0.68, Math.PI - 0.36, Math.PI * 0.5]
-    alphas.forEach(alpha => {
-      const ring = circleOnSphere(yAxis, alpha, R * 1.004, 120)
-      sampleArc(ring, 0.10).forEach(p => pts.push(p[0], p[1], p[2]))
-    })
-    return new Float32Array(pts)
-  }, [])
+// ── SOCCER BALL GRID ──────────────────────────────────────────────────────────
+// 90 edges of the truncated icosahedron drawn as particle streams.
+// Pentagon faces (12) and hex faces (20) stay clear — icons live inside them.
+function SoccerGridParticles() {
   return (
     <>
-      <Particles positions={LAT_POSITIONS} size={0.055} color="#58b8f8" opacity={0.85} renderOrder={4} />
-      <Particles positions={glow}          size={0.12}  color="#1a5ab8" opacity={0.45} renderOrder={3} />
+      {/* Core edge particles */}
+      <Particles positions={SOCCER_EDGE_POSITIONS} size={0.055} color="#58b8f8" opacity={0.88} renderOrder={4} />
+      {/* Soft glow halo around each edge */}
+      <Particles positions={SOCCER_EDGE_GLOW}      size={0.130} color="#1858c0" opacity={0.38} renderOrder={3} />
     </>
   )
 }
 
-function MeridianGridParticles() {
-  const glow = useMemo(() => {
-    const pts = []
-    for (let i = 0; i < 12; i++) {
-      const phi = (i / 12) * Math.PI * 2
-      const eq = new THREE.Vector3(Math.cos(phi), 0, Math.sin(phi))
-      const arc1 = greatCircleArc(north, eq, R * 1.004, 32)
-      const arc2 = greatCircleArc(eq, south, R * 1.004, 32)
-      sampleArc([...arc1, ...arc2.slice(1)], 0.12).forEach(p => pts.push(p[0], p[1], p[2]))
-    }
-    return new Float32Array(pts)
-  }, [])
-  return (
-    <>
-      <Particles positions={MERIDIAN_POSITIONS} size={0.048} color="#4aa8e8" opacity={0.78} renderOrder={4} />
-      <Particles positions={glow}               size={0.11}  color="#1848a8" opacity={0.38} renderOrder={3} />
-    </>
-  )
-}
-
-function ConnectionParticles() {
-  const glow = useMemo(() => {
-    const pts = []
-    FLOW_ARCS.slice(0, CONNECTION_POSITIONS.length > 0 ? 30 : 0).forEach(arc => {
-      sampleArc(arc, 0.10).forEach(p => pts.push(p[0], p[1], p[2]))
-    })
-    return new Float32Array(pts)
-  }, [])
-  return (
-    <>
-      <Particles positions={CONNECTION_POSITIONS} size={0.068} color="#80e4ff" opacity={0.92} renderOrder={5} />
-      <Particles positions={glow}                 size={0.15}  color="#2870e0" opacity={0.42} renderOrder={4} />
-    </>
-  )
-}
-
+// ── Spokes wiring icons into the grid ────────────────────────────────────────
 function SpokeParticles() {
-  return <Particles positions={SPOKE_POSITIONS} size={0.075} color="#b0f0ff" opacity={0.96} renderOrder={6} />
+  return (
+    <>
+      <Particles positions={SPOKE_POSITIONS} size={0.070} color="#a0eeff" opacity={0.95} renderOrder={6} />
+    </>
+  )
 }
 
+// ── Mini glowing orbs between grid lines ─────────────────────────────────────
+function BetweenLineParticles() {
+  return (
+    <Particles positions={BETWEEN_POSITIONS} size={0.040} color="#5090d8" opacity={0.75} renderOrder={2} />
+  )
+}
+
+// ── Volume depth particles ────────────────────────────────────────────────────
 function VolumeField() {
   const arr = useMemo(() => {
-    const count = 360
+    const count = 320
     const out = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
       const r = (0.12 + Math.random() * 0.80) * R
       const phi = Math.acos(2 * Math.random() - 1)
       const theta = Math.random() * Math.PI * 2
-      out[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+      out[i * 3]     = r * Math.sin(phi) * Math.cos(theta)
       out[i * 3 + 1] = r * Math.cos(phi)
       out[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta)
     }
     return out
   }, [])
-  return <Particles positions={arr} size={0.014} color="#183060" opacity={0.48} renderOrder={1} />
+  return <Particles positions={arr} size={0.014} color="#183060" opacity={0.45} renderOrder={1} />
 }
 
-// ── Junction dots: bright nodes at grid intersections ────────────────────────
+// ── Junction dots at every grid vertex and face center ───────────────────────
 function JunctionDots() {
   const { vertexArr, hexArr, pentArr } = useMemo(() => {
     const vArr = new Float32Array(vertices.length * 3)
     vertices.forEach((v, i) => { vArr[i*3]=v.x*R; vArr[i*3+1]=v.y*R; vArr[i*3+2]=v.z*R })
     const hArr = new Float32Array(hexCenters.length * 3)
     hexCenters.forEach((h, i) => { hArr[i*3]=h.x*R*1.001; hArr[i*3+1]=h.y*R*1.001; hArr[i*3+2]=h.z*R*1.001 })
-    const pArr = new Float32Array(pentagonCenters.length * 3)
-    pentagonCenters.forEach((p, i) => { pArr[i*3]=p.x*R*1.002; pArr[i*3+1]=p.y*R*1.002; pArr[i*3+2]=p.z*R*1.002 })
+    // Pentagon dots only for the 8 icon hubs (others are just non-icon grid nodes)
+    const pArr = new Float32Array(ICON_CENTERS.length * 3)
+    ICON_CENTERS.forEach((p, i) => { pArr[i*3]=p.x*R*1.002; pArr[i*3+1]=p.y*R*1.002; pArr[i*3+2]=p.z*R*1.002 })
     return { vertexArr: vArr, hexArr: hArr, pentArr: pArr }
   }, [])
   return (
@@ -225,11 +205,11 @@ function JunctionDots() {
   )
 }
 
-// ── Node halos — dense dotted rings, embedded feel ────────────────────────────
+// ── Node halo rings — 8 icons only ───────────────────────────────────────────
 function NodeHaloRings() {
   const { inner, outer } = useMemo(() => {
     const iPts = [], oPts = []
-    pentagonCenters.forEach(c => {
+    ICON_CENTERS.forEach(c => {
       circleOnSphere(c, 0.155, R * 1.003, 96).forEach(p => iPts.push(p[0], p[1], p[2]))
       circleOnSphere(c, 0.245, R * 1.004, 128).forEach(p => oPts.push(p[0], p[1], p[2]))
     })
@@ -243,13 +223,13 @@ function NodeHaloRings() {
   )
 }
 
-// ── Dense hub clusters around each icon (animated) ───────────────────────────
+// ── Dense animated hub clusters — 8 icons only ───────────────────────────────
 function NodeClusterParticles() {
   const tex = getGlowDotTexture()
   const { positions, count } = useMemo(() => {
     const perNode = 54
     const pts = []
-    pentagonCenters.forEach(pc => {
+    ICON_CENTERS.forEach(pc => {
       const n = pc.clone().normalize()
       const ref = Math.abs(n.y) > 0.85 ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,1,0)
       const e1 = new THREE.Vector3().crossVectors(n, ref).normalize()
@@ -286,20 +266,31 @@ function NodeClusterParticles() {
   )
 }
 
-// ── Pulsating breathing rings around icon hubs ────────────────────────────────
+// ── Pulsating breathing rings — 8 icons only ─────────────────────────────────
 function PulsatingRings() {
   const tex = getGlowDotTexture()
-  const { positions, count } = useMemo(() => {
+  const { positions, count, phases } = useMemo(() => {
     const pts = []
-    pentagonCenters.forEach(c => {
+    const phs = ICON_CENTERS.map((_, i) => (i / ICON_CENTERS.length) * Math.PI * 2)
+    ICON_CENTERS.forEach(c => {
       circleOnSphere(c, 0.195, R * 1.006, 80).forEach(p => pts.push(p[0], p[1], p[2]))
     })
-    return { positions: new Float32Array(pts), count: pts.length / 3 }
+    return { positions: new Float32Array(pts), count: pts.length / 3, phases: phs }
   }, [])
+
+  // Each icon's ring pulses at a different phase for organic feel
+  const refs = useRef([])
+  const allPts = useMemo(() => {
+    const out = []
+    ICON_CENTERS.forEach(c => out.push(circleOnSphere(c, 0.195, R * 1.006, 80)))
+    return out
+  }, [])
+
   const matRef = useRef()
   useFrame(({ clock }) => {
     if (matRef.current) matRef.current.opacity = 0.12 + 0.32 * (0.5 + 0.5 * Math.sin(clock.getElapsedTime() * 0.9))
   })
+
   return (
     <points renderOrder={9}>
       <bufferGeometry>
@@ -313,14 +304,13 @@ function PulsatingRings() {
 }
 
 // ── Animated flow particles traveling through the network ─────────────────────
-const NUM_FLOW = 280
+const NUM_FLOW = 300
 
 function FlowParticles() {
   const posBuffer = useRef(new Float32Array(NUM_FLOW * 3))
   const geomRef = useRef()
   const stateRef = useRef(null)
 
-  // Initialize lazily (FLOW_ARCS populated at module parse time)
   if (!stateRef.current && FLOW_ARCS.length > 0) {
     stateRef.current = Array.from({ length: NUM_FLOW }, () => ({
       arcIdx: Math.floor(Math.random() * FLOW_ARCS.length),
@@ -362,7 +352,8 @@ function FlowParticles() {
   )
 }
 
-// ── Icon planes ───────────────────────────────────────────────────────────────
+// ── Icon planes — placed at the 8 evenly distributed pentagon centers ─────────
+// Icons live in the center of pentagon faces: no grid edge passes through them.
 function IconPlane({ center, texIndex }) {
   const tex = useMemo(() => createIconTexture(texIndex), [texIndex])
   const position = useMemo(() => center.clone().multiplyScalar(R * 1.006), [center])
@@ -391,36 +382,39 @@ export default function HeroOrb() {
 
   return (
     <group ref={groupRef}>
-      {/* Depth-only occluder — hides back-face icons, adds no tint */}
+      {/* Depth occluder — hides back-face icons, no color output */}
       <DepthOccluder />
 
-      {/* Sparse interior depth particles (no surface, just volume) */}
+      {/* Sparse interior volume particles */}
       <VolumeField />
 
-      {/* GRID — ALL particles, no line geometry */}
-      <LatGridParticles />
-      <MeridianGridParticles />
-      <ConnectionParticles />
+      {/* Mini glowing orbs floating between grid lines */}
+      <BetweenLineParticles />
+
+      {/* SOCCER BALL GRID — 90 truncated-icosahedron edges as particle streams */}
+      <SoccerGridParticles />
+
+      {/* Spokes wiring each icon into its 5 surrounding vertices */}
       <SpokeParticles />
 
-      {/* Junction dots at intersections */}
+      {/* Junction dots: 60 vertices + 20 hex centers + 8 icon hubs */}
       <JunctionDots />
 
-      {/* Icon halo rings (dense dotted, embedded feel) */}
+      {/* Icon halos — only around the 8 selected icon positions */}
       <NodeHaloRings />
 
-      {/* Dense particle clouds around each service hub */}
+      {/* Animated hub particle clusters */}
       <NodeClusterParticles />
 
-      {/* Live data flow — particles traveling through the network */}
+      {/* Live flow particles traveling the network */}
       <FlowParticles />
 
-      {/* Icon planes (back-side occluded by DepthOccluder) */}
-      {pentagonCenters.map((c, i) => (
+      {/* 8 icon planes — inside pentagon faces, no grid edge overlap */}
+      {ICON_CENTERS.map((c, i) => (
         <IconPlane key={i} center={c} texIndex={i} />
       ))}
 
-      {/* Animated breathing rings around hubs */}
+      {/* Animated breathing rings */}
       <PulsatingRings />
     </group>
   )
