@@ -96,28 +96,6 @@ const SPOKE_POSITIONS = (() => {
   return new Float32Array(pts)
 })()
 
-// ── Plasma rim shader (energy field, not glass) ───────────────────────────────
-const VERT_PLASMA = `
-  varying vec3 vN; varying vec3 vV;
-  void main() {
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    vN = normalize(normalMatrix * normal);
-    vV = normalize(-mv.xyz);
-    gl_Position = projectionMatrix * mv;
-  }
-`
-const FRAG_PLASMA = `
-  uniform vec3  col;
-  uniform float power;
-  uniform float intensity;
-  varying vec3  vN; varying vec3  vV;
-  void main() {
-    float rim = 1.0 - max(dot(vN, vV), 0.0);
-    float plasma = pow(rim, power) * intensity;
-    gl_FragColor = vec4(col, plasma);
-  }
-`
-
 // ── Invisible depth occluder so back-face icons are hidden ────────────────────
 function DepthOccluder() {
   const mat = useMemo(() => {
@@ -130,46 +108,6 @@ function DepthOccluder() {
       <sphereGeometry args={[R * 0.992, 64, 64]} />
       <primitive object={mat} attach="material" />
     </mesh>
-  )
-}
-
-// ── Orb glow + floor reflection sprites ──────────────────────────────────────
-function OrbGlow() {
-  const { orbTex, floorTex } = useMemo(() => {
-    const makeCanvas = (w, h, fn) => {
-      const c = document.createElement('canvas'); c.width = w; c.height = h
-      fn(c.getContext('2d'), w, h)
-      return new THREE.CanvasTexture(c)
-    }
-    const orbTex = makeCanvas(512, 512, (ctx, w, h) => {
-      const g = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2)
-      g.addColorStop(0,    'rgba(8,  72, 210, 0.55)')
-      g.addColorStop(0.22, 'rgba(4,  48, 160, 0.28)')
-      g.addColorStop(0.50, 'rgba(2,  24,  90, 0.10)')
-      g.addColorStop(0.78, 'rgba(0,   8,  36, 0.03)')
-      g.addColorStop(1,    'rgba(0,   0,  10, 0.00)')
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h)
-    })
-    const floorTex = makeCanvas(256, 96, (ctx, w, h) => {
-      const g = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2)
-      g.addColorStop(0,   'rgba(0, 90, 255, 0.32)')
-      g.addColorStop(0.5, 'rgba(0, 44, 160, 0.08)')
-      g.addColorStop(1,   'rgba(0,  0,  40, 0.00)')
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h)
-    })
-    return { orbTex, floorTex }
-  }, [])
-  return (
-    <>
-      <sprite scale={[R * 3.5, R * 3.5, 1]} position={[0, 0, -0.6]}>
-        <spriteMaterial map={orbTex} transparent blending={THREE.AdditiveBlending}
-          depthWrite={false} depthTest={false} />
-      </sprite>
-      <sprite scale={[R * 2.2, R * 0.75, 1]} position={[0, -R * 1.22, -0.4]}>
-        <spriteMaterial map={floorTex} transparent blending={THREE.AdditiveBlending}
-          depthWrite={false} depthTest={false} />
-      </sprite>
-    </>
   )
 }
 
@@ -248,20 +186,6 @@ function ConnectionParticles() {
 
 function SpokeParticles() {
   return <Particles positions={SPOKE_POSITIONS} size={0.075} color="#b0f0ff" opacity={0.96} renderOrder={6} />
-}
-
-// ── Dense surface particle field — the fine texture seen on the reference ─────
-function SurfaceField() {
-  const [fine, mid] = useMemo(() => [
-    fibonacciSphere(6000, R * 1.001),
-    fibonacciSphere(1400, R * 1.007),
-  ], [])
-  return (
-    <>
-      <Particles positions={fine} size={0.016} color="#1e4c9a" opacity={0.72} renderOrder={2} />
-      <Particles positions={mid}  size={0.024} color="#3a78c8" opacity={0.52} renderOrder={3} />
-    </>
-  )
 }
 
 function VolumeField() {
@@ -457,44 +381,6 @@ function IconPlane({ center, texIndex }) {
   )
 }
 
-// ── Energy plasma boundary (not glass — feels like a force field) ─────────────
-function EnergyCorona() {
-  const wide = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, depthTest: false,
-    blending: THREE.AdditiveBlending, side: THREE.FrontSide,
-    uniforms: {
-      col: { value: new THREE.Color('#0055dd') },
-      power: { value: 1.6 }, intensity: { value: 1.35 },
-    },
-    vertexShader: VERT_PLASMA, fragmentShader: FRAG_PLASMA,
-  }), [])
-  const tight = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, depthTest: false,
-    blending: THREE.AdditiveBlending, side: THREE.FrontSide,
-    uniforms: {
-      col: { value: new THREE.Color('#88d8ff') },
-      power: { value: 5.0 }, intensity: { value: 1.65 },
-    },
-    vertexShader: VERT_PLASMA, fragmentShader: FRAG_PLASMA,
-  }), [])
-  const outer = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, depthTest: false,
-    blending: THREE.AdditiveBlending, side: THREE.BackSide,
-    uniforms: {
-      col: { value: new THREE.Color('#003399') },
-      power: { value: 1.0 }, intensity: { value: 0.55 },
-    },
-    vertexShader: VERT_PLASMA, fragmentShader: FRAG_PLASMA,
-  }), [])
-  return (
-    <>
-      <mesh renderOrder={20}><sphereGeometry args={[R * 1.006, 96, 96]} /><primitive object={wide}  attach="material" /></mesh>
-      <mesh renderOrder={21}><sphereGeometry args={[R * 1.016, 96, 96]} /><primitive object={tight} attach="material" /></mesh>
-      <mesh renderOrder={18}><sphereGeometry args={[R * 1.050, 96, 96]} /><primitive object={outer} attach="material" /></mesh>
-    </>
-  )
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 export default function HeroOrb() {
   const groupRef = useRef()
@@ -504,49 +390,38 @@ export default function HeroOrb() {
   })
 
   return (
-    <group>
-      {/* Background glow + floor reflection — stays fixed (outside rotating group) */}
-      <OrbGlow />
+    <group ref={groupRef}>
+      {/* Depth-only occluder — hides back-face icons, adds no tint */}
+      <DepthOccluder />
 
-      <group ref={groupRef}>
-        {/* Depth-only occluder — hides back-face icons, adds no tint */}
-        <DepthOccluder />
+      {/* Sparse interior depth particles (no surface, just volume) */}
+      <VolumeField />
 
-        {/* Deep volume field */}
-        <VolumeField />
+      {/* GRID — ALL particles, no line geometry */}
+      <LatGridParticles />
+      <MeridianGridParticles />
+      <ConnectionParticles />
+      <SpokeParticles />
 
-        {/* Dense surface particle texture (the fine dotted feel) */}
-        <SurfaceField />
+      {/* Junction dots at intersections */}
+      <JunctionDots />
 
-        {/* GRID — ALL particles, no line geometry */}
-        <LatGridParticles />
-        <MeridianGridParticles />
-        <ConnectionParticles />
-        <SpokeParticles />
+      {/* Icon halo rings (dense dotted, embedded feel) */}
+      <NodeHaloRings />
 
-        {/* Junction dots at intersections */}
-        <JunctionDots />
+      {/* Dense particle clouds around each service hub */}
+      <NodeClusterParticles />
 
-        {/* Icon halo rings (dense dotted, embedded feel) */}
-        <NodeHaloRings />
+      {/* Live data flow — particles traveling through the network */}
+      <FlowParticles />
 
-        {/* Dense particle clouds around each service hub */}
-        <NodeClusterParticles />
+      {/* Icon planes (back-side occluded by DepthOccluder) */}
+      {pentagonCenters.map((c, i) => (
+        <IconPlane key={i} center={c} texIndex={i} />
+      ))}
 
-        {/* Live data flow — particles traveling through the network */}
-        <FlowParticles />
-
-        {/* Icon planes (back-side occluded by DepthOccluder) */}
-        {pentagonCenters.map((c, i) => (
-          <IconPlane key={i} center={c} texIndex={i} />
-        ))}
-
-        {/* Animated breathing rings around hubs */}
-        <PulsatingRings />
-
-        {/* Energy plasma field boundary — not glass, feels like a force field */}
-        <EnergyCorona />
-      </group>
+      {/* Animated breathing rings around hubs */}
+      <PulsatingRings />
     </group>
   )
 }
