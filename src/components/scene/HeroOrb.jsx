@@ -17,7 +17,6 @@ function makeLatRing(lat, r = R, n = 120) {
   )
 }
 
-// Longitude arc: south pole → north pole at given longitude
 function makeLonArc(lon, r = R, n = 120) {
   return Array.from({ length: n + 1 }, (_, i) =>
     toXYZ((i / n) * Math.PI - Math.PI / 2, lon, r)
@@ -29,7 +28,6 @@ const LAT_RADS = LAT_DEG.map(d => d * Math.PI / 180)
 const LON_COUNT = 12
 const LON_RADS = Array.from({ length: LON_COUNT }, (_, i) => (i * Math.PI * 2) / LON_COUNT)
 
-// 8 octant centers on sphere surface
 const OCTANT_POSITIONS = [
   [1, 1, 1], [-1, 1, 1], [1, 1, -1], [-1, 1, -1],
   [1, -1, 1], [-1, -1, 1], [1, -1, -1], [-1, -1, -1],
@@ -111,8 +109,6 @@ const ICON_DATA = [
       <g>
         <rect x="2" y="3" width="20" height="14" rx="2" fill="none" />
         <line x1="2" y1="7" x2="22" y2="7" />
-        <circle cx="5" cy="5" r="0.5" fill="currentColor" />
-        <circle cx="8" cy="5" r="0.5" fill="currentColor" />
         <line x1="6" y1="10" x2="18" y2="10" />
         <line x1="6" y1="13" x2="14" y2="13" />
         <line x1="8" y1="21" x2="16" y2="21" />
@@ -134,6 +130,36 @@ const ICON_DATA = [
   },
 ]
 
+// Soft glow halo rendered as a sprite behind the orb
+function OrbGlow() {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 512
+    const ctx = canvas.getContext('2d')
+    const g = ctx.createRadialGradient(256, 256, 0, 256, 256, 256)
+    g.addColorStop(0,   'rgba(20, 100, 255, 0.55)')
+    g.addColorStop(0.25,'rgba(10, 70, 220, 0.28)')
+    g.addColorStop(0.55,'rgba(5, 40, 160, 0.10)')
+    g.addColorStop(1,   'rgba(0, 10, 80, 0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 512, 512)
+    return new THREE.CanvasTexture(canvas)
+  }, [])
+
+  const s = R * 3.6
+  return (
+    <sprite scale={[s, s, 1]}>
+      <spriteMaterial
+        map={texture}
+        transparent
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        opacity={1}
+      />
+    </sprite>
+  )
+}
+
 function SphereGrid() {
   const dotPositions = useMemo(() => {
     const arr = []
@@ -146,16 +172,18 @@ function SphereGrid() {
     return new Float32Array(arr)
   }, [])
 
+  const dotCount = (LAT_RADS.length * LON_RADS.length)
+
   return (
     <group>
       {LAT_RADS.map((lat, i) => (
         <Line
           key={`lat${i}`}
           points={makeLatRing(lat)}
-          color={Math.abs(lat) < 0.01 ? '#00aaff' : '#0e4d99'}
-          lineWidth={Math.abs(lat) < 0.01 ? 1.4 : 0.7}
+          color={Math.abs(lat) < 0.01 ? '#00ccff' : '#1166cc'}
+          lineWidth={Math.abs(lat) < 0.01 ? 1.6 : 0.8}
           transparent
-          opacity={Math.abs(lat) < 0.01 ? 1 : 0.65}
+          opacity={Math.abs(lat) < 0.01 ? 1 : 0.7}
         />
       ))}
 
@@ -163,10 +191,10 @@ function SphereGrid() {
         <Line
           key={`lon${i}`}
           points={makeLonArc(lon)}
-          color={i === 0 ? '#00aaff' : '#0e4d99'}
-          lineWidth={i === 0 ? 1.4 : 0.7}
+          color={i === 0 ? '#00ccff' : '#1166cc'}
+          lineWidth={i === 0 ? 1.6 : 0.8}
           transparent
-          opacity={i === 0 ? 1 : 0.65}
+          opacity={i === 0 ? 1 : 0.7}
         />
       ))}
 
@@ -174,17 +202,18 @@ function SphereGrid() {
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={dotPositions.length / 3}
+            count={dotCount}
             array={dotPositions}
             itemSize={3}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.05}
-          color="#55ddff"
+          size={0.055}
+          color="#88eeff"
           sizeAttenuation
           transparent
-          opacity={0.9}
+          opacity={1}
+          depthWrite={false}
         />
       </points>
     </group>
@@ -194,55 +223,58 @@ function SphereGrid() {
 function OrbIcon({ position, data, groupRef }) {
   const { camera } = useThree()
   const [hovered, setHovered] = useState(false)
-  const [vis, setVis] = useState(true)
+  // Use a DOM ref to update visibility without causing React re-renders every frame
+  const wrapRef = useRef()
 
   useFrame(() => {
-    if (!groupRef.current) return
+    if (!groupRef.current || !wrapRef.current) return
     const wp = position.clone().applyMatrix4(groupRef.current.matrixWorld)
     const toCamera = camera.position.clone().sub(wp).normalize()
     const normal = wp.clone().normalize()
-    setVis(normal.dot(toCamera) > 0.12)
+    const facing = normal.dot(toCamera) > 0.12
+    wrapRef.current.style.opacity = facing ? '1' : '0'
+    wrapRef.current.style.pointerEvents = facing ? 'auto' : 'none'
   })
 
   return (
-    <Html position={position.toArray()} center zIndexRange={[10, 0]}>
-      <div
-        style={{
-          width: 50,
-          height: 50,
-          borderRadius: '50%',
-          background: 'rgba(0, 8, 25, 0.82)',
-          border: `1.5px solid ${hovered ? '#44ccff' : '#1a6bbf'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          opacity: vis ? 1 : 0,
-          pointerEvents: vis ? 'auto' : 'none',
-          boxShadow: hovered
-            ? '0 0 18px #00aaff, 0 0 40px #0066cc55, inset 0 0 12px #00224455'
-            : '0 0 10px #004488aa, inset 0 0 8px #00111a33',
-          transition: 'opacity 0.2s, box-shadow 0.25s, border-color 0.25s',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-        }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        title={data.label}
-      >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={hovered ? '#55eeff' : '#2299dd'}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          color={hovered ? '#55eeff' : '#2299dd'}
+    <Html position={position.toArray()} center zIndexRange={[100, 0]}>
+      <div ref={wrapRef} style={{ opacity: 1, transition: 'opacity 0.2s', pointerEvents: 'auto' }}>
+        <div
+          style={{
+            width: 50,
+            height: 50,
+            borderRadius: '50%',
+            background: 'rgba(0, 8, 25, 0.80)',
+            border: `1.5px solid ${hovered ? '#55ddff' : '#1a6bbf'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: hovered
+              ? '0 0 20px #00ccff, 0 0 50px #0066cc44, inset 0 0 14px #003355'
+              : '0 0 12px #004488bb, inset 0 0 8px #00111a',
+            transition: 'box-shadow 0.25s, border-color 0.25s',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+          }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          title={data.label}
         >
-          {data.el}
-        </svg>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={hovered ? '#66eeff' : '#2299dd'}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            color={hovered ? '#66eeff' : '#2299dd'}
+          >
+            {data.el}
+          </svg>
+        </div>
       </div>
     </Html>
   )
@@ -258,24 +290,36 @@ export default function HeroOrb() {
   })
 
   return (
-    <group ref={groupRef}>
-      {/* Inner sphere — blocks backside icons */}
-      <mesh>
-        <sphereGeometry args={[R * 0.94, 32, 32]} />
-        <meshBasicMaterial color="#00060f" transparent opacity={0.85} side={THREE.FrontSide} />
-      </mesh>
+    <group>
+      {/* Glow halo sits outside the rotating group so it doesn't wobble */}
+      <OrbGlow />
 
-      {/* Outer atmosphere shell */}
-      <mesh>
-        <sphereGeometry args={[R * 1.08, 32, 32]} />
-        <meshBasicMaterial color="#0033aa" transparent opacity={0.04} side={THREE.BackSide} />
-      </mesh>
+      <group ref={groupRef}>
+        {/* Dark core — occludes the backside of the grid */}
+        <mesh renderOrder={-1}>
+          <sphereGeometry args={[R * 0.93, 32, 32]} />
+          <meshBasicMaterial color="#00060f" transparent opacity={0.92} depthWrite />
+        </mesh>
 
-      <SphereGrid />
+        {/* Outer shell — subtle additive rim glow */}
+        <mesh>
+          <sphereGeometry args={[R * 1.02, 32, 32]} />
+          <meshBasicMaterial
+            color="#0055cc"
+            transparent
+            opacity={0.04}
+            side={THREE.BackSide}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
 
-      {OCTANT_POSITIONS.map((pos, i) => (
-        <OrbIcon key={i} position={pos} data={ICON_DATA[i]} groupRef={groupRef} />
-      ))}
+        <SphereGrid />
+
+        {OCTANT_POSITIONS.map((pos, i) => (
+          <OrbIcon key={i} position={pos} data={ICON_DATA[i]} groupRef={groupRef} />
+        ))}
+      </group>
     </group>
   )
 }
