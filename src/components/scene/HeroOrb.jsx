@@ -7,7 +7,8 @@ import {
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 
 const R = 1.70
-const ORB_X = 1.9
+const ORB_X = 2.2
+const ORB_Y = 0.45
 const END_X = -1.5
 const END_SCALE = 0.55
 
@@ -882,9 +883,11 @@ export default function HeroOrb() {
     if (!groupRef.current) return
     const p = scrollState.progress
     const targetX = ORB_X + (END_X - ORB_X) * p
+    const targetY = ORB_Y + (0 - ORB_Y) * p
     const targetScale = 1.0 + (END_SCALE - 1.0) * p
     const lerpAmt = Math.min(1, delta * 8)
     groupRef.current.position.x += (targetX - groupRef.current.position.x) * lerpAmt
+    groupRef.current.position.y += (targetY - groupRef.current.position.y) * lerpAmt
     const curS = groupRef.current.scale.x
     const newS = curS + (targetScale - curS) * lerpAmt
     groupRef.current.scale.setScalar(newS)
@@ -903,7 +906,7 @@ export default function HeroOrb() {
   })
 
   return (
-    <group ref={groupRef} position={[ORB_X, 0, 0]}>
+    <group ref={groupRef} position={[ORB_X, ORB_Y, 0]}>
       <DepthOccluder />
       <VolumeField />
       <InteractiveMiniOrbs groupRef={groupRef} />
