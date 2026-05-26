@@ -11,12 +11,13 @@ export function registerCarousel({ onAdvance, activeRef, total }) {
 export function tryCarouselAdvance(direction) {
   if (!_onAdvance || !_activeRef) return false
   const cur = _activeRef.current
+  const step = direction > 0 ? 1 : -1
   if (direction > 0 && cur < _total - 1) {
-    _onAdvance(direction)
+    _onAdvance(step)
     return true
   }
   if (direction < 0 && cur > 0) {
-    _onAdvance(direction)
+    _onAdvance(step)
     return true
   }
   return false

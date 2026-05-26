@@ -5,7 +5,7 @@ const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
 const DURATION   = 2000
-const CARD_LOCK  = 920
+const CARD_LOCK  = 1100
 
 export default function useScrollSnap() {
   const lockRef = useRef(false)
