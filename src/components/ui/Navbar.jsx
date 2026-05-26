@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { FIXED_PRICE, CUSTOM_SERVICES } from '../../data/services'
 
@@ -18,18 +18,13 @@ function RRMark() {
   )
 }
 
-function ServicesDropdown({ onClose }) {
+function ServicesDropdown({ onStartClose }) {
   return (
-    <div className="nav-dropdown" onMouseLeave={onClose}>
+    <div className="nav-dropdown" onMouseLeave={onStartClose}>
       <div className="nav-dropdown-col">
         <div className="nav-dropdown-heading">Fixed Price Products</div>
         {FIXED_PRICE.map(s => (
-          <Link
-            key={s.slug}
-            to={`/services/${s.slug}`}
-            className="nav-dropdown-item"
-            onClick={onClose}
-          >
+          <Link key={s.slug} to={`/services/${s.slug}`} className="nav-dropdown-item">
             {s.name}
           </Link>
         ))}
@@ -37,12 +32,7 @@ function ServicesDropdown({ onClose }) {
       <div className="nav-dropdown-col">
         <div className="nav-dropdown-heading">Custom Services</div>
         {CUSTOM_SERVICES.map(s => (
-          <Link
-            key={s.slug}
-            to={`/services/${s.slug}`}
-            className="nav-dropdown-item"
-            onClick={onClose}
-          >
+          <Link key={s.slug} to={`/services/${s.slug}`} className="nav-dropdown-item">
             {s.name}
           </Link>
         ))}
@@ -52,10 +42,10 @@ function ServicesDropdown({ onClose }) {
 }
 
 export default function Navbar({ loaded }) {
-  const navRef    = useRef()
-  const closeRef  = useRef()
-  const [scrolled, setScrolled]   = useState(false)
-  const [showDrop, setShowDrop]   = useState(false)
+  const navRef   = useRef()
+  const closeRef = useRef()
+  const [scrolled,  setScrolled]  = useState(false)
+  const [showDrop,  setShowDrop]  = useState(false)
 
   useEffect(() => {
     if (!loaded) return
@@ -72,8 +62,8 @@ export default function Navbar({ loaded }) {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const openDrop  = () => { clearTimeout(closeRef.current); setShowDrop(true) }
-  const startClose = () => { closeRef.current = setTimeout(() => setShowDrop(false), 130) }
+  const openDrop   = () => { clearTimeout(closeRef.current); setShowDrop(true) }
+  const startClose = () => { closeRef.current = setTimeout(() => setShowDrop(false), 160) }
 
   return (
     <nav ref={navRef} className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} style={{ opacity: 0 }}>
@@ -85,24 +75,23 @@ export default function Navbar({ loaded }) {
         </Link>
 
         <div className="navbar-links">
-          {/* Services — has dropdown */}
+          {/* Services & Pricing — has dropdown */}
           <div
             className="navbar-link-wrap"
             onMouseEnter={openDrop}
             onMouseLeave={startClose}
           >
             <Link to="/services" className="navbar-link navbar-link--drop" onClick={() => setShowDrop(false)}>
-              Services
+              Services &amp; Pricing
               <svg className={`nav-chevron${showDrop ? ' nav-chevron--open' : ''}`} width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
-            {showDrop && <ServicesDropdown onClose={() => setShowDrop(false)} />}
+            {showDrop && <ServicesDropdown onStartClose={startClose} />}
           </div>
 
-          <Link to="/pricing" className="navbar-link">Pricing</Link>
-          <Link to="/proof"   className="navbar-link">Proof</Link>
-          <Link to="/about"   className="navbar-link">About</Link>
+          <Link to="/proof"  className="navbar-link">Proof</Link>
+          <Link to="/about"  className="navbar-link">About</Link>
         </div>
 
         <button className="navbar-cta-btn">
