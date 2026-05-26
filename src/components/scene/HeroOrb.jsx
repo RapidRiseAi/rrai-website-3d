@@ -918,7 +918,6 @@ export default function HeroOrb() {
   return (
     <group ref={groupRef} position={[ORB_X, ORB_Y, 0]}>
       <DepthOccluder />
-      <VolumeField />
       <InteractiveMiniOrbs groupRef={groupRef} />
       <SoccerGridParticles />
       <CubeEdgeFill />

@@ -4,7 +4,7 @@
 html { scroll-behavior: auto; }
 
 body {
-  background: #000104;
+  background: #000000;
   color: #e6f0ff;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-feature-settings: 'ss01', 'cv11';
@@ -17,51 +17,39 @@ body {
 
 #canvas-container { position: fixed; inset: 0; z-index: 0; }
 
-/* ── Atmospheric depth — deep black with electric tech-blue accents ─────── */
+/* ── Atmospheric depth — pure black, static electric-blue side-light ──────── */
 .hero-atmosphere {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   background:
-    /* electric tech-blue key from upper-left */
-    radial-gradient(ellipse 58% 78% at -6% -4%,  rgba(0, 120, 255, 0.42) 0%, transparent 56%),
-    /* secondary cyan rim */
-    radial-gradient(ellipse 34% 44% at 10% 14%,  rgba(0, 170, 255, 0.16) 0%, transparent 56%),
-    /* mid-left fill */
-    radial-gradient(ellipse 48% 68% at -2% 55%,  rgba(0, 70, 200, 0.18) 0%, transparent 62%),
-    /* centre bridge bloom */
-    radial-gradient(ellipse 52% 36% at 50% 50%,  rgba(0, 80, 210, 0.04) 0%, transparent 70%),
-    /* horizon glow */
-    radial-gradient(ellipse 70% 22% at 50% 108%, rgba(0, 100, 220, 0.12) 0%, transparent 62%),
-    /* diagonal light beam 1 */
-    linear-gradient(128deg, transparent 28%, rgba(0,110,255,0.03) 40%, rgba(0,150,255,0.06) 46%, rgba(0,110,255,0.03) 52%, transparent 64%),
-    /* diagonal light beam 2 */
-    linear-gradient(112deg, transparent 52%, rgba(0,80,220,0.025) 63%, rgba(0,120,255,0.045) 68%, rgba(0,80,220,0.025) 73%, transparent 85%),
-    /* heavy top vignette */
-    linear-gradient(to bottom, rgba(0,0,2,0.90) 0%, rgba(0,0,4,0.30) 18%, transparent 32%),
-    /* heavy bottom vignette */
-    linear-gradient(to top,    rgba(0,0,3,0.95) 0%, rgba(0,1,8,0.55) 14%, transparent 30%);
+    /* primary blue key light — upper-left */
+    radial-gradient(ellipse 55% 72% at -8% -6%,  rgba(14, 100, 255, 0.52) 0%, transparent 58%),
+    /* secondary rim — softer cyan */
+    radial-gradient(ellipse 30% 40% at 8%  12%,  rgba(0,  160, 255, 0.18) 0%, transparent 55%),
+    /* mid-left ambient fill */
+    radial-gradient(ellipse 42% 60% at -4% 52%,  rgba(0,  60,  200, 0.16) 0%, transparent 60%),
+    /* deep edge vignette — pure black corners */
+    radial-gradient(ellipse 90% 90% at 50% 50%,  transparent 55%, rgba(0,0,0,0.75) 100%),
+    /* top vignette */
+    linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.18) 20%, transparent 38%),
+    /* bottom vignette */
+    linear-gradient(to top,    rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.40) 18%, transparent 34%);
 }
 
+/* static accent light — no animation */
 .hero-atmosphere::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    /* breathing tech-blue key light */
-    radial-gradient(ellipse 38% 70% at -8% -8%, rgba(0, 150, 255, 0.46) 0%, rgba(0, 90, 240, 0.14) 36%, transparent 60%);
-  animation: atmosphere-breathe 10s ease-in-out infinite;
+    radial-gradient(ellipse 36% 65% at -10% -10%, rgba(30, 140, 255, 0.28) 0%, transparent 60%);
   mix-blend-mode: screen;
 }
 
-@keyframes atmosphere-breathe {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50%      { opacity: 1.05; transform: scale(1.04); }
-}
-
-/* scanline texture overlay */
+/* subtle horizontal scanlines for premium texture */
 .hero-atmosphere::after {
   content: '';
   position: absolute;
@@ -70,10 +58,9 @@ body {
     0deg,
     transparent,
     transparent 3px,
-    rgba(0, 60, 180, 0.018) 3px,
-    rgba(0, 60, 180, 0.018) 4px
+    rgba(0, 40, 160, 0.014) 3px,
+    rgba(0, 40, 160, 0.014) 4px
   );
-  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -104,39 +91,8 @@ body {
   background-size: 72px 72px;
   transform: perspective(550px) rotateX(68deg);
   transform-origin: 50% 100%;
-  animation: grid-pulse 6s ease-in-out infinite;
+  opacity: 0.55;
 }
-
-@keyframes grid-pulse {
-  0%, 100% { opacity: 0.55; }
-  50%       { opacity: 0.85; }
-}
-
-/* ── Animated star/particle field ───────────────────────────────────────── */
-.hero-stars {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, rgba(180, 220, 255, 0.55), transparent 60%),
-    radial-gradient(1px   1px   at 28% 72%, rgba(140, 200, 255, 0.40), transparent 60%),
-    radial-gradient(1.5px 1.5px at 42% 32%, rgba(190, 225, 255, 0.50), transparent 60%),
-    radial-gradient(1px   1px   at 55% 88%, rgba(140, 195, 255, 0.35), transparent 60%),
-    radial-gradient(1.5px 1.5px at 67% 22%, rgba(180, 220, 255, 0.45), transparent 60%),
-    radial-gradient(1px   1px   at 78% 58%, rgba(150, 200, 255, 0.40), transparent 60%),
-    radial-gradient(1px   1px   at 88% 12%, rgba(170, 210, 255, 0.42), transparent 60%),
-    radial-gradient(1.5px 1.5px at  8% 62%, rgba(160, 205, 255, 0.42), transparent 60%),
-    radial-gradient(1px   1px   at 35% 12%, rgba(200, 230, 255, 0.38), transparent 60%),
-    radial-gradient(1px   1px   at 62% 78%, rgba(150, 200, 255, 0.40), transparent 60%),
-    radial-gradient(1.5px 1.5px at 92% 82%, rgba(180, 220, 255, 0.50), transparent 60%),
-    radial-gradient(1px   1px   at 18% 92%, rgba(170, 210, 255, 0.38), transparent 60%);
-  animation: stars-drift 32s linear infinite, stars-twinkle 4.5s ease-in-out infinite;
-  opacity: 0.85;
-}
-
-@keyframes stars-drift   { 100% { background-position: -120px 80px; } }
-@keyframes stars-twinkle { 0%, 100% { opacity: 0.70; } 50% { opacity: 0.95; } }
 
 /* ── Premium grain texture ──────────────────────────────────────────────── */
 .hero-noise {
@@ -329,7 +285,7 @@ body {
 .hero-h1 {
   display: flex;
   flex-direction: column;
-  font-size: clamp(3.0rem, 5.2vw, 6.4rem);
+  font-size: clamp(3.4rem, 6.0vw, 7.0rem);
   line-height: 1.02;
   letter-spacing: -0.044em;
   max-width: 52vw;
@@ -339,20 +295,20 @@ body {
 .h1-row { display: block; }
 
 .h1-regular {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-weight: 800;
   color: #ffffff;
 }
 
 .h1-italic {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-weight: 700;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.60);
+  color: rgba(200, 222, 255, 0.88);
 }
 
 .h1-accent {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-weight: 800;
   color: #2590ff;
   animation: accent-color 6s ease-in-out infinite;
