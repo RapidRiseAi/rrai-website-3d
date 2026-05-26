@@ -991,7 +991,7 @@ h2 {
 }
 
 .expertise-left {
-  flex: 0 0 48%;
+  flex: 0 0 43%;
   min-height: 100vh;
   pointer-events: none;
 }
@@ -1035,7 +1035,7 @@ h2 {
 /* ── Card carousel wrapper ────────────────────────────────────────────────── */
 .ec-carousel-wrap {
   position: relative;
-  height: clamp(500px, 64vh, 660px);
+  height: clamp(450px, 58vh, 594px);
   width: 100%;
 }
 
@@ -1044,34 +1044,54 @@ h2 {
   position: absolute;
   top: 0;
   left: 0;
-  width: 356px;
-  height: clamp(500px, 64vh, 660px);
+  width: 390px;
+  height: clamp(450px, 58vh, 594px);
   border-radius: 20px;
-  background: linear-gradient(160deg, #111c2e, #070d18);
-  border: 1px solid rgba(82, 160, 255, 0.28);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* preview cards: near-black */
+  background: #050810;
+  border: 1px solid rgba(82, 160, 255, 0.18);
   overflow: hidden;
   user-select: none;
   will-change: transform, opacity;
   outline: none;
 }
 
+/* Active card — rich dark gradient + premium glow */
 .expertise-card--active {
+  background: linear-gradient(160deg, #111c2e, #070d18);
   border-color: rgba(82, 160, 255, 0.45);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(82, 160, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+/* Top-edge shimmer on active card */
+.expertise-card--active::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(82, 160, 255, 0.55), transparent);
+  pointer-events: none;
 }
 
 .expertise-card:not(.expertise-card--active) {
   cursor: pointer;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 .expertise-card:not(.expertise-card--active):hover {
-  border-color: rgba(82, 160, 255, 0.50);
+  border-color: rgba(82, 160, 255, 0.38);
 }
 
 .expertise-card:focus-visible {
   outline: 2px solid rgba(82, 160, 255, 0.7);
   outline-offset: 3px;
+}
+
+/* Content layer — fills card, used by AnimatePresence */
+.ec-content-layer {
+  position: absolute;
+  inset: 0;
 }
 
 /* ── Shared inner wrapper ─────────────────────────────────────────────────── */
@@ -1258,30 +1278,6 @@ h2 {
   line-height: 1.2;
 }
 
-/* ── Progress dots ────────────────────────────────────────────────────────── */
-.ec-progress {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 20px;
-}
-
-.ec-progress-dot {
-  width: 20px;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(82, 160, 255, 0.18);
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.22s, width 0.22s;
-}
-
-.ec-progress-dot--active {
-  width: 32px;
-  background: rgba(82, 160, 255, 0.65);
-}
-
 /* ── Reduced motion ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .expertise-card { transition: opacity 0.2s !important; }
@@ -1302,10 +1298,10 @@ h2 {
     min-height: unset;
   }
   .expertise-h2 { white-space: normal; }
-  .ec-carousel-wrap { height: clamp(480px, 60vh, 620px); }
+  .ec-carousel-wrap { height: clamp(430px, 56vh, 560px); }
   .expertise-card {
-    width: min(82vw, 356px);
-    height: clamp(480px, 60vh, 620px);
+    width: min(78vw, 390px);
+    height: clamp(430px, 56vh, 560px);
   }
 }
 
@@ -1313,12 +1309,11 @@ h2 {
   .expertise-section { padding: 56px 0 36px; }
   .expertise-heading-block { margin-bottom: 20px; }
   .expertise-h2 { font-size: clamp(1.2rem, 5vw, 1.7rem); }
-  .ec-carousel-wrap { height: auto; min-height: 480px; }
+  .ec-carousel-wrap { height: auto; min-height: 440px; }
   .expertise-card {
-    width: min(86vw, 340px);
+    width: min(86vw, 360px);
     height: auto;
-    min-height: 460px;
+    min-height: 420px;
   }
   .expertise-card:not(.expertise-card--active) { display: none; }
-  .ec-progress { margin-top: 14px; }
 }

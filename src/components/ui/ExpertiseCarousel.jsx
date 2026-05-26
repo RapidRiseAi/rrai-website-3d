@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { registerCarousel } from '../../utils/carouselControl'
 
@@ -44,8 +44,6 @@ const TrendingUpIcon = () => (
     <polyline points="16 7 22 7 22 13"/>
   </svg>
 )
-
-/* Arrow up-right */
 const ArrowIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M7 17L17 7"/><path d="M7 7h10v10"/>
@@ -105,25 +103,33 @@ const CARDS = [
   },
 ]
 
-/* ── Animation ──────────────────────────────────────────────────────────────── */
-// CARD_OFFSET = card CSS width (356px) + gap (10px) = 366px
-const CARD_OFFSET = 366
-const TRANSITION  = { duration: 0.60, ease: [0.16, 1, 0.3, 1] }
+/* ── Animation constants ────────────────────────────────────────────────────── */
+const CARD_OFFSET  = 402   // 390px card + 12px gap
+const SLIDE_TRANS  = { duration: 0.88, ease: [0.16, 1, 0.3, 1] }
+const RISE         = (delay = 0) => ({ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay })
+const FADE         = (delay = 0) => ({ duration: 0.40, ease: 'easeOut', delay })
 
 function getCardAnim(pos) {
   if (pos < 0)   return { x: -CARD_OFFSET,      opacity: 0 }
   if (pos === 0) return { x: 0,                  opacity: 1 }
   if (pos === 1) return { x: CARD_OFFSET,        opacity: 1 }
-  if (pos === 2) return { x: CARD_OFFSET * 2,    opacity: 0.7 }
+  if (pos === 2) return { x: CARD_OFFSET * 2,    opacity: 0.55 }
   return               { x: CARD_OFFSET * 3,    opacity: 0 }
 }
 
-/* ── Active card ────────────────────────────────────────────────────────────── */
+/* ── Active card — full reveal with staggered rise ──────────────────────────── */
 function ActiveContent({ card, onNavigate }) {
   const Icon = card.icon
   return (
     <div className="ec-inner ec-inner--active">
-      <div className="ec-toprow">
+
+      {/* Header row — fades down from above */}
+      <motion.div
+        className="ec-toprow"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={FADE(0.22)}
+      >
         <div className="ec-meta">
           <span className="ec-number">{card.number}</span>
           <span className="ec-category">{card.category}</span>
@@ -131,28 +137,86 @@ function ActiveContent({ card, onNavigate }) {
         <button className="ec-arrow-btn" onClick={onNavigate} aria-label={`Explore ${card.title}`}>
           <ArrowIcon />
         </button>
-      </div>
+      </motion.div>
 
-      <div className="ec-icon-box" aria-hidden="true"><Icon /></div>
-      <h3 className="ec-title">{card.title}</h3>
-      <p className="ec-intro">{card.intro}</p>
-      <div className="ec-divider" aria-hidden="true" />
+      {/* Icon — scales in */}
+      <motion.div
+        className="ec-icon-box"
+        aria-hidden="true"
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={FADE(0.26)}
+      >
+        <Icon />
+      </motion.div>
 
-      <div className="ec-cap-block">
+      {/* Title — rises from preview-footer position */}
+      <motion.h3
+        className="ec-title"
+        initial={{ opacity: 0, y: 90 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={RISE(0.06)}
+      >
+        {card.title}
+      </motion.h3>
+
+      {/* Intro — pulled up just behind the title */}
+      <motion.p
+        className="ec-intro"
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={RISE(0.16)}
+      >
+        {card.intro}
+      </motion.p>
+
+      {/* Divider */}
+      <motion.div
+        className="ec-divider"
+        aria-hidden="true"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        style={{ originX: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: 0.28 }}
+      />
+
+      {/* Capabilities — staggered list */}
+      <motion.div
+        className="ec-cap-block"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={RISE(0.32)}
+      >
         <p className="ec-cap-label">Capabilities</p>
         <ul className="ec-bullets">
-          {card.capabilities.map((item, i) => <li key={i}>{item}</li>)}
+          {card.capabilities.map((item, i) => (
+            <motion.li
+              key={i}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.38, ease: 'easeOut', delay: 0.36 + i * 0.055 }}
+            >
+              {item}
+            </motion.li>
+          ))}
         </ul>
-      </div>
+      </motion.div>
     </div>
   )
 }
 
-/* ── Preview card ───────────────────────────────────────────────────────────── */
+/* ── Preview card — minimal with dot grid ───────────────────────────────────── */
 function PreviewContent({ card, onNavigate }) {
   return (
     <div className="ec-inner ec-inner--preview">
-      <div className="ec-toprow">
+
+      {/* Number + arrow */}
+      <motion.div
+        className="ec-toprow"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={FADE(0.05)}
+      >
         <span className="ec-preview-num">{card.number}</span>
         <button
           className="ec-arrow-btn"
@@ -161,11 +225,26 @@ function PreviewContent({ card, onNavigate }) {
         >
           <ArrowIcon />
         </button>
-      </div>
-      <div className="ec-preview-dots" aria-hidden="true" />
-      <div className="ec-preview-footer">
+      </motion.div>
+
+      {/* Dot grid */}
+      <motion.div
+        className="ec-preview-dots"
+        aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={FADE(0.10)}
+      />
+
+      {/* Title footer */}
+      <motion.div
+        className="ec-preview-footer"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={RISE(0.08)}
+      >
         <h3 className="ec-preview-title">{card.title}</h3>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -199,7 +278,7 @@ export default function ExpertiseCarousel() {
 
         <div className="ec-carousel-wrap" role="region" aria-label="Expertise cards">
           {CARDS.map((card, i) => {
-            const pos = i - activeCard
+            const pos       = i - activeCard
             const isActive  = pos === 0
             const isPreview = pos === 1
             const isVisible = pos >= 0 && pos <= 2
@@ -210,7 +289,7 @@ export default function ExpertiseCarousel() {
                 className={`expertise-card${isActive ? ' expertise-card--active' : ''}`}
                 style={{ zIndex: isActive ? 3 : isPreview ? 2 : isVisible ? 1 : 0 }}
                 animate={getCardAnim(pos)}
-                transition={TRANSITION}
+                transition={SLIDE_TRANS}
                 onClick={() => isPreview && setActiveCard(i)}
                 role={isPreview ? 'button' : undefined}
                 aria-label={isPreview ? `Show ${card.title}` : undefined}
@@ -221,25 +300,35 @@ export default function ExpertiseCarousel() {
                   }
                 }}
               >
-                {isActive
-                  ? <ActiveContent card={card} onNavigate={() => navigate(card.route)} />
-                  : <PreviewContent card={card} onNavigate={() => navigate(card.route)} />
-                }
+                {/* Content switches with AnimatePresence for seamless crossfade */}
+                <AnimatePresence mode="wait" initial={false}>
+                  {isActive ? (
+                    <motion.div
+                      key={`active-${card.number}`}
+                      className="ec-content-layer"
+                      exit={{ opacity: 0, transition: { duration: 0.18 } }}
+                    >
+                      <ActiveContent
+                        card={card}
+                        onNavigate={() => navigate(card.route)}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={`preview-${card.number}`}
+                      className="ec-content-layer"
+                      exit={{ opacity: 0, transition: { duration: 0.14 } }}
+                    >
+                      <PreviewContent
+                        card={card}
+                        onNavigate={() => navigate(card.route)}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )
           })}
-        </div>
-
-        <div className="ec-progress" aria-hidden="true">
-          {CARDS.map((_, i) => (
-            <button
-              key={i}
-              className={`ec-progress-dot${i === activeCard ? ' ec-progress-dot--active' : ''}`}
-              onClick={() => setActiveCard(i)}
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-          ))}
         </div>
       </div>
     </section>
