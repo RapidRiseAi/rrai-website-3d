@@ -91,6 +91,14 @@ export default function HeroSection({ loaded }) {
   return (
     <section className="hero-section" ref={sectionRef}>
 
+      {/* ── Cinematic background layers ─────────────────────────── */}
+      <div className="hbg-ul-wash"    aria-hidden="true" />
+      <div className="hbg-beam-main"  aria-hidden="true" />
+      <div className="hbg-beam-floor" aria-hidden="true" />
+      <div className="hbg-orb-halo"   aria-hidden="true" />
+      <div className="hbg-orb-base"   aria-hidden="true" />
+      <div className="hbg-vignette"   aria-hidden="true" />
+
       {/* ── Left content block — exits LEFT on scroll ───────────── */}
       <motion.div className="hero-left-content" style={{ x: mainExitX }}>
 

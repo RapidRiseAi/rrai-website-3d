@@ -17,79 +17,34 @@ body {
 
 #canvas-container { position: fixed; inset: 0; z-index: 0; }
 
-/* ── Atmospheric depth — cinematic layered lighting ─────────────────────── */
+/* ── Atmospheric depth — page-wide base vignette only ───────────────────── */
+/* Hero-specific lighting lives in .hbg-* inside .hero-section */
 .hero-atmosphere {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   background:
-    /* top dark cap */
-    linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.16) 14%, transparent 30%),
-    /* bottom dark floor */
-    linear-gradient(to top,    rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.52) 18%, transparent 36%),
-    /* deep edge vignette — keeps center dominant */
-    radial-gradient(ellipse 90% 90% at 50% 50%, transparent 36%, rgba(0,0,0,0.90) 100%),
-    /* orb lower stage shadow — warmth beneath the orb */
-    radial-gradient(ellipse 28% 18% at 76% 70%, rgba(12, 58, 185, 0.12) 0%, transparent 60%),
-    /* orb environmental halo — integrates orb into scene */
-    radial-gradient(ellipse 44% 56% at 76% 38%, rgba(45, 130, 255, 0.15) 0%, transparent 64%),
-    /* lower-left stage floor glow */
-    radial-gradient(ellipse 55% 45% at -6% 90%,  rgba(8,  50, 195, 0.18) 0%, transparent 64%),
-    /* mid-left ambient fill */
-    radial-gradient(ellipse 50% 60% at -4% 40%,  rgba(10, 65, 215, 0.14) 0%, transparent 66%),
-    /* top-left atmospheric key glow — broad, soft, primary */
-    radial-gradient(ellipse 80% 72% at -10% -8%, rgba(40, 115, 255, 0.22) 0%, transparent 62%);
+    linear-gradient(to bottom, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.10) 12%, transparent 26%),
+    linear-gradient(to top,    rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.40) 15%, transparent 30%),
+    radial-gradient(ellipse 94% 94% at 50% 50%, transparent 38%, rgba(0,0,0,0.86) 100%);
 }
 
-/* diagonal studio beam from upper-left — blurred, refined */
 .hero-atmosphere::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    /* primary diagonal beam — upper-left inward */
-    linear-gradient(
-      142deg,
-      rgba(20, 102, 255, 0.20) 0%,
-      rgba(20, 102, 255, 0.09) 24%,
-      transparent 44%
-    ),
-    /* faint right-edge counter-light near orb */
-    linear-gradient(
-      to left,
-      rgba(14, 70, 200, 0.08) 0%,
-      transparent 28%
-    );
-  filter: blur(52px);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 20, 100, 0.008) 3px,
+    rgba(0, 20, 100, 0.008) 4px
+  );
 }
 
-/* lower sweep + floor reflected light + scanlines */
-.hero-atmosphere::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    /* horizontal scanlines — barely visible, premium texture */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(0, 30, 130, 0.010) 3px,
-      rgba(0, 30, 130, 0.010) 4px
-    ),
-    /* lower-left floor reflected light sweep */
-    radial-gradient(ellipse 65% 32% at 18% 100%, rgba(14, 60, 215, 0.11) 0%, transparent 66%),
-    /* lower diagonal fill — shaping the floor */
-    linear-gradient(
-      -142deg,
-      transparent 60%,
-      rgba(8, 55, 195, 0.07) 78%,
-      transparent 94%
-    );
-}
+.hero-atmosphere::after { content: none; }
 
 /* ── Perspective floor grid ──────────────────────────────────────────────── */
 .bg-floor-grid {
@@ -101,18 +56,18 @@ body {
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 36%, transparent 72%);
-  mask-image:         linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 36%, transparent 72%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.65) 32%, transparent 66%);
+  mask-image:         linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.65) 32%, transparent 66%);
 }
 
-/* soft reflected floor glow — sits beneath the grid */
+/* soft reflected floor glow */
 .bg-floor-grid::before {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 62% 40% at 52% 100%, rgba(14, 58, 210, 0.14) 0%, transparent 68%),
-    radial-gradient(ellipse 32% 22% at 26% 100%, rgba(10, 48, 195, 0.09) 0%, transparent 62%);
+    radial-gradient(ellipse 62% 40% at 52% 100%, rgba(18, 70, 220, 0.22) 0%, transparent 68%),
+    radial-gradient(ellipse 32% 22% at 26% 100%, rgba(14, 56, 210, 0.14) 0%, transparent 62%);
   pointer-events: none;
 }
 
@@ -125,12 +80,12 @@ body {
   right: -60%;
   height: 100%;
   background-image:
-    linear-gradient(90deg, rgba(22, 90, 255, 0.20) 1px, transparent 1px),
-    linear-gradient(0deg,  rgba(22, 90, 255, 0.13) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(30, 100, 255, 0.30) 1px, transparent 1px),
+    linear-gradient(0deg,  rgba(30, 100, 255, 0.19) 1px, transparent 1px);
   background-size: 64px 64px;
   transform: perspective(600px) rotateX(70deg);
   transform-origin: 50% 100%;
-  opacity: 0.58;
+  opacity: 0.76;
 }
 
 /* ── Premium grain texture ──────────────────────────────────────────────── */
@@ -302,6 +257,90 @@ body {
   flex-direction: row;
   align-items: stretch;
   overflow: hidden;
+  isolation: isolate;
+}
+
+/* ── Hero cinematic background layers (inside .hero-section, z-index 1) ──── */
+
+/* 1 — Upper-left atmospheric wash: broad soft key light */
+.hbg-ul-wash {
+  position: absolute;
+  top: -12%;
+  left: -22%;
+  width: 74%;
+  height: 88%;
+  background: radial-gradient(ellipse 80% 75% at 22% 18%, rgba(32, 100, 235, 0.34) 0%, rgba(18, 62, 190, 0.14) 44%, transparent 72%);
+  filter: blur(44px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 2 — Primary diagonal beam: angled shaft from upper-left toward center */
+.hbg-beam-main {
+  position: absolute;
+  top: -200px;
+  left: -300px;
+  width: 880px;
+  height: 240px;
+  background: linear-gradient(90deg, transparent 0%, rgba(48, 132, 255, 0.40) 36%, rgba(48, 132, 255, 0.24) 62%, transparent 100%);
+  filter: blur(54px);
+  transform: rotate(38deg);
+  transform-origin: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 3 — Lower-left floor sweep: reflected ground light */
+.hbg-beam-floor {
+  position: absolute;
+  bottom: 16px;
+  left: -300px;
+  width: 1100px;
+  height: 220px;
+  background: linear-gradient(90deg, transparent 0%, rgba(36, 112, 248, 0.32) 30%, rgba(50, 132, 255, 0.20) 56%, transparent 100%);
+  filter: blur(62px);
+  transform: rotate(-13deg);
+  transform-origin: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 4 — Orb halo: large atmospheric glow behind the sphere */
+.hbg-orb-halo {
+  position: absolute;
+  right: -4%;
+  top: 2%;
+  width: 760px;
+  height: 760px;
+  background: radial-gradient(circle at 50% 48%, rgba(40, 136, 255, 0.28) 0%, rgba(25, 96, 220, 0.13) 38%, transparent 68%);
+  filter: blur(20px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 5 — Orb stage base: pool of light beneath the sphere */
+.hbg-orb-base {
+  position: absolute;
+  bottom: 8%;
+  right: 6%;
+  width: 460px;
+  height: 230px;
+  background: radial-gradient(ellipse 78% 58% at 50% 100%, rgba(28, 104, 235, 0.26) 0%, rgba(16, 64, 195, 0.11) 52%, transparent 82%);
+  filter: blur(32px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 6 — Scene vignette: deepens edges, pulls focus inward */
+.hbg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.76) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.80) 0%, transparent 16%),
+    linear-gradient(to top,    rgba(0,0,0,0.92) 0%, transparent 20%);
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* Left column — eyebrow, headline, sub, CTA */
