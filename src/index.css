@@ -22,18 +22,18 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 600px;
-  height: 560px;
+  width: 480px;
+  height: 420px;
   pointer-events: none;
   z-index: 1;
   background: radial-gradient(ellipse at 0% 0%,
-    rgba(10,  155, 255, 0.95) 0%,
-    rgba(0,   128, 255, 0.68) 12%,
-    rgba(0,    96, 245, 0.36) 28%,
-    rgba(0,    68, 220, 0.14) 48%,
+    rgba(10,  155, 255, 0.45) 0%,
+    rgba(0,   128, 255, 0.28) 14%,
+    rgba(0,    96, 245, 0.14) 30%,
+    rgba(0,    68, 220, 0.05) 50%,
     transparent 68%
   );
-  filter: blur(2px);
+  filter: blur(8px);
 }
 
 
@@ -393,7 +393,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #00040e;
+  background: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
