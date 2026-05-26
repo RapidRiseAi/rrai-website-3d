@@ -17,66 +17,77 @@ body {
 
 #canvas-container { position: fixed; inset: 0; z-index: 0; }
 
-/* ── Atmospheric depth — cinematic lighting ──────────────────────────────── */
+/* ── Atmospheric depth — cinematic layered lighting ─────────────────────── */
 .hero-atmosphere {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   background:
-    /* top-left blue key light */
-    radial-gradient(ellipse 68% 80% at -14% -10%, rgba(14, 88, 245, 0.58) 0%, transparent 56%),
-    /* secondary key fill, softer */
-    radial-gradient(ellipse 38% 52% at -4% 15%,  rgba(0,  80, 220, 0.22) 0%, transparent 60%),
-    /* lower-left ambient */
-    radial-gradient(ellipse 44% 58% at -6% 62%,  rgba(0,  50, 180, 0.16) 0%, transparent 62%),
-    /* orb integration glow — right-center zone */
-    radial-gradient(ellipse 42% 52% at 78% 42%,  rgba(10, 65, 200, 0.26) 0%, transparent 60%),
-    /* deep vignette — darkens edges */
-    radial-gradient(ellipse 92% 92% at 50% 50%,  transparent 42%, rgba(0,0,0,0.86) 100%),
     /* top dark cap */
-    linear-gradient(to bottom, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.22) 18%, transparent 36%),
+    linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.16) 14%, transparent 30%),
     /* bottom dark floor */
-    linear-gradient(to top,    rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.60) 22%, transparent 40%);
+    linear-gradient(to top,    rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.52) 18%, transparent 36%),
+    /* deep edge vignette — keeps center dominant */
+    radial-gradient(ellipse 90% 90% at 50% 50%, transparent 36%, rgba(0,0,0,0.90) 100%),
+    /* orb lower stage shadow — warmth beneath the orb */
+    radial-gradient(ellipse 28% 18% at 76% 70%, rgba(12, 58, 185, 0.12) 0%, transparent 60%),
+    /* orb environmental halo — integrates orb into scene */
+    radial-gradient(ellipse 44% 56% at 76% 38%, rgba(45, 130, 255, 0.15) 0%, transparent 64%),
+    /* lower-left stage floor glow */
+    radial-gradient(ellipse 55% 45% at -6% 90%,  rgba(8,  50, 195, 0.18) 0%, transparent 64%),
+    /* mid-left ambient fill */
+    radial-gradient(ellipse 50% 60% at -4% 40%,  rgba(10, 65, 215, 0.14) 0%, transparent 66%),
+    /* top-left atmospheric key glow — broad, soft, primary */
+    radial-gradient(ellipse 80% 72% at -10% -8%, rgba(40, 115, 255, 0.22) 0%, transparent 62%);
 }
 
-/* angled studio light sweep — upper-left diagonal beam */
+/* diagonal studio beam from upper-left — blurred, refined */
 .hero-atmosphere::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
+    /* primary diagonal beam — upper-left inward */
     linear-gradient(
-      146deg,
-      rgba(18, 100, 255, 0.16) 0%,
-      rgba(18, 100, 255, 0.07) 18%,
-      transparent 38%
+      142deg,
+      rgba(20, 102, 255, 0.20) 0%,
+      rgba(20, 102, 255, 0.09) 24%,
+      transparent 44%
     ),
-    radial-gradient(ellipse 30% 40% at 78% 42%, rgba(20, 90, 215, 0.20) 0%, transparent 62%);
-  filter: blur(38px);
-  mix-blend-mode: screen;
+    /* faint right-edge counter-light near orb */
+    linear-gradient(
+      to left,
+      rgba(14, 70, 200, 0.08) 0%,
+      transparent 28%
+    );
+  filter: blur(52px);
 }
 
-/* lower diagonal sweep + premium scanlines */
+/* lower sweep + floor reflected light + scanlines */
 .hero-atmosphere::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
+    /* horizontal scanlines — barely visible, premium texture */
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 3px,
-      rgba(0, 35, 150, 0.011) 3px,
-      rgba(0, 35, 150, 0.011) 4px
+      rgba(0, 30, 130, 0.010) 3px,
+      rgba(0, 30, 130, 0.010) 4px
     ),
+    /* lower-left floor reflected light sweep */
+    radial-gradient(ellipse 65% 32% at 18% 100%, rgba(14, 60, 215, 0.11) 0%, transparent 66%),
+    /* lower diagonal fill — shaping the floor */
     linear-gradient(
-      -146deg,
-      transparent 58%,
-      rgba(10, 60, 200, 0.06) 76%,
-      transparent 92%
+      -142deg,
+      transparent 60%,
+      rgba(8, 55, 195, 0.07) 78%,
+      transparent 94%
     );
 }
 
@@ -86,14 +97,26 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 58vh;
+  height: 60vh;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 75%);
-  mask-image:         linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 75%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 36%, transparent 72%);
+  mask-image:         linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 36%, transparent 72%);
 }
 
+/* soft reflected floor glow — sits beneath the grid */
+.bg-floor-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 62% 40% at 52% 100%, rgba(14, 58, 210, 0.14) 0%, transparent 68%),
+    radial-gradient(ellipse 32% 22% at 26% 100%, rgba(10, 48, 195, 0.09) 0%, transparent 62%);
+  pointer-events: none;
+}
+
+/* perspective grid lines */
 .bg-floor-grid::after {
   content: '';
   position: absolute;
@@ -102,12 +125,12 @@ body {
   right: -60%;
   height: 100%;
   background-image:
-    linear-gradient(90deg, rgba(18, 85, 255, 0.18) 1px, transparent 1px),
-    linear-gradient(0deg,  rgba(18, 85, 255, 0.12) 1px, transparent 1px);
-  background-size: 72px 72px;
-  transform: perspective(550px) rotateX(68deg);
+    linear-gradient(90deg, rgba(22, 90, 255, 0.20) 1px, transparent 1px),
+    linear-gradient(0deg,  rgba(22, 90, 255, 0.13) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(600px) rotateX(70deg);
   transform-origin: 50% 100%;
-  opacity: 0.62;
+  opacity: 0.58;
 }
 
 /* ── Premium grain texture ──────────────────────────────────────────────── */
@@ -303,6 +326,7 @@ body {
   justify-content: flex-end;
   align-items: center;
   padding-bottom: 62px;
+  padding-right: 6vw; /* shifts centering axis left toward orb center */
   pointer-events: none;
 }
 
