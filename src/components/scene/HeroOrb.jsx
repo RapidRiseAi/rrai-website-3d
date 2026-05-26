@@ -315,7 +315,7 @@ function InteractiveMiniOrbs({ groupRef }) {
   }, [gl, ndc])
 
   const { positions, posCube, sizes, seeds } = useMemo(() => {
-    const N = 54
+    const N = 48   /* ~21 % fewer surface orbs: 6×48²=13824 vs 6×54²=17496 */
     const sphPts = []
     const cubePts = []
     for (const [axis, sign] of [[0,1],[0,-1],[1,1],[1,-1],[2,1],[2,-1]]) {
@@ -487,11 +487,13 @@ function MorphParticles({
   posSphere, posCube, size, color, opacity,
   renderOrder = 4, fadeIn = false,
   sizeCube, opacityCube,
+  hideAtCube = false,
 }) {
   const sizeC = sizeCube ?? size
-  const opC = opacityCube ?? opacity
+  const opC   = hideAtCube ? 0 : (opacityCube ?? opacity)
   const tex = getGlowDotTexture()
   const { size: viewport } = useThree()
+  const pointsRef = useRef()
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -520,11 +522,15 @@ function MorphParticles({
     } else if (opC !== opacity) {
       material.uniforms.uOpacity.value = opacity + (opC - opacity) * p
     }
+    /* remove from render pipeline once fully transparent */
+    if (hideAtCube && pointsRef.current) {
+      pointsRef.current.visible = p < 0.99
+    }
   })
 
   const count = posSphere.length / 3
   return (
-    <points renderOrder={renderOrder}>
+    <points ref={pointsRef} renderOrder={renderOrder}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={posSphere} itemSize={3} />
         <bufferAttribute attach="attributes-aPosCube" count={count} array={posCube} itemSize={3} />
@@ -539,9 +545,9 @@ function SoccerGridParticles() {
   return (
     <>
       <MorphParticles posSphere={SOCCER_EDGE_POSITIONS} posCube={SOCCER_EDGE_POSITIONS_CUBE}
-        size={0.095} color="#1d6cb8" opacity={0.88} renderOrder={4} />
+        size={0.095} color="#1d6cb8" opacity={0.88} renderOrder={4} hideAtCube />
       <MorphParticles posSphere={SOCCER_EDGE_GLOW} posCube={SOCCER_EDGE_GLOW_CUBE}
-        size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} />
+        size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} hideAtCube />
     </>
   )
 }
@@ -563,7 +569,7 @@ function CubeEdgeFill() {
 function CardinalSpokeParticles() {
   return (
     <MorphParticles posSphere={CARDINAL_SPOKE_POSITIONS} posCube={CARDINAL_SPOKE_CUBE}
-      size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} />
+      size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} hideAtCube />
   )
 }
 
@@ -591,16 +597,16 @@ function JunctionDots() {
     <>
       <MorphParticles posSphere={JUNCTION_VERTEX_POSITIONS} posCube={JUNCTION_VERTEX_CUBE}
         size={0.18} sizeCube={0.10}
-        color="#d8f0ff" opacity={0.92} opacityCube={0.45}
-        renderOrder={7} />
+        color="#d8f0ff" opacity={0.92}
+        renderOrder={7} hideAtCube />
       <MorphParticles posSphere={JUNCTION_HEX_POSITIONS} posCube={JUNCTION_HEX_CUBE}
         size={0.10} sizeCube={0.07}
-        color="#90d0ff" opacity={0.78} opacityCube={0.40}
-        renderOrder={6} />
+        color="#90d0ff" opacity={0.78}
+        renderOrder={6} hideAtCube />
       <MorphParticles posSphere={JUNCTION_PENT_POSITIONS} posCube={JUNCTION_PENT_CUBE}
         size={0.32} sizeCube={0.14}
-        color="#ffffff" opacity={0.95} opacityCube={0.45}
-        renderOrder={9} />
+        color="#ffffff" opacity={0.95}
+        renderOrder={9} hideAtCube />
     </>
   )
 }
@@ -622,7 +628,7 @@ function NodeHaloRings() {
   }, [])
   return (
     <MorphParticles posSphere={spherePts} posCube={cubePts}
-      size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} />
+      size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} hideAtCube />
   )
 }
 
@@ -660,6 +666,7 @@ function NodeClusterParticles() {
   }, [])
 
   const { size: viewport } = useThree()
+  const clusterRef = useRef()
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -678,13 +685,16 @@ function NodeClusterParticles() {
   }), [tex, viewport.height])
 
   useFrame(({ clock }) => {
-    material.uniforms.uMorph.value = scrollState.progress
+    const p = scrollState.progress
+    material.uniforms.uMorph.value = p
     material.uniforms.uScale.value = viewport.height / 2
-    material.uniforms.uOpacity.value = 0.55 + 0.22 * Math.sin(clock.getElapsedTime() * 1.35)
+    const fade = Math.max(0, 1 - p)
+    material.uniforms.uOpacity.value = (0.55 + 0.22 * Math.sin(clock.getElapsedTime() * 1.35)) * fade
+    if (clusterRef.current) clusterRef.current.visible = p < 0.99
   })
 
   return (
-    <points renderOrder={8}>
+    <points ref={clusterRef} renderOrder={8}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={posSphere} itemSize={3} />
         <bufferAttribute attach="attributes-aPosCube"  count={count} array={posCube}  itemSize={3} />
