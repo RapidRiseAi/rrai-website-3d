@@ -6,7 +6,7 @@ import {
   useScroll,
   useTransform,
 } from 'framer-motion'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, Fragment } from 'react'
 
 const EXPO = [0.16, 1, 0.30, 1]
 
@@ -159,27 +159,32 @@ export default function HeroSection({ loaded }) {
 
       </motion.div>
 
-      {/* ── Stats — exits RIGHT on scroll ───────────────────────── */}
-      <motion.div className="hero-stats-wrap" style={{ x: statsExitX }}>
-        <motion.div
-          className="hero-stats"
-          initial={{ opacity: 0, y: 24 }}
-          animate={controls}
-          variants={{
-            hidden:  { opacity: 0, y: 24 },
-            visible: { opacity: 1, y: 0,
-              transition: { duration: 0.70, delay: 1.06, ease: EXPO } },
-          }}
-        >
-          {STATS.map((s, i) => (
-            <div key={i} className="stat">
-              <span className="stat-num">
-                {counts[i]}<span className="stat-unit">{s.unit}</span>
-              </span>
-              <span className="stat-label">{s.label}<br />{s.sub}</span>
-            </div>
-          ))}
-        </motion.div>
+      {/* ── Right column — stat group centered under orb ────────── */}
+      <motion.div className="hero-right" style={{ x: statsExitX }}>
+        <div className="hero-stats-wrap">
+          <motion.div
+            className="hero-stats"
+            initial={{ opacity: 0, y: 24 }}
+            animate={controls}
+            variants={{
+              hidden:  { opacity: 0, y: 24 },
+              visible: { opacity: 1, y: 0,
+                transition: { duration: 0.70, delay: 1.06, ease: EXPO } },
+            }}
+          >
+            {STATS.map((s, i) => (
+              <Fragment key={i}>
+                {i > 0 && <div className="stat-sep" aria-hidden="true" />}
+                <div className="stat">
+                  <span className="stat-num">
+                    {counts[i]}<span className="stat-unit">{s.unit}</span>
+                  </span>
+                  <span className="stat-label">{s.label}<br />{s.sub}</span>
+                </div>
+              </Fragment>
+            ))}
+          </motion.div>
+        </div>
       </motion.div>
 
     </section>
