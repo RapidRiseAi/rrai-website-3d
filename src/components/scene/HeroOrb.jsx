@@ -377,10 +377,13 @@ function InteractiveMiniOrbs({ groupRef }) {
     const p = scrollState.progress
     const scale = 1.0 + (END_SCALE - 1.0) * p
 
-    material.uniforms.uMorph.value = p
-    material.uniforms.uTime.value = clock.getElapsedTime()
-    material.uniforms.uScale.value = size.height / 2
-    material.uniforms.uRadius.value = 0.58 * scale
+    // Stay on sphere (no cube morph) and fade out as the user scrolls to the
+    // expertise section — the CarouselOverlay icon shape takes over from there.
+    material.uniforms.uMorph.value    = 0
+    material.uniforms.uOpacity.value  = Math.max(0, 1.0 - p * 1.6)
+    material.uniforms.uTime.value     = clock.getElapsedTime()
+    material.uniforms.uScale.value    = size.height / 2
+    material.uniforms.uRadius.value   = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
       trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
@@ -920,7 +923,7 @@ export default function HeroOrb() {
       <DepthOccluder />
       <InteractiveMiniOrbs groupRef={groupRef} />
       <SoccerGridParticles />
-      <CubeEdgeFill />
+      {/* CubeEdgeFill removed — sphere dissolves into CarouselOverlay icon shapes */}
       <CardinalSpokeParticles />
       <JunctionDots />
       <NodeHaloRings />
