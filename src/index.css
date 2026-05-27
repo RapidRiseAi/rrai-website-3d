@@ -1027,8 +1027,8 @@ h2 {
   width: calc(43% + clamp(55px, 5.5vw, 90px));
   background: linear-gradient(to right,
     transparent 0%,          /* screen edge — body bg (#000) makes this look solid */
-    transparent 43%,         /* ~cube centre — still transparent, cube visible     */
-    #000000     65%,         /* fast build past cube's right edge                  */
+    transparent 65%,         /* covers full cube right edge (~31% viewport ≈ 63% element) */
+    #000000     75%,         /* fast build past cube to solid black                */
     #000000     88%,         /* solid through the left-col/carousel gap            */
     transparent 100%         /* fade on right — same width as before               */
   );
