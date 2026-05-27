@@ -240,20 +240,23 @@ export default function ExpertiseCarousel() {
     })
   }, [])
 
-  /* Shadow fade-in: activate once section enters view so the shadow never
-     overlaps the cube mid-animation. Class triggers a CSS animation with
-     a 1.8s delay (giving the cube time to reach its final position). */
+  /* Shadow control: bidirectional IntersectionObserver.
+     When expertise section enters view → add .active to #ec-global-shadow
+     (CSS transition kicks in after 1.8s delay so cube is settled first).
+     When section leaves → remove .active and shadow fades out quickly. */
   useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
+    const el     = sectionRef.current
+    const shadow = document.getElementById('ec-global-shadow')
+    if (!el || !shadow) return
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          el.classList.add('expertise-section--active')
-          obs.disconnect()
+          shadow.classList.add('active')
+        } else {
+          shadow.classList.remove('active')
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.2 }
     )
     obs.observe(el)
     return () => obs.disconnect()

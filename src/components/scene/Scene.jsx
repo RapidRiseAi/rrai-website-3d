@@ -43,13 +43,12 @@ export default function Scene() {
       camera={{ position: [0, 0.15, 7.4], fov: 42 }}
       gl={{
         antialias: true,
-        alpha: false,
+        alpha: true,
         toneMapping: THREE.NoToneMapping,
         powerPreference: 'high-performance',
       }}
       dpr={[1, 2]}
     >
-      <color attach="background" args={['#000000']} />
       <FaintBackdropDots />
       <Suspense fallback={null}>
         <HeroOrb />

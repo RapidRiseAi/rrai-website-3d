@@ -19,6 +19,12 @@ export default function HomePage() {
 
       <Navbar loaded={loaded} />
 
+      {/* Shadow sits in the same z-index layer as the canvas but EARLIER in DOM,
+          so the canvas composites over it. Transparent canvas pixels (background)
+          reveal the shadow; opaque canvas pixels (sphere/cube) paint on top of it.
+          Result: sphere and cube genuinely layer above the shadow. */}
+      <div id="ec-global-shadow" aria-hidden="true" />
+
       <div id="canvas-container">
         <Scene />
       </div>

@@ -1007,42 +1007,42 @@ h2 {
   position: relative;
 }
 
-/* Left shadow — single element spanning from section left all the way to
-   the carousel's active-card left edge. Gradient is transparent over the
-   cube area so the cube remains visible; pure black through the gap between
-   the cube and the carousel; fades to transparent right where card-1 starts.
-   Starts at opacity:0 and animates in once the section is visible (via JS
-   class .expertise-section--active) so it never overlaps a moving cube. */
-.expertise-section::before {
-  content: '';
-  position: absolute;
+/* ── Global carousel shadow ───────────────────────────────────────────────────
+   position: fixed at z-index 0 — placed in the DOM BEFORE #canvas-container
+   (also z-index 0). The canvas composites over the shadow; its transparent
+   pixels (background) reveal the shadow; its opaque pixels (sphere/cube) paint
+   on top → the sphere and cube sit genuinely ABOVE the shadow layer.
+
+   Left side: solid #000000 all the way to the screen edge.
+   Right side: fades to transparent over the carousel's left edge so the active
+   card emerges cleanly from the dark zone.
+
+   Hidden by default; revealed via the .active class added/removed by
+   IntersectionObserver in ExpertiseCarousel when the section enters/leaves view. */
+#ec-global-shadow {
+  position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  /* Covers from section-left (0) to where the active card begins:
-     43% left-col + shadow fade (= expertise-right padding-left) */
+  /* Same width as before: left column (43vw) + carousel padding (5.5vw) */
   width: calc(43% + clamp(55px, 5.5vw, 90px));
   background: linear-gradient(to right,
-    transparent 0%,
-    transparent 40%,           /* ~19% viewport — cube left edge still clear */
-    rgba(0, 0, 0, 0.55) 54%,   /* ~26% viewport — entering cube right half  */
-    #000000 66%,                /* ~32% viewport — past cube, pure black      */
-    #000000 89%,                /* ~43% viewport — right-col edge             */
-    transparent 100%           /* ~48.5% viewport — fade at active card      */
+    #000000 0%,
+    #000000 88%,
+    rgba(0, 0, 0, 0.85) 93%,
+    transparent 100%
   );
-  z-index: 10;
+  z-index: 0;
   pointer-events: none;
   opacity: 0;
+  /* Fast fade-out (no delay) when section leaves; slow fade-in when it enters */
+  transition: opacity 0.5s ease;
 }
 
-/* Fade the shadow in once .expertise-section--active is applied by JS */
-.expertise-section--active::before {
-  animation: ec-shadow-in 0.9s ease forwards;
-  animation-delay: 1.8s;
-}
-
-@keyframes ec-shadow-in {
-  to { opacity: 1; }
+#ec-global-shadow.active {
+  opacity: 1;
+  /* 1.8s delay on enter — cube reaches END_X before shadow materialises */
+  transition: opacity 0.9s ease 1.8s;
 }
 
 /* ── Section heading ──────────────────────────────────────────────────────── */
@@ -1389,7 +1389,6 @@ h2 {
     padding: 0 6vw 0 6vw;
     min-height: unset;
   }
-  .expertise-section::before { content: none; }
   .expertise-h2 { white-space: normal; }
   .ec-carousel-wrap { height: clamp(430px, 56vh, 560px); }
   .expertise-card {
