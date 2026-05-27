@@ -43,13 +43,13 @@ export default function Scene() {
       camera={{ position: [0, 0.15, 7.4], fov: 42 }}
       gl={{
         antialias: true,
-        alpha: false,
+        alpha: true,              /* transparent canvas — empty pixels show body bg */
         toneMapping: THREE.NoToneMapping,
         powerPreference: 'high-performance',
       }}
       dpr={[1, 2]}
     >
-      <color attach="background" args={['#000000']} />
+      {/* No background fill — canvas is transparent; body #000 shows through */}
       <FaintBackdropDots />
       <Suspense fallback={null}>
         <HeroOrb />
