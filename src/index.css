@@ -1007,22 +1007,42 @@ h2 {
   position: relative;
 }
 
-/* Left shadow — pure black flush with left column, fades right.
-   Cards exiting left disappear behind it. Spans full column height. */
-.expertise-right::before {
+/* Left shadow — single element spanning from section left all the way to
+   the carousel's active-card left edge. Gradient is transparent over the
+   cube area so the cube remains visible; pure black through the gap between
+   the cube and the carousel; fades to transparent right where card-1 starts.
+   Starts at opacity:0 and animates in once the section is visible (via JS
+   class .expertise-section--active) so it never overlaps a moving cube. */
+.expertise-section::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: clamp(55px, 5.5vw, 90px);
+  /* Covers from section-left (0) to where the active card begins:
+     43% left-col + shadow fade (= expertise-right padding-left) */
+  width: calc(43% + clamp(55px, 5.5vw, 90px));
   background: linear-gradient(to right,
-    #000000 0%,
-    #000000 35%,
-    rgba(0, 0, 0, 0.88) 62%,
-    transparent 100%);
-  z-index: 100;
+    transparent 0%,
+    transparent 40%,           /* ~19% viewport — cube left edge still clear */
+    rgba(0, 0, 0, 0.55) 54%,   /* ~26% viewport — entering cube right half  */
+    #000000 66%,                /* ~32% viewport — past cube, pure black      */
+    #000000 89%,                /* ~43% viewport — right-col edge             */
+    transparent 100%           /* ~48.5% viewport — fade at active card      */
+  );
+  z-index: 10;
   pointer-events: none;
+  opacity: 0;
+}
+
+/* Fade the shadow in once .expertise-section--active is applied by JS */
+.expertise-section--active::before {
+  animation: ec-shadow-in 0.9s ease forwards;
+  animation-delay: 1.8s;
+}
+
+@keyframes ec-shadow-in {
+  to { opacity: 1; }
 }
 
 /* ── Section heading ──────────────────────────────────────────────────────── */
@@ -1369,7 +1389,7 @@ h2 {
     padding: 0 6vw 0 6vw;
     min-height: unset;
   }
-  .expertise-right::before { content: none; }
+  .expertise-section::before { content: none; }
   .expertise-h2 { white-space: normal; }
   .ec-carousel-wrap { height: clamp(430px, 56vh, 560px); }
   .expertise-card {

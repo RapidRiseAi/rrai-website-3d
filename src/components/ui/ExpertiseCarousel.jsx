@@ -113,7 +113,7 @@ function computeOffset() {
 }
 
 /* ── Animation ──────────────────────────────────────────────────────────────── */
-const SLIDE_TRANS = { duration: 1.35, ease: [0.22, 1, 0.36, 1] }
+const SLIDE_TRANS = { duration: 1.65, ease: [0.22, 1, 0.36, 1] }
 const RISE        = (delay = 0) => ({ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay })
 const FADE        = (delay = 0) => ({ duration: 0.40, ease: 'easeOut', delay })
 
@@ -218,6 +218,7 @@ export default function ExpertiseCarousel() {
   const [activeCard, setActiveCard] = useState(0)
   const [cardOffset, setCardOffset] = useState(() => computeOffset())
   const activeCardRef = useRef(0)
+  const sectionRef    = useRef(null)
   const navigate = useNavigate()
 
   /* keep ref in sync */
@@ -239,8 +240,27 @@ export default function ExpertiseCarousel() {
     })
   }, [])
 
+  /* Shadow fade-in: activate once section enters view so the shadow never
+     overlaps the cube mid-animation. Class triggers a CSS animation with
+     a 1.8s delay (giving the cube time to reach its final position). */
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add('expertise-section--active')
+          obs.disconnect()
+        }
+      },
+      { threshold: 0.25 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <section className="expertise-section" data-carousel="" aria-label="Our expertise">
+    <section ref={sectionRef} className="expertise-section" data-carousel="" aria-label="Our expertise">
       <div className="expertise-left" aria-hidden="true" />
 
       <div className="expertise-right">
