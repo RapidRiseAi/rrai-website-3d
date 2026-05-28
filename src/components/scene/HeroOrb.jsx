@@ -1332,7 +1332,9 @@ export default function HeroOrb() {
     groupRef.current.scale.setScalar(newS)
 
     if (isDragging.current) return
-    groupRef.current.rotation.y += delta * 0.044
+    if (p < 0.85 || carouselState.activeCard === 0) {
+      groupRef.current.rotation.y += delta * 0.044
+    }
     if (snappingBack.current) {
       const rot = groupRef.current.rotation
       rot.x += (0 - rot.x) * Math.min(1, delta * 3.5)
