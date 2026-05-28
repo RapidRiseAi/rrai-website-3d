@@ -67,6 +67,7 @@ export default function Navbar({ loaded }) {
         <Link to="/" className="navbar-brand">
           <RRMark />
           <span className="navbar-logo">Rapid Rise AI</span>
+          <span style={{ fontSize: '9px', opacity: 0.4, marginLeft: 6, letterSpacing: '0.05em', color: '#fff' }}>v0.001</span>
         </Link>
 
         <div className="navbar-links">
