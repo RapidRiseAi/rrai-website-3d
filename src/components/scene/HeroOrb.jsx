@@ -270,19 +270,17 @@ function _genBrowserFrame() {
 function _genCommandCube() {
   const pts = []
 
-  // Gear parameters
   const N_TEETH   = 8
-  const R_BODY    = R * 0.66   // body (valley) radius
-  const R_TOOTH   = R * 0.87   // tooth tip radius
-  const R_HOLE    = R * 0.25   // center hole radius
-  const DEPTH     = R * 0.36   // extrusion depth
-  const FZ        = DEPTH / 2  // front face z
-  const BZ        = -DEPTH / 2 // back face z
+  const R_BODY    = R * 0.66
+  const R_TOOTH   = R * 0.87
+  const R_HOLE    = R * 0.25
+  const DEPTH     = R * 0.26
+  const FZ        = DEPTH / 2
   const period    = Math.PI * 2 / N_TEETH
-  const halfTooth = period * 0.40 / 2
+  const halfTooth = period * 0.42 / 2
 
-  // 3/4 view: Y-axis tilt (~25°) shows right-side thickness, X-axis (~12°) shows top
-  const TY = Math.PI * 0.14, TX = Math.PI * 0.065
+  // Reduced tilt — front face dominant, depth readable without hiding gear shape
+  const TY = Math.PI * 0.11, TX = Math.PI * 0.04
   const cY = Math.cos(TY), sY = Math.sin(TY)
   const cX = Math.cos(TX), sX = Math.sin(TX)
   const tilt = (x, y, z) => {
@@ -294,21 +292,22 @@ function _genCommandCube() {
     pts.push(tx+(Math.random()-.5)*jit, ty+(Math.random()-.5)*jit, tz+(Math.random()-.5)*jit)
   }
 
-  // Max gear radius at angle θ — used for fill rejection sampling
+  // Continuous front-biased z — concentrated at front, fading toward back (no discrete bands)
+  const frontZ = () => FZ - Math.pow(Math.random(), 2) * DEPTH
+
   const gearR = (θ) => {
     const t = ((θ % period) + period) % period
     return Math.min(t, period - t) <= halfTooth ? R_TOOTH : R_BODY
   }
 
-  // Ordered 2D gear outline: valley arc → rising wall → tooth top → falling wall
-  // Per tooth: NV + (NW+1) + (NT+1) + NW = 12+6+11+5 = 34 pts × 8 teeth = 272 pts
-  const outline2d = []
+  // Gear outline: valley arc → rising wall → tooth top → falling wall
+  const outline2d = [], toothTips = []
   const NV = 12, NW = 5, NT = 10
   for (let i = 0; i < N_TEETH; i++) {
     const θc = i * period
-    const θv = θc - (period - halfTooth)  // valley start = end of previous tooth fall
-    const θr = θc - halfTooth             // start of rising wall
-    const θf = θc + halfTooth             // end of falling wall
+    const θv = θc - (period - halfTooth)
+    const θr = θc - halfTooth
+    const θf = θc + halfTooth
     for (let j = 0; j < NV; j++) {
       const θ = θv + (θr - θv)*j/NV
       outline2d.push([R_BODY*Math.cos(θ), R_BODY*Math.sin(θ)])
@@ -319,7 +318,9 @@ function _genCommandCube() {
     }
     for (let j = 0; j <= NT; j++) {
       const θ = θr + (θf-θr)*j/NT
-      outline2d.push([R_TOOTH*Math.cos(θ), R_TOOTH*Math.sin(θ)])
+      const pt = [R_TOOTH*Math.cos(θ), R_TOOTH*Math.sin(θ)]
+      outline2d.push(pt)
+      toothTips.push(pt)
     }
     for (let j = 1; j <= NW; j++) {
       const r = R_TOOTH + (R_BODY-R_TOOTH)*j/NW
@@ -327,48 +328,43 @@ function _genCommandCube() {
     }
   }
 
-  // Front face outline — 3 dense passes → bright glowing outer edge
-  for (let pass = 0; pass < 3; pass++)
-    for (const [x, y] of outline2d) addPt(x, y, FZ, 0.009 + pass*0.005)
+  // Front face outline — 2 passes, tight jitter (no concentric rings)
+  for (let pass = 0; pass < 2; pass++)
+    for (const [x, y] of outline2d) addPt(x, y, FZ, 0.007 + pass*0.004)
 
-  // Back face outline — 1 pass (dimmer)
-  for (const [x, y] of outline2d) addPt(x, y, BZ, 0.018)
+  // Extra tooth tip emphasis — bright crisp silhouette on teeth
+  for (const [x, y] of toothTips) addPt(x, y, FZ, 0.005)
 
-  // Side walls — connect front to back along entire profile (6 depth levels)
+  // Side walls — 10 random front-biased z samples per outline point (no discrete levels)
   for (const [x, y] of outline2d)
-    for (let j = 0; j <= 5; j++) addPt(x, y, FZ + (BZ-FZ)*j/5, 0.015)
+    for (let k = 0; k < 10; k++) addPt(x, y, frontZ(), 0.013)
 
-  // Center hole — front rim bright (2 passes), back rim dim, cylindrical wall
+  // Center hole — front rim 2 passes, continuous side wall
   const HC = 100
   for (let pass = 0; pass < 2; pass++)
     for (let i = 0; i < HC; i++)
-      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), FZ, 0.009 + pass*0.004)
+      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), FZ, 0.007 + pass*0.003)
   for (let i = 0; i < HC; i++)
-    addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), BZ, 0.016)
-  for (let d = 0; d <= 8; d++) {
-    const z = FZ + (BZ-FZ)*d/8
-    for (let i = 0; i < 60; i++)
-      addPt(R_HOLE*Math.cos(i/60*Math.PI*2), R_HOLE*Math.sin(i/60*Math.PI*2), z, 0.013)
-  }
+    for (let k = 0; k < 8; k++)
+      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), frontZ(), 0.012)
 
-  // Front face fill — random rejection inside gear profile
+  // Front face fill
   let f = 0, fa = 0
-  while (f < 500 && fa++ < 2000) {
+  while (f < 600 && fa++ < 2400) {
     const x = (Math.random()*2-1)*R_TOOTH*1.02, y = (Math.random()*2-1)*R_TOOTH*1.02
     const r = Math.sqrt(x*x+y*y)
     if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
-    addPt(x, y, FZ, 0.022)
+    addPt(x, y, FZ, 0.020)
     f++
   }
 
-  // Volumetric fill — particles through the full 3D depth
+  // Volumetric fill — front-biased depth
   let v = 0, va = 0
-  while (v < 350 && va++ < 1800) {
+  while (v < 400 && va++ < 1800) {
     const x = (Math.random()*2-1)*R_TOOTH*1.02, y = (Math.random()*2-1)*R_TOOTH*1.02
-    const z = BZ + Math.random()*DEPTH
     const r = Math.sqrt(x*x+y*y)
     if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
-    addPt(x, y, z, 0.020)
+    addPt(x, y, frontZ(), 0.018)
     v++
   }
 
