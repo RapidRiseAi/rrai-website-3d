@@ -105,13 +105,12 @@ const JUNCTION_PENT_POSITIONS = (() => {
 })()
 
 /* ── Collapse timing ────────────────────────────────────────────────────────────
-   Both animations start immediately on scroll (p = 0) with a smoothstep ease
-   so the opening motion is barely perceptible and builds gradually.
-
-   Grid/glow/dots/rings: smoothstep p 0 → 0.76, transparent by p ≈ 0.46,
+   Grid/glow/dots/rings: smoothstep p 0 → 0.76, transparent by p ≈ 0.59,
                          fully at centre by p 0.76, then unmounted at p 0.80.
-   Surface orbs:         smoothstep p 0 → 0.62, max collapse 50% (not all the
-                         way), fade fully by p 0.62 — ExpertiseParticles hand-off.
+   Surface orbs:         sqrt ease-out p 0 → 0.40 (visible immediately on scroll),
+                         max 50% collapse — never fades/disappears.
+                         Card morph: smoothstep p 0.38 → 1.0, same orbs rearrange
+                         into card shape. Always fully opaque throughout.
  ────────────────────────────────────────────────────────────────────────────── */
 function smoothstep(t)     { const c = Math.max(0, Math.min(1, t)); return c * c * (3 - 2 * c) }
 function gridCollapseT(p)  { return smoothstep(p / 0.76) }
@@ -119,12 +118,13 @@ function collapseFade(t)   { return Math.max(0, 1.0 - t * 1.5) }
 
 /* ── Card shape system ──────────────────────────────────────────────────────────
    N_ORB surface orbs are reused as the section-2 card particles.
-   Animation: sphere → 50% collapse (p 0→0.62) → card shape (p 0.62→0.88).
-   Card changes at p≥0.88 animate uMorphCard 1→0→1 while swapping the buffer.
+   Animation: sphere → 50% collapse (p 0→0.40) → card shape (p 0.38→1.0).
+   No opacity fade — orbs are always visible throughout the entire transform.
+   Card changes at p≥0.90 animate uMorphCard 1→0→1 while swapping the buffer.
  ────────────────────────────────────────────────────────────────────────────── */
 const N_ORB          = 13824   // 48×48×6 surface orbs
-const CARD_COLLAPSE_DUR = 0.35
-const CARD_EXPAND_DUR   = 0.68
+const CARD_COLLAPSE_DUR = 0.60  // 2× slower card-change collapse
+const CARD_EXPAND_DUR   = 1.20  // 2× slower card-change bloom
 const MAX_CARD_OP       = 0.92
 
 const CARD_COLORS = [
@@ -359,7 +359,7 @@ const MINI_FRAG = `
     if (tex.a < 0.01) discard;
     vec3 sphereCol = mix(uColorBase, uColorHot, vGlow);
     vec3 col = mix(sphereCol, uColorCard, vCardBlend);
-    float opMult = mix(0.8, 1.0, uMorph);
+    float opMult = mix(mix(0.8, 1.0, uMorph), 1.0, vCardBlend);
     float a = tex.a * uOpacity * opMult * (1.0 + vGlow * 1.4);
     gl_FragColor = vec4(col * (1.0 + vGlow * 1.0), a);
   }
@@ -492,25 +492,27 @@ function InteractiveMiniOrbs({ groupRef }) {
     const p     = scrollState.progress
     const scale = 1.0 + (END_SCALE - 1.0) * p
 
-    // Phase 1 — sphere collapse (p 0→0.62), max 50% toward centre
-    const rawT      = smoothstep(p / 0.62)
+    // Phase 1 — collapse, sqrt ease-out (immediately visible at first scroll pixel)
+    // Peaks at p=0.40; max collapseT=0.5 (orbs move to 50% of sphere radius)
+    const rawT      = Math.min(1, Math.sqrt(p / 0.40))
     const collapseT = rawT * 0.5
 
-    // Phase 2 — scroll-driven card morph (p 0.62→0.88)
-    const cardScrollT = smoothstep(Math.max(0, Math.min(1, (p - 0.62) / 0.26)))
+    // Phase 2 — card morph, smoothstep over twice the old range (2× slower)
+    // Starts at p=0.38 (slight overlap with collapse for seamless hand-off)
+    const cardScrollT = smoothstep(Math.max(0, Math.min(1, (p - 0.38) / 0.62)))
 
     // Card change transition state machine
     const wanted = carouselState.activeCard
     const phase  = phaseRef.current
 
     // Abort any in-flight transition when user scrolls back above the card zone
-    if (p < 0.88 && phase !== 'idle') {
+    if (p < 0.90 && phase !== 'idle') {
       phaseRef.current = 'idle'
       timerRef.current = 0
     }
 
     // Silent sync: keep buffer current while scroll drives the morph
-    if (wanted !== activeRef.current && p < 0.88) {
+    if (wanted !== activeRef.current && p < 0.90) {
       activeRef.current = wanted
       posTarget.set(cardBufs[wanted])
       if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
@@ -518,7 +520,7 @@ function InteractiveMiniOrbs({ groupRef }) {
     }
 
     // Trigger animated card swap only when fully in card mode
-    if (p >= 0.88 && wanted !== activeRef.current && phaseRef.current === 'idle') {
+    if (p >= 0.90 && wanted !== activeRef.current && phaseRef.current === 'idle') {
       phaseRef.current = 'collapsing'
       timerRef.current = 0
     }
@@ -554,16 +556,13 @@ function InteractiveMiniOrbs({ groupRef }) {
       }
     }
 
-    const usedCardMorph = p >= 0.62 ? finalCardMorph : 0.0
+    // Card morph only kicks in once the collapse starts transitioning (p≥0.38)
+    const usedCardMorph = p >= 0.38 ? finalCardMorph : 0.0
 
-    // Opacity: sphere fades out by p=0.62, card fades back in p=0.62→0.88
-    const sphereOp = Math.max(0, 1.0 - rawT)
-    const cardOp   = (p >= 0.88 ? 1.0 : cardScrollT) * MAX_CARD_OP
-    const orbOpacity = p >= 0.62 ? cardOp : sphereOp
-
+    // Always fully opaque — the transform is purely positional, never fades
     material.uniforms.uMorph.value     = collapseT
     material.uniforms.uMorphCard.value = usedCardMorph
-    material.uniforms.uOpacity.value   = orbOpacity
+    material.uniforms.uOpacity.value   = MAX_CARD_OP
     material.uniforms.uTime.value      = clock.getElapsedTime()
     material.uniforms.uScale.value     = size.height / 2
     material.uniforms.uRadius.value    = 0.58 * scale
