@@ -202,59 +202,43 @@ function _padToBig(pts, targetN) {
 
 function _genBrowserFrame() {
   const pts = []
-  const W  = R * 0.72   // portal half-width (landscape)
-  const H  = R * 0.56   // portal half-height
-  const D  = R * 0.28   // depth — shallow 3-D portal feel
-  const CR = R * 0.12   // corner radius
+  const CR = R * 0.10   // corner radius for all slabs
+  const TH = R * 0.055  // slab half-thickness (front/back face separation)
+  const BK = 0.94       // back-face scale factor
 
-  // ── Front face — double ring creates a thick glowing edge ──────────────
-  _addRoundedRect(pts, 0, 0,  D*.5, W,      H,      CR,     42, 26, 14, 0.024)
-  _addRoundedRect(pts, 0, 0,  D*.5, W*.965, H*.965, CR*.93, 28, 17,  9, 0.020)
+  // Build one page slab: thick front face + thinner back face + 4 corner connectors
+  const slab = (cx, cy, cz, hw, hh, nWf, nHf, nCf, nWb, nHb, nCb) => {
+    _addRoundedRect(pts, cx, cy, cz+TH, hw,    hh,    CR, nWf, nHf, nCf, 0.024)
+    _addRoundedRect(pts, cx, cy, cz-TH, hw*BK, hh*BK, CR, nWb, nHb, nCb, 0.020)
+    for (const [sx,sy] of [[1,1],[1,-1],[-1,1],[-1,-1]])
+      _addLine(pts, cx+sx*(hw-CR*.4),    cy+sy*(hh-CR*.4),    cz+TH,
+                    cx+sx*(hw*BK-CR*.38), cy+sy*(hh*BK-CR*.38), cz-TH, 5, 0.016)
+  }
 
-  // ── Back face — slightly inset, shows portal depth ─────────────────────
-  _addRoundedRect(pts, 0, 0, -D*.5, W*.88,  H*.88,  CR*.85, 30, 19, 10, 0.022)
+  // ── Three floating page slabs: back/large/low → front/small/high ─────────
+  // This diagonal stack reads immediately as "climbing the rankings"
+  slab(0, -R*.24, -R*.30, R*.68, R*.44, 38, 24, 12, 25, 16, 8)  // rank 3 — back
+  slab(0,  0,      0,     R*.60, R*.39, 34, 22, 11, 22, 14, 8)  // rank 2 — mid
+  slab(0,  R*.24,  R*.30, R*.52, R*.34, 30, 19, 10, 19, 12, 7)  // rank 1 — front
 
-  // ── Depth connectors — 4 corners + 2 mid-edge ─────────────────────────
-  _addLine(pts,  W-CR*.3,  H,  D*.5,   W*.88-CR*.26,  H*.88,  -D*.5, 8, 0.018)
-  _addLine(pts, -W+CR*.3,  H,  D*.5,  -W*.88+CR*.26,  H*.88,  -D*.5, 8, 0.018)
-  _addLine(pts,  W-CR*.3, -H,  D*.5,   W*.88-CR*.26, -H*.88,  -D*.5, 8, 0.018)
-  _addLine(pts, -W+CR*.3, -H,  D*.5,  -W*.88+CR*.26, -H*.88,  -D*.5, 8, 0.018)
-  _addLine(pts,  W,  0,    D*.5,   W*.88,  0,         -D*.5,   6, 0.018)
-  _addLine(pts, -W,  0,    D*.5,  -W*.88,  0,         -D*.5,   6, 0.018)
-
-  // ── Search lens — large circle, right half, proud of front face ─────────
-  // Right edge of lens (R*0.84) protrudes beyond portal right edge (R*0.72)
-  // so the lens visibly integrates into — not merely decorates — the portal
-  const lR = R * 0.40   // lens radius
-  const lX = R * 0.44   // lens centre x (right half)
-  const lY = R * 0.02   // lens centre y (fractionally above mid)
-  const lZ = D * 0.54   // proud of front face
-  _addCircle(pts, lX, lY, lZ,       lR,      96, 0.018)   // main outer ring
-  _addCircle(pts, lX, lY, lZ,       lR*.975, 72, 0.014)   // ring thickness
-  _addCircle(pts, lX, lY, lZ-0.04,  lR*.95,  48, 0.014)   // depth layer
-  _addCircle(pts, lX, lY, lZ,       lR*.58,  52, 0.013)   // inner accent ring
-
-  // ── Handle — thick 3-line diagonal, bottom-right of lens ───────────────
-  const hA  = -Math.PI / 4                      // -45° (bottom-right)
-  const hx0 = lX + Math.cos(hA) * lR * 0.92
-  const hy0 = lY + Math.sin(hA) * lR * 0.92
-  const hx1 = hx0 + Math.cos(hA) * lR * 0.72
-  const hy1 = hy0 + Math.sin(hA) * lR * 0.72
-  const hp  = 0.022 / Math.SQRT2               // perpendicular half-offset
-  _addLine(pts, hx0,    hy0,    lZ,       hx1,    hy1,    lZ-0.03, 24, 0.016)
-  _addLine(pts, hx0+hp, hy0+hp, lZ,       hx1+hp, hy1+hp, lZ-0.03, 16, 0.016)
-  _addLine(pts, hx0-hp, hy0-hp, lZ,       hx1-hp, hy1-hp, lZ-0.03, 14, 0.016)
-
-  // ── Discovery path — single arc flowing from left into the lens ─────────
-  // Suggests a visitor's digital journey: web → search → discovery
-  const pX = -W * 1.06
-  const pY =  H * 0.10
+  // ── Upward ranking path — runs through all three layers ───────────────────
+  const pX = R * 0.16
   _addBezier(pts,
-    [pX,            pY,          lZ],
-    [pX + W * .52,  pY + H*.30,  lZ + 0.02],
-    [lX - lR*1.80,  lY + H*.20,  lZ + 0.01],
-    [lX - lR*1.02,  lY,          lZ],
-    58, 0.042)
+    [pX,  -R*.62, -R*.42],
+    [pX,  -R*.18, -R*.12],
+    [pX,   R*.18,  R*.12],
+    [pX,   R*.60,  R*.40],
+    66, 0.018)
+
+  // ── Three rank nodes — growing in size toward the top/front slab ─────────
+  const node = (nx, ny, nz, r, n1, n2, n3) => {
+    _addCircle(pts, nx, ny, nz, r,      n1, 0.010)
+    _addCircle(pts, nx, ny, nz, r*.52,  n2, 0.007)
+    if (n3) _addCircle(pts, nx, ny, nz, r*.22, n3, 0.004)
+  }
+  node(pX+R*.02, -R*.24, -R*.30, R*.040, 18, 10,  0)  // rank 3 node
+  node(pX+R*.04,  0,      0,     R*.050, 22, 12,  0)  // rank 2 node
+  node(pX+R*.06,  R*.24,  R*.30, R*.060, 26, 14, 10)  // rank 1 — largest, bright core
 
   return _padToBig(pts, N_ORB)
 }
