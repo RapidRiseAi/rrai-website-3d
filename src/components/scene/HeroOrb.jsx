@@ -202,13 +202,12 @@ function _padToBig(pts, targetN) {
 
 function _genBrowserFrame() {
   const pts = []
-  const GR = R * 1.28  // larger globe
+  const GR = R * 1.28
 
-  // Y-axis tilt (~18°) gives 3/4-depth perspective so the globe reads as 3D
   const TY = Math.PI * 0.10
   const cT = Math.cos(TY), sT = Math.sin(TY)
 
-  // Emit N+1 points along a parametric sphere-surface curve, with tilt + jitter
+  // Grid-line arcs: tight jitter so tiled copies form near-solid tubes
   const arc = (fn, N, jit) => {
     for (let i = 0; i <= N; i++) {
       const [x, y, z] = fn(i / N)
@@ -220,46 +219,49 @@ function _genBrowserFrame() {
     }
   }
 
-  // Outer silhouette rim — great circle facing camera (z = 0 plane)
-  arc(t => [GR*Math.cos(t*Math.PI*2), GR*Math.sin(t*Math.PI*2), 0], 160, 0.014)
+  // Outer silhouette rim — full circle, very dense
+  arc(t => [GR*Math.cos(t*Math.PI*2), GR*Math.sin(t*Math.PI*2), 0], 480, 0.004)
 
-  // Equator — front half (more points = brighter), rear half (fewer = dimmer)
-  arc(t => [ GR*Math.cos(t*Math.PI),          0,  GR*Math.sin(t*Math.PI)],         100, 0.016)
-  arc(t => [ GR*Math.cos(Math.PI+t*Math.PI),  0,  GR*Math.sin(Math.PI+t*Math.PI)],  38, 0.016)
+  // Equator: front dense (solid), rear sparse (dimmer)
+  arc(t => [ GR*Math.cos(t*Math.PI),         0,  GR*Math.sin(t*Math.PI)],         400, 0.004)
+  arc(t => [ GR*Math.cos(Math.PI+t*Math.PI), 0,  GR*Math.sin(Math.PI+t*Math.PI)],  38, 0.016)
 
   // Upper latitude y = GR·0.42
   const rU = GR * Math.sqrt(1 - 0.42*0.42)
-  arc(t => [ rU*Math.cos(t*Math.PI),         GR*0.42,  rU*Math.sin(t*Math.PI)],   70, 0.015)
-  arc(t => [ rU*Math.cos(Math.PI+t*Math.PI), GR*0.42,  rU*Math.sin(Math.PI+t*Math.PI)], 26, 0.015)
+  arc(t => [ rU*Math.cos(t*Math.PI),          GR*0.42,  rU*Math.sin(t*Math.PI)],          320, 0.004)
+  arc(t => [ rU*Math.cos(Math.PI+t*Math.PI),  GR*0.42,  rU*Math.sin(Math.PI+t*Math.PI)],   26, 0.015)
 
   // Lower latitude y = -GR·0.42
-  arc(t => [ rU*Math.cos(t*Math.PI),        -GR*0.42,  rU*Math.sin(t*Math.PI)],   70, 0.015)
-  arc(t => [ rU*Math.cos(Math.PI+t*Math.PI),-GR*0.42,  rU*Math.sin(Math.PI+t*Math.PI)], 26, 0.015)
+  arc(t => [ rU*Math.cos(t*Math.PI),         -GR*0.42,  rU*Math.sin(t*Math.PI)],          320, 0.004)
+  arc(t => [ rU*Math.cos(Math.PI+t*Math.PI), -GR*0.42,  rU*Math.sin(Math.PI+t*Math.PI)],   26, 0.015)
 
-  // Center longitude φ=π/2 — vertical line through globe center, front-facing
-  arc(t => [0,  GR*Math.sin((t-.5)*Math.PI),  GR*Math.cos((t-.5)*Math.PI)],  100, 0.015)
+  // Center longitude: front dense, rear sparse
+  arc(t => [0,  GR*Math.sin((t-.5)*Math.PI),  GR*Math.cos((t-.5)*Math.PI)],  400, 0.004)
   arc(t => [0,  GR*Math.sin((t-.5)*Math.PI), -GR*Math.cos((t-.5)*Math.PI)],   38, 0.017)
 
-  // Right longitude φ=π/3 (60° right) — softer side curve
+  // Right longitude φ=60°
   const rx = 0.5, rz = Math.sqrt(1 - rx*rx)
-  arc(t => [ GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI),  GR*rz*Math.cos((t-.5)*Math.PI)],  68, 0.017)
-  arc(t => [ GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI), -GR*rz*Math.cos((t-.5)*Math.PI)],  28, 0.017)
+  arc(t => [ GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI),  GR*rz*Math.cos((t-.5)*Math.PI)],  320, 0.004)
+  arc(t => [ GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI), -GR*rz*Math.cos((t-.5)*Math.PI)],   28, 0.017)
 
-  // Left longitude φ=2π/3 (symmetric, same density)
-  arc(t => [-GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI),  GR*rz*Math.cos((t-.5)*Math.PI)],  68, 0.017)
-  arc(t => [-GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI), -GR*rz*Math.cos((t-.5)*Math.PI)],  28, 0.017)
+  // Left longitude φ=120°
+  arc(t => [-GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI),  GR*rz*Math.cos((t-.5)*Math.PI)],  320, 0.004)
+  arc(t => [-GR*rx*Math.cos((t-.5)*Math.PI),  GR*Math.sin((t-.5)*Math.PI), -GR*rz*Math.cos((t-.5)*Math.PI)],   28, 0.017)
 
-  // Scattered surface orbs — uniform random distribution across sphere surface
-  for (let i = 0; i < 320; i++) {
-    const phi   = Math.acos(2 * Math.random() - 1)
-    const theta = Math.random() * Math.PI * 2
-    const x = GR * Math.sin(phi) * Math.cos(theta)
-    const y = GR * Math.cos(phi)
-    const z = GR * Math.sin(phi) * Math.sin(theta)
+  // Fibonacci sphere scatter — perfectly even spacing, no clusters
+  const N_SURF = 260
+  const golden = Math.PI * (3 - Math.sqrt(5))
+  for (let i = 0; i < N_SURF; i++) {
+    const fy = 1 - (i / (N_SURF - 1)) * 2
+    const fr = Math.sqrt(1 - fy * fy)
+    const ftheta = golden * i
+    const x = Math.cos(ftheta) * fr * GR
+    const y = fy * GR
+    const z = Math.sin(ftheta) * fr * GR
     pts.push(
-      x*cT + z*sT + (Math.random()-.5)*0.04,
-      y            + (Math.random()-.5)*0.04,
-     -x*sT + z*cT + (Math.random()-.5)*0.04,
+      x*cT + z*sT + (Math.random()-.5)*0.05,
+      y            + (Math.random()-.5)*0.05,
+     -x*sT + z*cT + (Math.random()-.5)*0.05,
     )
   }
 
@@ -363,6 +365,7 @@ const MINI_VERT = `
   uniform float uTime;
   uniform float uRadius;
   uniform float uScale;
+  uniform float uSizeScale;
   uniform vec3 uCursorWorld;
   uniform float uCursorActive;
   uniform float uMorph;
@@ -409,7 +412,7 @@ const MINI_VERT = `
     vec3 displacedPos = basePos + pushDir * windProx * strengthMult;
 
     vec4 mv = modelViewMatrix * vec4(displacedPos, 1.0);
-    gl_PointSize = aSize * 2.0 * (1.0 + vGlow * 6.6) * (uScale / -mv.z);
+    gl_PointSize = aSize * uSizeScale * 2.0 * (1.0 + vGlow * 6.6) * (uScale / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
 `
@@ -543,6 +546,7 @@ function InteractiveMiniOrbs({ groupRef }) {
       uTime:          { value: 0 },
       uRadius:        { value: 0.58 },
       uScale:         { value: size.height / 2 },
+      uSizeScale:     { value: 1.0 },
       uMap:           { value: tex },
       uColorBase:     { value: new THREE.Color('#82c8f0') },
       uColorHot:      { value: new THREE.Color('#58b8f8') },
@@ -629,12 +633,13 @@ function InteractiveMiniOrbs({ groupRef }) {
     const usedCardMorph = p >= 0.38 ? finalCardMorph : 0.0
 
     // Always fully opaque — the transform is purely positional, never fades
-    material.uniforms.uMorph.value     = collapseT
-    material.uniforms.uMorphCard.value = usedCardMorph
-    material.uniforms.uOpacity.value   = MAX_CARD_OP
-    material.uniforms.uTime.value      = clock.getElapsedTime()
-    material.uniforms.uScale.value     = size.height / 2
-    material.uniforms.uRadius.value    = 0.58 * scale
+    material.uniforms.uMorph.value      = collapseT
+    material.uniforms.uMorphCard.value  = usedCardMorph
+    material.uniforms.uOpacity.value    = MAX_CARD_OP
+    material.uniforms.uTime.value       = clock.getElapsedTime()
+    material.uniforms.uScale.value      = size.height / 2
+    material.uniforms.uSizeScale.value  = activeRef.current === 0 ? 2.0 : 1.0
+    material.uniforms.uRadius.value     = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
       trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
