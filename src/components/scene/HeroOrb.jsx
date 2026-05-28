@@ -268,11 +268,110 @@ function _genBrowserFrame() {
   return _padToBig(pts, N_ORB)
 }
 function _genCommandCube() {
-  const pts=[]
-  _addCubeEdges(pts, 0,0,0, R*.82, 18, 0.024)
-  _addCubeEdges(pts, 0,0,0, R*.36, 10, 0.018)
-  for (const x of[-1,1]) for (const y of[-1,1]) for (const z of[-1,1])
-    _addLine(pts, x*R*.82,y*R*.82,z*R*.82, x*R*.36,y*R*.36,z*R*.36, 4, 0.016)
+  const pts = []
+
+  // Gear parameters
+  const N_TEETH   = 8
+  const R_BODY    = R * 0.66   // body (valley) radius
+  const R_TOOTH   = R * 0.87   // tooth tip radius
+  const R_HOLE    = R * 0.25   // center hole radius
+  const DEPTH     = R * 0.36   // extrusion depth
+  const FZ        = DEPTH / 2  // front face z
+  const BZ        = -DEPTH / 2 // back face z
+  const period    = Math.PI * 2 / N_TEETH
+  const halfTooth = period * 0.40 / 2
+
+  // 3/4 view: Y-axis tilt (~25°) shows right-side thickness, X-axis (~12°) shows top
+  const TY = Math.PI * 0.14, TX = Math.PI * 0.065
+  const cY = Math.cos(TY), sY = Math.sin(TY)
+  const cX = Math.cos(TX), sX = Math.sin(TX)
+  const tilt = (x, y, z) => {
+    const x1 = x*cY + z*sY, z1 = -x*sY + z*cY
+    return [x1, y*cX - z1*sX, y*sX + z1*cX]
+  }
+  const addPt = (x, y, z, jit = 0.016) => {
+    const [tx, ty, tz] = tilt(x, y, z)
+    pts.push(tx+(Math.random()-.5)*jit, ty+(Math.random()-.5)*jit, tz+(Math.random()-.5)*jit)
+  }
+
+  // Max gear radius at angle θ — used for fill rejection sampling
+  const gearR = (θ) => {
+    const t = ((θ % period) + period) % period
+    return Math.min(t, period - t) <= halfTooth ? R_TOOTH : R_BODY
+  }
+
+  // Ordered 2D gear outline: valley arc → rising wall → tooth top → falling wall
+  // Per tooth: NV + (NW+1) + (NT+1) + NW = 12+6+11+5 = 34 pts × 8 teeth = 272 pts
+  const outline2d = []
+  const NV = 12, NW = 5, NT = 10
+  for (let i = 0; i < N_TEETH; i++) {
+    const θc = i * period
+    const θv = θc - (period - halfTooth)  // valley start = end of previous tooth fall
+    const θr = θc - halfTooth             // start of rising wall
+    const θf = θc + halfTooth             // end of falling wall
+    for (let j = 0; j < NV; j++) {
+      const θ = θv + (θr - θv)*j/NV
+      outline2d.push([R_BODY*Math.cos(θ), R_BODY*Math.sin(θ)])
+    }
+    for (let j = 0; j <= NW; j++) {
+      const r = R_BODY + (R_TOOTH-R_BODY)*j/NW
+      outline2d.push([r*Math.cos(θr), r*Math.sin(θr)])
+    }
+    for (let j = 0; j <= NT; j++) {
+      const θ = θr + (θf-θr)*j/NT
+      outline2d.push([R_TOOTH*Math.cos(θ), R_TOOTH*Math.sin(θ)])
+    }
+    for (let j = 1; j <= NW; j++) {
+      const r = R_TOOTH + (R_BODY-R_TOOTH)*j/NW
+      outline2d.push([r*Math.cos(θf), r*Math.sin(θf)])
+    }
+  }
+
+  // Front face outline — 3 dense passes → bright glowing outer edge
+  for (let pass = 0; pass < 3; pass++)
+    for (const [x, y] of outline2d) addPt(x, y, FZ, 0.009 + pass*0.005)
+
+  // Back face outline — 1 pass (dimmer)
+  for (const [x, y] of outline2d) addPt(x, y, BZ, 0.018)
+
+  // Side walls — connect front to back along entire profile (6 depth levels)
+  for (const [x, y] of outline2d)
+    for (let j = 0; j <= 5; j++) addPt(x, y, FZ + (BZ-FZ)*j/5, 0.015)
+
+  // Center hole — front rim bright (2 passes), back rim dim, cylindrical wall
+  const HC = 100
+  for (let pass = 0; pass < 2; pass++)
+    for (let i = 0; i < HC; i++)
+      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), FZ, 0.009 + pass*0.004)
+  for (let i = 0; i < HC; i++)
+    addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), BZ, 0.016)
+  for (let d = 0; d <= 8; d++) {
+    const z = FZ + (BZ-FZ)*d/8
+    for (let i = 0; i < 60; i++)
+      addPt(R_HOLE*Math.cos(i/60*Math.PI*2), R_HOLE*Math.sin(i/60*Math.PI*2), z, 0.013)
+  }
+
+  // Front face fill — random rejection inside gear profile
+  let f = 0, fa = 0
+  while (f < 500 && fa++ < 2000) {
+    const x = (Math.random()*2-1)*R_TOOTH*1.02, y = (Math.random()*2-1)*R_TOOTH*1.02
+    const r = Math.sqrt(x*x+y*y)
+    if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
+    addPt(x, y, FZ, 0.022)
+    f++
+  }
+
+  // Volumetric fill — particles through the full 3D depth
+  let v = 0, va = 0
+  while (v < 350 && va++ < 1800) {
+    const x = (Math.random()*2-1)*R_TOOTH*1.02, y = (Math.random()*2-1)*R_TOOTH*1.02
+    const z = BZ + Math.random()*DEPTH
+    const r = Math.sqrt(x*x+y*y)
+    if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
+    addPt(x, y, z, 0.020)
+    v++
+  }
+
   return _padToBig(pts, N_ORB)
 }
 function _genAppStack() {
