@@ -2,7 +2,6 @@ import { Canvas } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import HeroOrb from './HeroOrb'
-import ExpertiseParticles from './ExpertiseParticles'
 
 function FaintBackdropDots() {
   const positions = useMemo(() => {
@@ -54,7 +53,6 @@ export default function Scene() {
       <FaintBackdropDots />
       <Suspense fallback={null}>
         <HeroOrb />
-        <ExpertiseParticles />
       </Suspense>
     </Canvas>
   )

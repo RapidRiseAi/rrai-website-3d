@@ -5,6 +5,7 @@ import {
   buildSoccerBall, greatCircleArc, circleOnSphere,
 } from '../../utils/soccerBall'
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
+import { carouselState } from '../../utils/carouselState'
 
 const R = 1.70
 const ORB_X = 2.45
@@ -116,6 +117,168 @@ function smoothstep(t)     { const c = Math.max(0, Math.min(1, t)); return c * c
 function gridCollapseT(p)  { return smoothstep(p / 0.76) }
 function collapseFade(t)   { return Math.max(0, 1.0 - t * 1.5) }
 
+/* ── Card shape system ──────────────────────────────────────────────────────────
+   N_ORB surface orbs are reused as the section-2 card particles.
+   Animation: sphere → 50% collapse (p 0→0.62) → card shape (p 0.62→0.88).
+   Card changes at p≥0.88 animate uMorphCard 1→0→1 while swapping the buffer.
+ ────────────────────────────────────────────────────────────────────────────── */
+const N_ORB          = 13824   // 48×48×6 surface orbs
+const CARD_COLLAPSE_DUR = 0.35
+const CARD_EXPAND_DUR   = 0.68
+const MAX_CARD_OP       = 0.92
+
+const CARD_COLORS = [
+  '#68ccff', '#4ab8ff', '#78d4ff', '#5ab8ff',
+  '#8ae0ff', '#54bbff', '#4caaff',
+]
+
+function _addLine(pts, x0,y0,z0, x1,y1,z1, n, jit=0.04) {
+  for (let i=0; i<=n; i++) {
+    const t=i/n
+    pts.push(x0+(x1-x0)*t+(Math.random()-.5)*jit, y0+(y1-y0)*t+(Math.random()-.5)*jit, z0+(z1-z0)*t+(Math.random()-.5)*jit)
+  }
+}
+function _addCircle(pts, cx,cy,cz, r, n, jit=0.028) {
+  for (let i=0; i<n; i++) {
+    const a=(i/n)*Math.PI*2
+    pts.push(cx+Math.cos(a)*r+(Math.random()-.5)*jit, cy+Math.sin(a)*r+(Math.random()-.5)*jit, cz+(Math.random()-.5)*jit)
+  }
+}
+function _addRect(pts, cx,cy,cz, hw,hh, ns,nh, jit=0.03) {
+  for (let i=0; i<=ns; i++) {
+    const t=i/ns
+    pts.push(cx-hw+t*2*hw,cy+hh,cz+(Math.random()-.5)*jit)
+    pts.push(cx-hw+t*2*hw,cy-hh,cz+(Math.random()-.5)*jit)
+  }
+  for (let i=0; i<=nh; i++) {
+    const t=i/nh
+    pts.push(cx-hw,cy-hh+t*2*hh,cz+(Math.random()-.5)*jit)
+    pts.push(cx+hw,cy-hh+t*2*hh,cz+(Math.random()-.5)*jit)
+  }
+}
+function _addCubeEdges(pts, cx,cy,cz, s, ns=18, jit=0.022) {
+  const c=[[-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],[-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]]
+  const e=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]
+  for (const [a,b] of e) _addLine(pts, cx+c[a][0],cy+c[a][1],cz+c[a][2], cx+c[b][0],cy+c[b][1],cz+c[b][2], ns, jit)
+}
+function _addBezier(pts, p0,p1,p2,p3, n, jit=0.030) {
+  for (let i=0; i<=n; i++) {
+    const t=i/n, mt=1-t
+    pts.push(
+      mt*mt*mt*p0[0]+3*mt*mt*t*p1[0]+3*mt*t*t*p2[0]+t*t*t*p3[0]+(Math.random()-.5)*jit,
+      mt*mt*mt*p0[1]+3*mt*mt*t*p1[1]+3*mt*t*t*p2[1]+t*t*t*p3[1]+(Math.random()-.5)*jit,
+      mt*mt*mt*p0[2]+3*mt*mt*t*p1[2]+3*mt*t*t*p2[2]+t*t*t*p3[2]+(Math.random()-.5)*jit,
+    )
+  }
+}
+
+// Tiles a small anchor set of positions up to N_ORB with slight jitter
+function _padToBig(pts, targetN) {
+  const base = Math.floor(pts.length / 3)
+  if (base === 0) return new Float32Array(targetN * 3)
+  const arr = new Float32Array(targetN * 3)
+  for (let i = 0; i < targetN; i++) {
+    const src = i % base
+    arr[i*3]   = pts[src*3]   + (Math.random()-.5)*0.05
+    arr[i*3+1] = pts[src*3+1] + (Math.random()-.5)*0.05
+    arr[i*3+2] = pts[src*3+2] + (Math.random()-.5)*0.05
+  }
+  return arr
+}
+
+function _genBrowserFrame() {
+  const pts=[], W=R*.80, H=R*.70, D=R*.40
+  _addRect(pts, 0,0,D*.5, W,H, 46,36, 0.025)
+  _addRect(pts, 0,0,-D*.5, W*.90,H*.90, 40,30, 0.025)
+  for (const [sx,sy] of [[1,1],[1,-1],[-1,1],[-1,-1]])
+    _addLine(pts, sx*W,sy*H,D*.5, sx*W*.90,sy*H*.90,-D*.5, 10, 0.015)
+  _addLine(pts, -W*.92,H*.58,D*.5+.02, W*.92,H*.58,D*.5+.02, 44, 0.015)
+  for (let d=0; d<3; d++) _addCircle(pts, -W*.68+d*W*.125,H*.77,D*.5+.02, W*.027, 9, 0.008)
+  return _padToBig(pts, N_ORB)
+}
+function _genCommandCube() {
+  const pts=[]
+  _addCubeEdges(pts, 0,0,0, R*.82, 18, 0.024)
+  _addCubeEdges(pts, 0,0,0, R*.36, 10, 0.018)
+  for (const x of[-1,1]) for (const y of[-1,1]) for (const z of[-1,1])
+    _addLine(pts, x*R*.82,y*R*.82,z*R*.82, x*R*.36,y*R*.36,z*R*.36, 4, 0.016)
+  return _padToBig(pts, N_ORB)
+}
+function _genAppStack() {
+  const pts=[], pw=R*.36, ph=R*.74
+  _addRect(pts, -R*.18,0,R*.28, pw,ph, 30,44, 0.022)
+  _addCircle(pts, -R*.18,ph*.84,R*.30, R*.034, 10, 0.008)
+  _addLine(pts, -R*.18-pw*.62,-ph*.83,R*.29, -R*.18+pw*.62,-ph*.83,R*.29, 16, 0.012)
+  _addRect(pts, R*.24,-R*.07,-R*.08, pw*.88,ph*.84, 22,36, 0.022)
+  _addCircle(pts, R*.24,ph*.84*.84-R*.07,-R*.06, R*.030, 9, 0.008)
+  _addRect(pts, R*.56,-R*.16,-R*.38, pw*.74,ph*.68, 16,26, 0.022)
+  return _padToBig(pts, N_ORB)
+}
+function _genWorkflowPath() {
+  const pts=[]
+  const n0=[-R*.56,-R*.72,-R*.04], n1=[R*.06,R*.02,R*.10], n2=[R*.60,R*.72,R*.04]
+  for (const [nx,ny,nz] of [n0,n1,n2]) {
+    _addCircle(pts, nx,ny,nz, R*.130, 26, 0.018)
+    _addCircle(pts, nx,ny,nz, R*.058, 14, 0.012)
+  }
+  _addBezier(pts, n0,[n0[0]+R*.28,n0[1]+R*.52,n0[2]],[n1[0]-R*.28,n1[1]-R*.40,n1[2]],n1, 52, 0.028)
+  _addBezier(pts, n1,[n1[0]+R*.26,n1[1]+R*.44,n1[2]],[n2[0]-R*.26,n2[1]-R*.42,n2[2]],n2, 52, 0.028)
+  return _padToBig(pts, N_ORB)
+}
+function _genIntelligenceOrbit() {
+  const pts=[], cR=R*.36, oR=R*.84, tilt=Math.PI/5.5
+  for (let i=0; i<108; i++) {
+    const phi=Math.acos(2*Math.random()-1), theta=Math.random()*Math.PI*2
+    const r=cR*(0.96+Math.random()*.08)
+    pts.push(r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta))
+  }
+  for (let i=0; i<76; i++) {
+    const a=(i/76)*Math.PI*2
+    pts.push(Math.cos(a)*oR+(Math.random()-.5)*.022, Math.sin(a)*oR*Math.sin(tilt)+(Math.random()-.5)*.022, Math.sin(a)*oR*Math.cos(tilt)+(Math.random()-.5)*.022)
+  }
+  const satA=Math.PI*.42
+  for (let k=0; k<14; k++) {
+    const sa=satA+(Math.random()-.5)*.20, rr=oR*(1+(Math.random()-.5)*.06)
+    pts.push(Math.cos(sa)*rr, Math.sin(sa)*rr*Math.sin(tilt), Math.sin(sa)*rr*Math.cos(tilt))
+  }
+  return _padToBig(pts, N_ORB)
+}
+function _genConnectedCubes() {
+  const pts=[], cs=R*.26, ss=R*.18, dist=R*.80
+  _addCubeEdges(pts, 0,0,0, cs, 7, 0.018)
+  const sats=[[0,dist,R*.08],[0,-dist,-R*.08],[-dist,0,R*.10],[dist,0,-R*.10]]
+  for (const [sx,sy,sz] of sats) {
+    _addCubeEdges(pts, sx,sy,sz, ss, 5, 0.014)
+    const len=Math.sqrt(sx*sx+sy*sy+sz*sz)
+    _addLine(pts, sx/len*cs,sy/len*cs,sz/len*cs, sx-sx/len*ss,sy-sy/len*ss,sz-sz/len*ss, 10, 0.018)
+  }
+  return _padToBig(pts, N_ORB)
+}
+function _genFunnel() {
+  const pts=[], topW=R*.82, botW=R*.12, topY=R*.70, botY=-R*.68, D=R*.30, H=topY-botY
+  _addLine(pts, -topW,topY,D*.5, -botW,botY,0, 40, 0.038)
+  _addLine(pts,  topW,topY,D*.5,  botW,botY,0, 40, 0.038)
+  _addLine(pts, -topW,topY,D*.5,  topW,topY,D*.5, 52, 0.038)
+  _addLine(pts, -botW,botY,0, botW,botY,0, 12, 0.025)
+  _addLine(pts, -topW*.88,topY*.96,-D*.5, -botW*.88,botY*.96,0, 28, 0.038)
+  _addLine(pts,  topW*.88,topY*.96,-D*.5,  botW*.88,botY*.96,0, 28, 0.038)
+  _addLine(pts, -topW*.88,topY*.96,-D*.5,  topW*.88,topY*.96,-D*.5, 40, 0.038)
+  for (let lv=1; lv<=2; lv++) {
+    const t=lv/3, y=topY-H*t, wl=(topW+(botW-topW)*t)*.80, zl=D*.5*(1-t)
+    _addLine(pts, -wl,y,zl, wl,y,zl, Math.ceil(wl*11), 0.030)
+  }
+  for (let k=0; k<38; k++) {
+    const t=Math.random(), y=topY-H*t, wl=(topW+(botW-topW)*t)*.68, zl=D*.5*(1-t)
+    pts.push((Math.random()-.5)*wl*2, y, (Math.random()-.5)*zl*2+zl*.5)
+  }
+  return _padToBig(pts, N_ORB)
+}
+
+const CARD_GENERATORS = [
+  _genBrowserFrame, _genCommandCube, _genAppStack, _genWorkflowPath,
+  _genIntelligenceOrbit, _genConnectedCubes, _genFunnel,
+]
+
 const TRAIL_LEN = 24
 const TRAIL_LIFETIME = 1.0
 
@@ -134,12 +297,20 @@ const MINI_VERT = `
   uniform vec3 uCursorWorld;
   uniform float uCursorActive;
   uniform float uMorph;
+  uniform float uMorphCard;
   attribute float aSize;
   attribute float aSeed;
+  attribute vec3 aPosTarget;
   varying float vGlow;
+  varying float vCardBlend;
 
   void main() {
-    vec3 basePos = position * (1.0 - uMorph);
+    /* Phase 1: collapse sphere toward centre (uMorph 0→0.5) */
+    vec3 collapsedPos = position * (1.0 - uMorph);
+    /* Phase 2: rearrange from collapsed position to card shape (uMorphCard 0→1) */
+    vec3 basePos = mix(collapsedPos, aPosTarget, uMorphCard);
+
+    float cursorOff = 1.0 - uMorphCard;
     vec3 worldPos = (modelMatrix * vec4(basePos, 1.0)).xyz;
 
     float maxG = 0.0;
@@ -152,12 +323,13 @@ const MINI_VERT = `
     }
     float g = pow(maxG, 1.5);
     float tw = 0.22 * sin(uTime * 1.6 + aSeed * 12.566);
-    vGlow = clamp(g + tw * 0.5, 0.0, 1.6);
+    vGlow = clamp(g + tw * 0.5, 0.0, 1.6) * cursorOff;
+    vCardBlend = uMorphCard;
 
     float cd = distance(worldPos, uCursorWorld);
-    float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive;
+    float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive * cursorOff;
 
-    /* use original sphere position for normals — stable as particles collapse */
+    /* stable normals from original sphere position even as particles rearrange */
     vec3 localNorm = normalize(position);
     vec3 tangentRef = abs(localNorm.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     vec3 T1 = normalize(cross(localNorm, tangentRef));
@@ -176,14 +348,17 @@ const MINI_FRAG = `
   uniform sampler2D uMap;
   uniform vec3 uColorBase;
   uniform vec3 uColorHot;
+  uniform vec3 uColorCard;
   uniform float uOpacity;
   uniform float uMorph;
   varying float vGlow;
+  varying float vCardBlend;
 
   void main() {
     vec4 tex = texture2D(uMap, gl_PointCoord);
     if (tex.a < 0.01) discard;
-    vec3 col = mix(uColorBase, uColorHot, vGlow);
+    vec3 sphereCol = mix(uColorBase, uColorHot, vGlow);
+    vec3 col = mix(sphereCol, uColorCard, vCardBlend);
     float opMult = mix(0.8, 1.0, uMorph);
     float a = tex.a * uOpacity * opMult * (1.0 + vGlow * 1.4);
     gl_FragColor = vec4(col * (1.0 + vGlow * 1.0), a);
@@ -278,6 +453,16 @@ function InteractiveMiniOrbs({ groupRef }) {
     () => new THREE.Vector4(1000, 1000, 1000, TRAIL_LIFETIME + 1)
   ), [])
 
+  // Card morph state — never triggers re-renders
+  const activeRef     = useRef(0)
+  const phaseRef      = useRef('idle')
+  const timerRef      = useRef(0)
+  const targetAttrRef = useRef()
+
+  // Pre-generate all 7 card shapes (tiled to N_ORB); posTarget is the live GPU buffer
+  const cardBufs  = useMemo(() => CARD_GENERATORS.map(g => g()), [])
+  const posTarget = useMemo(() => new Float32Array(cardBufs[0]), [cardBufs])
+
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -292,45 +477,109 @@ function InteractiveMiniOrbs({ groupRef }) {
       uMap:           { value: tex },
       uColorBase:     { value: new THREE.Color('#82c8f0') },
       uColorHot:      { value: new THREE.Color('#58b8f8') },
+      uColorCard:     { value: new THREE.Color(CARD_COLORS[0]) },
       uOpacity:       { value: 1.0 },
       uCursorWorld:   { value: new THREE.Vector3() },
       uCursorActive:  { value: 0.0 },
       uMorph:         { value: 0.0 },
+      uMorphCard:     { value: 0.0 },
     },
     vertexShader: MINI_VERT,
     fragmentShader: MINI_FRAG,
   }), [tex, size.height, trail])
 
   useFrame(({ clock }, delta) => {
-    const p = scrollState.progress
+    const p     = scrollState.progress
     const scale = 1.0 + (END_SCALE - 1.0) * p
-    // Orbs: smoothstep ease, collapse to 50% max, fade fully by p=0.62
-    const rawT      = smoothstep(p / 0.62)
-    const collapseT = rawT * 0.5              // 0 → 0.5  (50% toward centre)
-    const orbFade   = Math.max(0, 1.0 - rawT) // 1 → 0 as rawT goes 0 → 1
 
-    material.uniforms.uMorph.value    = collapseT
-    material.uniforms.uOpacity.value  = orbFade
-    material.uniforms.uTime.value     = clock.getElapsedTime()
-    material.uniforms.uScale.value    = size.height / 2
-    material.uniforms.uRadius.value   = 0.58 * scale
+    // Phase 1 — sphere collapse (p 0→0.62), max 50% toward centre
+    const rawT      = smoothstep(p / 0.62)
+    const collapseT = rawT * 0.5
+
+    // Phase 2 — scroll-driven card morph (p 0.62→0.88)
+    const cardScrollT = smoothstep(Math.max(0, Math.min(1, (p - 0.62) / 0.26)))
+
+    // Card change transition state machine
+    const wanted = carouselState.activeCard
+    const phase  = phaseRef.current
+
+    // Abort any in-flight transition when user scrolls back above the card zone
+    if (p < 0.88 && phase !== 'idle') {
+      phaseRef.current = 'idle'
+      timerRef.current = 0
+    }
+
+    // Silent sync: keep buffer current while scroll drives the morph
+    if (wanted !== activeRef.current && p < 0.88) {
+      activeRef.current = wanted
+      posTarget.set(cardBufs[wanted])
+      if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+      material.uniforms.uColorCard.value.setStyle(CARD_COLORS[wanted])
+    }
+
+    // Trigger animated card swap only when fully in card mode
+    if (p >= 0.88 && wanted !== activeRef.current && phaseRef.current === 'idle') {
+      phaseRef.current = 'collapsing'
+      timerRef.current = 0
+    }
+
+    timerRef.current += delta
+
+    // Default: scroll drives card morph value
+    let finalCardMorph = cardScrollT
+
+    if (phaseRef.current === 'collapsing') {
+      const t = Math.min(1, timerRef.current / CARD_COLLAPSE_DUR)
+      finalCardMorph = 1.0 - t * t  // ease-in collapse back to 50%-collapsed position
+      if (t >= 1) {
+        activeRef.current = carouselState.activeCard
+        posTarget.set(cardBufs[activeRef.current])
+        if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+        material.uniforms.uColorCard.value.setStyle(CARD_COLORS[activeRef.current])
+        finalCardMorph = 0.0
+        phaseRef.current = 'expanding'
+        timerRef.current = 0
+      }
+    } else if (phaseRef.current === 'expanding') {
+      const t = Math.min(1, timerRef.current / CARD_EXPAND_DUR)
+      finalCardMorph = 1 - Math.pow(1 - t, 3)  // ease-out cubic bloom into new shape
+      if (t >= 1) {
+        finalCardMorph = 1.0
+        phaseRef.current = 'idle'
+        // Another change queued while expanding — start collapsing immediately
+        if (carouselState.activeCard !== activeRef.current) {
+          phaseRef.current = 'collapsing'
+          timerRef.current = 0
+        }
+      }
+    }
+
+    const usedCardMorph = p >= 0.62 ? finalCardMorph : 0.0
+
+    // Opacity: sphere fades out by p=0.62, card fades back in p=0.62→0.88
+    const sphereOp = Math.max(0, 1.0 - rawT)
+    const cardOp   = (p >= 0.88 ? 1.0 : cardScrollT) * MAX_CARD_OP
+    const orbOpacity = p >= 0.62 ? cardOp : sphereOp
+
+    material.uniforms.uMorph.value     = collapseT
+    material.uniforms.uMorphCard.value = usedCardMorph
+    material.uniforms.uOpacity.value   = orbOpacity
+    material.uniforms.uTime.value      = clock.getElapsedTime()
+    material.uniforms.uScale.value     = size.height / 2
+    material.uniforms.uRadius.value    = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
       trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
     }
 
+    // Cursor interaction only while the orbs are in sphere mode
     raycaster.setFromCamera(ndc, camera)
-
     let hasHit = false
-    if (groupRef && groupRef.current) {
+    if (groupRef?.current && p < 0.62) {
       invMat.copy(groupRef.current.matrixWorld).invert()
       localRay.copy(raycaster.ray).applyMatrix4(invMat)
-      // Cursor hit sphere shrinks proportionally to collapse position
       localSphere.radius = R * Math.max(0.05, 1.0 - collapseT)
-      let localHitFound = false
-      if (localRay.intersectSphere(localSphere, localHit)) localHitFound = true
-
-      if (localHitFound) {
+      if (localRay.intersectSphere(localSphere, localHit)) {
         hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
         hasHit = true
       }
@@ -358,6 +607,13 @@ function InteractiveMiniOrbs({ groupRef }) {
           array={sizes} itemSize={1} />
         <bufferAttribute attach="attributes-aSeed" count={seeds.length}
           array={seeds} itemSize={1} />
+        <bufferAttribute
+          ref={targetAttrRef}
+          attach="attributes-aPosTarget"
+          count={positions.length / 3}
+          array={posTarget}
+          itemSize={3}
+        />
       </bufferGeometry>
       <primitive object={material} attach="material" />
     </points>
@@ -798,7 +1054,7 @@ export default function HeroOrb() {
   return (
     <group ref={groupRef} position={[ORB_X, ORB_Y, 0]}>
       <DepthOccluder />
-      {showHeavy && <InteractiveMiniOrbs groupRef={groupRef} />}
+      <InteractiveMiniOrbs groupRef={groupRef} />
       {showHeavy && <SoccerGridParticles />}
       {showHeavy && <CardinalSpokeParticles />}
       {showHeavy && <JunctionDots />}
