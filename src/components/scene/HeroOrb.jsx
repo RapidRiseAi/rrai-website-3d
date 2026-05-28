@@ -368,16 +368,14 @@ function _genCommandCube() {
   // not the full wall surface. This gives the 3D read with clean edges.
   for (const [x, y] of corners) edgeLine(x, y, 2, 11)
 
-  // Center hole — front + back rim equally bright; bore shown by sparse lines
-  const HC = 120
-  for (let pass = 0; pass < 3; pass++)
-    for (let i = 0; i < HC; i++)
-      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), FZ, 0.004, 0)
-  for (let pass = 0; pass < 3; pass++)
-    for (let i = 0; i < HC; i++)
-      addPt(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), BZ, 0.004, 0)
-  for (let i = 0; i < HC; i += 6)
-    edgeLine(R_HOLE*Math.cos(i/HC*Math.PI*2), R_HOLE*Math.sin(i/HC*Math.PI*2), 1, 9)
+  // Center hole bore — treated as a plain SURFACE (no highlighted rim/edges):
+  // normal-size surface orbs spread evenly over the cylinder wall.
+  const HC = 54, HZ = 6
+  for (let i = 0; i < HC; i++) {
+    const a = i / HC * Math.PI * 2
+    for (let k = 0; k <= HZ; k++)
+      addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), FZ - DEPTH*k/HZ, 0.012, 1)
+  }
 
   // Front face fill — densely populate the main surface (normal-size orbs)
   let f = 0, fa = 0
@@ -399,7 +397,10 @@ function _genCommandCube() {
     b++
   }
 
-  return _padToBigTagged(pts, tags, N_ORB)
+  // Face normal (local) for hover — the card's flat surface plane orientation
+  const out = _padToBigTagged(pts, tags, N_ORB)
+  out.normal = tilt(0, 0, 1)
+  return out
 }
 function _genAppStack() {
   const pts=[], pw=R*.36, ph=R*.74
@@ -604,11 +605,10 @@ function InteractiveMiniOrbs({ groupRef }) {
   const localHit = useMemo(() => new THREE.Vector3(), [])
   const hit = useMemo(() => new THREE.Vector3(), [])
   const ndc = useMemo(() => new THREE.Vector2(2, 2), [])
-  // Camera-facing plane through the group origin — used for hover on flat card
-  // shapes (gear etc.) whose orbs lie on a disk, not the globe's sphere shell
-  const hoverPlane = useMemo(() => new THREE.Plane(), [])
-  const camDir     = useMemo(() => new THREE.Vector3(), [])
-  const grpOrigin  = useMemo(() => new THREE.Vector3(), [])
+  // Local-space face plane for hover on flat card shapes (gear etc.) whose orbs
+  // lie on a disk, not the globe's sphere shell. Working in local space makes
+  // the hover spot track the surface at every group rotation angle.
+  const localPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), [])
 
   useEffect(() => {
     const canvas = gl.domElement
@@ -672,14 +672,15 @@ function InteractiveMiniOrbs({ groupRef }) {
   // buffers swapped on card change, exactly like aPosTarget.
   const cardData = useMemo(() => CARD_GENERATORS.map(g => {
     const r = g()
-    return r instanceof Float32Array
-      ? { pos: r, tags: new Float32Array(r.length / 3) }
-      : r
+    if (r instanceof Float32Array)
+      return { pos: r, tags: new Float32Array(r.length / 3), normal: [0, 0, 1] }
+    return { pos: r.pos, tags: r.tags, normal: r.normal || null }
   }), [])
-  const cardBufs  = useMemo(() => cardData.map(d => d.pos),  [cardData])
-  const cardTags  = useMemo(() => cardData.map(d => d.tags), [cardData])
-  const posTarget = useMemo(() => new Float32Array(cardBufs[0]), [cardBufs])
-  const tagTarget = useMemo(() => new Float32Array(cardTags[0]), [cardTags])
+  const cardBufs    = useMemo(() => cardData.map(d => d.pos),    [cardData])
+  const cardTags    = useMemo(() => cardData.map(d => d.tags),   [cardData])
+  const cardNormals = useMemo(() => cardData.map(d => d.normal), [cardData])
+  const posTarget   = useMemo(() => new Float32Array(cardBufs[0]), [cardBufs])
+  const tagTarget   = useMemo(() => new Float32Array(cardTags[0]), [cardTags])
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
@@ -803,19 +804,20 @@ function InteractiveMiniOrbs({ groupRef }) {
     raycaster.setFromCamera(ndc, camera)
     let hasHit = false
     if (groupRef?.current && (p < 0.62 || p >= 0.85)) {
-      // Globe card and sphere mode: orbs lie on a sphere shell, so intersect
-      // a sphere. Flat card shapes (gear etc.): orbs lie on a disk near the
-      // group origin, so intersect a camera-facing plane through it instead —
-      // this makes the whole surface respond to hover, not just the rim orbs.
-      const flatCard = p >= 0.85 && activeRef.current !== 0
-      if (flatCard) {
-        camera.getWorldDirection(camDir)
-        grpOrigin.setFromMatrixPosition(groupRef.current.matrixWorld)
-        hoverPlane.setFromNormalAndCoplanarPoint(camDir, grpOrigin)
-        if (raycaster.ray.intersectPlane(hoverPlane, hit)) hasHit = true
+      invMat.copy(groupRef.current.matrixWorld).invert()
+      localRay.copy(raycaster.ray).applyMatrix4(invMat)
+      // Flat card shapes (gear etc.) expose a face normal: intersect that face
+      // plane in local space so the hover spot tracks the surface at every
+      // rotation angle. Globe card + sphere mode: intersect the sphere shell.
+      const hn = p >= 0.85 ? cardNormals[activeRef.current] : null
+      if (hn) {
+        localPlane.normal.set(hn[0], hn[1], hn[2])
+        localPlane.constant = 0
+        if (localRay.intersectPlane(localPlane, localHit)) {
+          hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
+          hasHit = true
+        }
       } else {
-        invMat.copy(groupRef.current.matrixWorld).invert()
-        localRay.copy(raycaster.ray).applyMatrix4(invMat)
         localSphere.radius = p >= 0.85 ? R * 1.28 : R * Math.max(0.05, 1.0 - collapseT)
         if (localRay.intersectSphere(localSphere, localHit)) {
           hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
