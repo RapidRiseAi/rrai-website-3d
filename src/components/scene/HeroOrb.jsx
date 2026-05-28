@@ -368,13 +368,23 @@ function _genCommandCube() {
   // not the full wall surface. This gives the 3D read with clean edges.
   for (const [x, y] of corners) edgeLine(x, y, 2, 11)
 
-  // Center hole bore — treated as a plain SURFACE (no highlighted rim/edges):
-  // normal-size surface orbs spread evenly over the cylinder wall.
-  const HC = 54, HZ = 6
-  for (let i = 0; i < HC; i++) {
-    const a = i / HC * Math.PI * 2
-    for (let k = 0; k <= HZ; k++)
-      addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), FZ - DEPTH*k/HZ, 0.012, 1)
+  // Center hole — the two CIRCLES are bright edge lines (like the outer
+  // outline); the cylinder wall between them has NO connector lines, just a
+  // light surface scatter of normal-size orbs.
+  const HC = 130
+  for (let pass = 0; pass < 3; pass++)
+    for (let i = 0; i < HC; i++) {
+      const a = i / HC * Math.PI * 2
+      addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), FZ, 0.004, 0)
+    }
+  for (let pass = 0; pass < 3; pass++)
+    for (let i = 0; i < HC; i++) {
+      const a = i / HC * Math.PI * 2
+      addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), BZ, 0.004, 0)
+    }
+  for (let i = 0; i < 300; i++) {
+    const a = Math.random() * Math.PI * 2
+    addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), FZ - Math.random()*DEPTH, 0.012, 1)
   }
 
   // Front face fill — densely populate the main surface (normal-size orbs)
