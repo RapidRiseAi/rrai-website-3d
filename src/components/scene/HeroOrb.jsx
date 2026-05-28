@@ -87,7 +87,6 @@ const CARDINAL_SPOKE_POSITIONS = (() => {
   return new Float32Array(pts)
 })()
 
-// Static junction-dot positions (moved out of JunctionDots so we can pre-morph them)
 const JUNCTION_VERTEX_POSITIONS = (() => {
   const arr = new Float32Array(vertices.length * 3)
   vertices.forEach((v, i) => { arr[i*3]=v.x*R; arr[i*3+1]=v.y*R; arr[i*3+2]=v.z*R })
@@ -104,94 +103,24 @@ const JUNCTION_PENT_POSITIONS = (() => {
   return arr
 })()
 
-// ── Cube structure ───────────────────────────────────────────────────────────
-const CUBE_CORNERS_LOCAL = (() => {
-  const out = []
-  for (const x of [-R, R])
-    for (const y of [-R, R])
-      for (const z of [-R, R])
-        out.push([x, y, z])
-  return out
-})()
-
-const CUBE_EDGE_PAIRS = (() => {
-  const pairs = []
-  for (let i = 0; i < 8; i++) {
-    for (let j = i + 1; j < 8; j++) {
-      const a = CUBE_CORNERS_LOCAL[i], b = CUBE_CORNERS_LOCAL[j]
-      const diffs = (a[0] !== b[0]) + (a[1] !== b[1]) + (a[2] !== b[2])
-      if (diffs === 1) pairs.push([a, b])
-    }
-  }
-  return pairs
-})()
-
-// Closest point on the 12 cube edges
-function projectToCubeEdge(px, py, pz) {
-  let bestD2 = Infinity, bx = 0, by = 0, bz = 0
-  for (let k = 0; k < CUBE_EDGE_PAIRS.length; k++) {
-    const [a, b] = CUBE_EDGE_PAIRS[k]
-    const dx = b[0]-a[0], dy = b[1]-a[1], dz = b[2]-a[2]
-    const dLen2 = dx*dx + dy*dy + dz*dz
-    let t = ((px-a[0])*dx + (py-a[1])*dy + (pz-a[2])*dz) / dLen2
-    if (t < 0) t = 0; else if (t > 1) t = 1
-    const cx = a[0] + dx*t, cy = a[1] + dy*t, cz = a[2] + dz*t
-    const d2 = (px-cx)**2 + (py-cy)**2 + (pz-cz)**2
-    if (d2 < bestD2) { bestD2 = d2; bx = cx; by = cy; bz = cz }
-  }
-  return [bx, by, bz]
-}
-
-function projectToCubeCorner(px, py, pz) {
-  let bestD2 = Infinity, bx = 0, by = 0, bz = 0
-  for (let k = 0; k < CUBE_CORNERS_LOCAL.length; k++) {
-    const c = CUBE_CORNERS_LOCAL[k]
-    const d2 = (px-c[0])**2 + (py-c[1])**2 + (pz-c[2])**2
-    if (d2 < bestD2) { bestD2 = d2; bx = c[0]; by = c[1]; bz = c[2] }
-  }
-  return [bx, by, bz]
-}
-
-function computeCubeTargets(positions, mode) {
-  const project = mode === 'edge' ? projectToCubeEdge : projectToCubeCorner
-  const out = new Float32Array(positions.length)
-  for (let i = 0; i < positions.length; i += 3) {
-    const [x, y, z] = project(positions[i], positions[i+1], positions[i+2])
-    out[i] = x; out[i+1] = y; out[i+2] = z
-  }
-  return out
-}
-
-// Pre-computed cube targets — every sphere-surface point has a destination on the cube
-const SOCCER_EDGE_POSITIONS_CUBE = computeCubeTargets(SOCCER_EDGE_POSITIONS, 'edge')
-const SOCCER_EDGE_GLOW_CUBE      = computeCubeTargets(SOCCER_EDGE_GLOW,      'edge')
-const CARDINAL_SPOKE_CUBE        = computeCubeTargets(CARDINAL_SPOKE_POSITIONS, 'edge')
-const JUNCTION_VERTEX_CUBE       = computeCubeTargets(JUNCTION_VERTEX_POSITIONS, 'corner')
-const JUNCTION_HEX_CUBE          = computeCubeTargets(JUNCTION_HEX_POSITIONS,    'corner')
-const JUNCTION_PENT_CUBE         = computeCubeTargets(JUNCTION_PENT_POSITIONS,   'corner')
-
-// Dense fill for all 12 cube edges — guarantees solid edge coverage at morph=1
-const CUBE_EDGE_FILL_DATA = (() => {
-  const SAMPLES = 48
-  const sphPts = []
-  const cubePts = []
-  for (const [a, b] of CUBE_EDGE_PAIRS) {
-    for (let k = 0; k < SAMPLES; k++) {
-      const t = (k + 0.5) / SAMPLES
-      const cx = a[0] + (b[0] - a[0]) * t
-      const cy = a[1] + (b[1] - a[1]) * t
-      const cz = a[2] + (b[2] - a[2]) * t
-      cubePts.push(cx, cy, cz)
-      const len = Math.sqrt(cx*cx + cy*cy + cz*cz)
-      sphPts.push(cx/len*R, cy/len*R, cz/len*R)
-    }
-  }
-  return { sphere: new Float32Array(sphPts), cube: new Float32Array(cubePts) }
-})()
+/* ── Collapse timing ────────────────────────────────────────────────────────────
+   Grid/glow/dots/rings: collapseT ramps p 0.30 → 0.78 (duration 0.48)
+   Surface orbs:         collapseT ramps p 0.30 → 0.785 (duration 0.485, 1% slower)
+   fade = max(0, 1 - collapseT * 1.5)  →  transparent by collapseT ≈ 0.67
+ ────────────────────────────────────────────────────────────────────────────── */
+function gridCollapseT(p)  { return Math.max(0, Math.min(1, (p - 0.30) / 0.48)) }
+function orbsCollapseT(p)  { return Math.max(0, Math.min(1, (p - 0.30) / 0.485)) }
+function collapseFade(t)   { return Math.max(0, 1.0 - t * 1.5) }
 
 const TRAIL_LEN = 24
 const TRAIL_LIFETIME = 1.0
 
+/* ── Surface-orb shader ─────────────────────────────────────────────────────────
+   uMorph = 0  →  sphere surface (full size, full opacity)
+   uMorph = 1  →  particles converged to group origin (fully faded via uOpacity)
+   Uses original sphere position for normalisation so tangent vectors are stable
+   even as particles collapse toward the centre.
+ ────────────────────────────────────────────────────────────────────────────── */
 const MINI_VERT = `
   uniform vec4 uTrail[${TRAIL_LEN}];
   uniform float uTrailLifetime;
@@ -201,13 +130,12 @@ const MINI_VERT = `
   uniform vec3 uCursorWorld;
   uniform float uCursorActive;
   uniform float uMorph;
-  attribute vec3 aPosCube;
   attribute float aSize;
   attribute float aSeed;
   varying float vGlow;
 
   void main() {
-    vec3 basePos = mix(position, aPosCube, uMorph);
+    vec3 basePos = position * (1.0 - uMorph);
     vec3 worldPos = (modelMatrix * vec4(basePos, 1.0)).xyz;
 
     float maxG = 0.0;
@@ -225,7 +153,8 @@ const MINI_VERT = `
     float cd = distance(worldPos, uCursorWorld);
     float windProx = (1.0 - smoothstep(0.0, uRadius * 0.7, cd)) * uCursorActive;
 
-    vec3 localNorm = normalize(basePos);
+    /* use original sphere position for normals — stable as particles collapse */
+    vec3 localNorm = normalize(position);
     vec3 tangentRef = abs(localNorm.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     vec3 T1 = normalize(cross(localNorm, tangentRef));
     vec3 T2 = cross(localNorm, T1);
@@ -257,18 +186,20 @@ const MINI_FRAG = `
   }
 `
 
-// Simple morph shader used by every grid/dot cloud that needs to transform
+/* ── Grid/dot collapse shader ───────────────────────────────────────────────────
+   uMorph = 0  →  original sphere surface positions
+   uMorph = 1  →  all particles at group origin (centre)
+   Points shrink slightly as they collapse (reinforces the implosion read).
+ ────────────────────────────────────────────────────────────────────────────── */
 const MORPH_VERT = `
   uniform float uMorph;
   uniform float uSize;
-  uniform float uSizeCube;
   uniform float uScale;
-  attribute vec3 aPosCube;
   void main() {
-    vec3 basePos = mix(position, aPosCube, uMorph);
-    float pointSize = mix(uSize, uSizeCube, uMorph);
-    vec4 mv = modelViewMatrix * vec4(basePos, 1.0);
-    gl_PointSize = pointSize * (uScale / -mv.z);
+    vec3 pos = position * (1.0 - uMorph);
+    float sz = uSize * (1.0 - uMorph * 0.5);
+    vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+    gl_PointSize = sz * (uScale / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
 `
@@ -288,10 +219,6 @@ function InteractiveMiniOrbs({ groupRef }) {
   const { camera, size, gl } = useThree()
   const raycaster = useMemo(() => new THREE.Raycaster(), [])
   const localSphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(0, 0, 0), R), [])
-  const localBox = useMemo(() => new THREE.Box3(
-    new THREE.Vector3(-R, -R, -R),
-    new THREE.Vector3(R, R, R)
-  ), [])
   const localRay = useMemo(() => new THREE.Ray(), [])
   const invMat = useMemo(() => new THREE.Matrix4(), [])
   const localHit = useMemo(() => new THREE.Vector3(), [])
@@ -314,10 +241,9 @@ function InteractiveMiniOrbs({ groupRef }) {
     }
   }, [gl, ndc])
 
-  const { positions, posCube, sizes, seeds } = useMemo(() => {
-    const N = 48   /* ~21 % fewer surface orbs: 6×48²=13824 vs 6×54²=17496 */
+  const { positions, sizes, seeds } = useMemo(() => {
+    const N = 48
     const sphPts = []
-    const cubePts = []
     for (const [axis, sign] of [[0,1],[0,-1],[1,1],[1,-1],[2,1],[2,-1]]) {
       for (let i = 0; i < N; i++) {
         for (let j = 0; j < N; j++) {
@@ -330,20 +256,18 @@ function InteractiveMiniOrbs({ groupRef }) {
           const len = Math.sqrt(x*x + y*y + z*z)
           const r = R * (0.998 + Math.random() * 0.005)
           sphPts.push(x/len*r, y/len*r, z/len*r)
-          cubePts.push(x * R, y * R, z * R)
         }
       }
     }
     const count = sphPts.length / 3
     const p = new Float32Array(sphPts)
-    const pc = new Float32Array(cubePts)
     const s = new Float32Array(count)
     const sd = new Float32Array(count)
     for (let i = 0; i < count; i++) {
       s[i] = 0.013 + Math.random() * 0.005
       sd[i] = Math.random()
     }
-    return { positions: p, posCube: pc, sizes: s, seeds: sd }
+    return { positions: p, sizes: s, seeds: sd }
   }, [])
 
   const trail = useMemo(() => Array.from({ length: TRAIL_LEN },
@@ -375,12 +299,11 @@ function InteractiveMiniOrbs({ groupRef }) {
 
   useFrame(({ clock }, delta) => {
     const p = scrollState.progress
+    const collapseT = orbsCollapseT(p)         // 1% slower than grid
     const scale = 1.0 + (END_SCALE - 1.0) * p
 
-    // Stay on sphere (no cube morph) and fade out as the user scrolls to the
-    // expertise section — the CarouselOverlay icon shape takes over from there.
-    material.uniforms.uMorph.value    = 0
-    material.uniforms.uOpacity.value  = Math.max(0, 1.0 - p * 1.6)
+    material.uniforms.uMorph.value    = collapseT
+    material.uniforms.uOpacity.value  = collapseFade(collapseT)
     material.uniforms.uTime.value     = clock.getElapsedTime()
     material.uniforms.uScale.value    = size.height / 2
     material.uniforms.uRadius.value   = 0.58 * scale
@@ -393,18 +316,12 @@ function InteractiveMiniOrbs({ groupRef }) {
 
     let hasHit = false
     if (groupRef && groupRef.current) {
-      // Cast the ray into the group's local frame so we can intersect against
-      // an axis-aligned box (cube) or origin-centered sphere — this makes the
-      // cursor effect work on cube faces, not just at the corners.
       invMat.copy(groupRef.current.matrixWorld).invert()
       localRay.copy(raycaster.ray).applyMatrix4(invMat)
-
+      // Shrink cursor-hit sphere as orbs collapse inward
+      localSphere.radius = R * Math.max(0.05, 1.0 - collapseT)
       let localHitFound = false
-      if (p > 0.5) {
-        if (localRay.intersectBox(localBox, localHit)) localHitFound = true
-      } else {
-        if (localRay.intersectSphere(localSphere, localHit)) localHitFound = true
-      }
+      if (localRay.intersectSphere(localSphere, localHit)) localHitFound = true
 
       if (localHitFound) {
         hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
@@ -430,8 +347,6 @@ function InteractiveMiniOrbs({ groupRef }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={positions.length / 3}
           array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-aPosCube" count={posCube.length / 3}
-          array={posCube} itemSize={3} />
         <bufferAttribute attach="attributes-aSize" count={sizes.length}
           array={sizes} itemSize={1} />
         <bufferAttribute attach="attributes-aSeed" count={seeds.length}
@@ -462,7 +377,7 @@ function DepthOccluder() {
   )
 }
 
-// Particles cloud with optional scroll-driven fade (no morph)
+// Static particle cloud with optional scroll-driven fade (no morph)
 function Particles({ positions, size, color, opacity, renderOrder = 4, fade = false }) {
   const tex = getGlowDotTexture()
   const count = positions.length / 3
@@ -484,16 +399,10 @@ function Particles({ positions, size, color, opacity, renderOrder = 4, fade = fa
   )
 }
 
-// Particles cloud that morphs every point from `posSphere` → `posCube` as scroll progresses.
-// This is what makes the sphere actually *transform* into the cube — not crossfade.
-function MorphParticles({
-  posSphere, posCube, size, color, opacity,
-  renderOrder = 4, fadeIn = false,
-  sizeCube, opacityCube,
-  hideAtCube = false,
-}) {
-  const sizeC = sizeCube ?? size
-  const opC   = hideAtCube ? 0 : (opacityCube ?? opacity)
+/* Collapse particles from sphere surface toward group origin as scroll increases.
+   All grid, spoke, dot, and halo elements use this component.
+   No cube destination — every particle converges to [0,0,0] in group space. */
+function MorphParticles({ positions, size, color, opacity, renderOrder = 4 }) {
   const tex = getGlowDotTexture()
   const { size: viewport } = useThree()
   const pointsRef = useRef()
@@ -503,76 +412,55 @@ function MorphParticles({
     depthTest: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uMorph:    { value: 0 },
-      uSize:     { value: size },
-      uSizeCube: { value: sizeC },
-      uScale:    { value: viewport.height / 2 },
-      uMap:      { value: tex },
-      uColor:    { value: new THREE.Color(color) },
-      uOpacity:  { value: opacity },
+      uMorph:   { value: 0 },
+      uSize:    { value: size },
+      uScale:   { value: viewport.height / 2 },
+      uMap:     { value: tex },
+      uColor:   { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
     },
     vertexShader: MORPH_VERT,
     fragmentShader: MORPH_FRAG,
-  }), [tex, viewport.height, size, sizeC, color, opacity])
+  }), [tex, viewport.height, size, color, opacity])
 
   useFrame(() => {
     const p = scrollState.progress
-    material.uniforms.uMorph.value = p
-    material.uniforms.uScale.value = viewport.height / 2
-    if (fadeIn) {
-      const t = Math.min(1, Math.max(0, (p - 0.35) / 0.55))
-      material.uniforms.uOpacity.value = opacity * t * t
-    } else if (opC !== opacity) {
-      material.uniforms.uOpacity.value = opacity + (opC - opacity) * p
-    }
-    /* remove from render pipeline once fully transparent */
-    if (hideAtCube && pointsRef.current) {
-      pointsRef.current.visible = p < 0.99
-    }
+    const ct = gridCollapseT(p)
+    material.uniforms.uMorph.value   = ct
+    material.uniforms.uScale.value   = viewport.height / 2
+    const fade = collapseFade(ct)
+    material.uniforms.uOpacity.value = opacity * fade
+    if (pointsRef.current) pointsRef.current.visible = fade > 0.005
   })
 
-  const count = posSphere.length / 3
+  const count = positions.length / 3
   return (
     <points ref={pointsRef} renderOrder={renderOrder}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={posSphere} itemSize={3} />
-        <bufferAttribute attach="attributes-aPosCube" count={count} array={posCube} itemSize={3} />
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
       <primitive object={material} attach="material" />
     </points>
   )
 }
 
-// Soccer grid morphs into the cube edges
+// Soccer-ball grid lines collapse inward
 function SoccerGridParticles() {
   return (
     <>
-      <MorphParticles posSphere={SOCCER_EDGE_POSITIONS} posCube={SOCCER_EDGE_POSITIONS_CUBE}
-        size={0.095} color="#1d6cb8" opacity={0.88} renderOrder={4} hideAtCube />
-      <MorphParticles posSphere={SOCCER_EDGE_GLOW} posCube={SOCCER_EDGE_GLOW_CUBE}
-        size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} hideAtCube />
+      <MorphParticles positions={SOCCER_EDGE_POSITIONS}
+        size={0.095} color="#1d6cb8" opacity={0.88} renderOrder={4} />
+      <MorphParticles positions={SOCCER_EDGE_GLOW}
+        size={0.156} color="#1858c0" opacity={0.38} renderOrder={3} />
     </>
   )
 }
 
-// Dense edge fill — ensures all 12 cube edges are fully solid at morph=1.
-// fadeIn keeps these invisible at morph=0 so they don't pollute the sphere look.
-function CubeEdgeFill() {
-  return (
-    <>
-      <MorphParticles posSphere={CUBE_EDGE_FILL_DATA.sphere} posCube={CUBE_EDGE_FILL_DATA.cube}
-        size={0.072} color="#58b8f8" opacity={0.92} renderOrder={5} fadeIn />
-      <MorphParticles posSphere={CUBE_EDGE_FILL_DATA.sphere} posCube={CUBE_EDGE_FILL_DATA.cube}
-        size={0.18} color="#1060d0" opacity={0.32} renderOrder={3} fadeIn />
-    </>
-  )
-}
-
-// Spokes morph onto nearest cube edges (they collapse toward each icon's corner)
+// Icon-spoke lines collapse inward
 function CardinalSpokeParticles() {
   return (
-    <MorphParticles posSphere={CARDINAL_SPOKE_POSITIONS} posCube={CARDINAL_SPOKE_CUBE}
-      size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} hideAtCube />
+    <MorphParticles positions={CARDINAL_SPOKE_POSITIONS}
+      size={0.068} color="#a0eeff" opacity={0.96} renderOrder={6} />
   )
 }
 
@@ -593,61 +481,46 @@ function VolumeField() {
   return <Particles positions={arr} size={0.014} color="#183060" opacity={0.45} renderOrder={1} fade />
 }
 
-// Junction dots stay full brightness on the sphere, but shrink/dim as they
-// collapse onto the 8 cube corners so the cube corners don't blow out.
+// Junction vertex + hex + pentagon dots collapse inward
 function JunctionDots() {
   return (
     <>
-      <MorphParticles posSphere={JUNCTION_VERTEX_POSITIONS} posCube={JUNCTION_VERTEX_CUBE}
-        size={0.18} sizeCube={0.10}
-        color="#d8f0ff" opacity={0.92}
-        renderOrder={7} hideAtCube />
-      <MorphParticles posSphere={JUNCTION_HEX_POSITIONS} posCube={JUNCTION_HEX_CUBE}
-        size={0.10} sizeCube={0.07}
-        color="#90d0ff" opacity={0.78}
-        renderOrder={6} hideAtCube />
-      <MorphParticles posSphere={JUNCTION_PENT_POSITIONS} posCube={JUNCTION_PENT_CUBE}
-        size={0.32} sizeCube={0.14}
-        color="#ffffff" opacity={0.95}
-        renderOrder={9} hideAtCube />
+      <MorphParticles positions={JUNCTION_VERTEX_POSITIONS}
+        size={0.18} color="#d8f0ff" opacity={0.92} renderOrder={7} />
+      <MorphParticles positions={JUNCTION_HEX_POSITIONS}
+        size={0.10} color="#90d0ff" opacity={0.78} renderOrder={6} />
+      <MorphParticles positions={JUNCTION_PENT_POSITIONS}
+        size={0.32} color="#ffffff" opacity={0.95} renderOrder={9} />
     </>
   )
 }
 
-// Halo rings collapse onto the icon's corner as the morph progresses
+// Icon halo rings collapse inward
 function NodeHaloRings() {
-  const { sphere: spherePts, cube: cubePts } = useMemo(() => {
-    const iPts = []
-    const cPts = []
+  const spherePts = useMemo(() => {
+    const pts = []
     ICON_CENTERS.forEach(c => {
-      const ring = circleOnSphere(c, ICON_HALO_INNER, R * 1.003, 84)
-      ring.forEach(p => {
-        iPts.push(p[0], p[1], p[2])
-        const [cx, cy, cz] = projectToCubeCorner(p[0], p[1], p[2])
-        cPts.push(cx, cy, cz)
-      })
+      circleOnSphere(c, ICON_HALO_INNER, R * 1.003, 84).forEach(p => pts.push(p[0], p[1], p[2]))
     })
-    return { sphere: new Float32Array(iPts), cube: new Float32Array(cPts) }
+    return new Float32Array(pts)
   }, [])
   return (
-    <MorphParticles posSphere={spherePts} posCube={cubePts}
-      size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} hideAtCube />
+    <MorphParticles positions={spherePts}
+      size={0.040} color="#a8e8ff" opacity={0.92} renderOrder={8} />
   )
 }
 
-// Hub clusters collapse to the corner as well
+// Node cluster particles around each icon centre collapse inward
 function NodeClusterParticles() {
   const tex = getGlowDotTexture()
-  const { posSphere, posCube, count } = useMemo(() => {
+  const { posSphere, count } = useMemo(() => {
     const perNode = 54
     const sphPts = []
-    const cubePts = []
     ICON_CENTERS.forEach(pc => {
       const n = pc.clone().normalize()
       const ref = Math.abs(n.y) > 0.85 ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,1,0)
       const e1 = new THREE.Vector3().crossVectors(n, ref).normalize()
       const e2 = new THREE.Vector3().crossVectors(e1, n).normalize()
-      const corner = pc.toArray().map(v => v > 0 ? R : -R)
       for (let k = 0; k < perNode; k++) {
         const alpha = 0.03 + Math.random() * 0.22
         const phi = Math.random() * Math.PI * 2
@@ -658,14 +531,9 @@ function NodeClusterParticles() {
           .normalize()
           .multiplyScalar(R * (1.001 + Math.random() * 0.012))
         sphPts.push(pt.x, pt.y, pt.z)
-        cubePts.push(corner[0], corner[1], corner[2])
       }
     })
-    return {
-      posSphere: new Float32Array(sphPts),
-      posCube:   new Float32Array(cubePts),
-      count: sphPts.length / 3,
-    }
+    return { posSphere: new Float32Array(sphPts), count: sphPts.length / 3 }
   }, [])
 
   const { size: viewport } = useThree()
@@ -689,18 +557,18 @@ function NodeClusterParticles() {
 
   useFrame(({ clock }) => {
     const p = scrollState.progress
-    material.uniforms.uMorph.value = p
-    material.uniforms.uScale.value = viewport.height / 2
-    const fade = Math.max(0, 1 - p)
+    const ct = gridCollapseT(p)
+    material.uniforms.uMorph.value  = ct
+    material.uniforms.uScale.value  = viewport.height / 2
+    const fade = collapseFade(ct)
     material.uniforms.uOpacity.value = (0.55 + 0.22 * Math.sin(clock.getElapsedTime() * 1.35)) * fade
-    if (clusterRef.current) clusterRef.current.visible = p < 0.99
+    if (clusterRef.current) clusterRef.current.visible = fade > 0.005
   })
 
   return (
     <points ref={clusterRef} renderOrder={8}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={posSphere} itemSize={3} />
-        <bufferAttribute attach="attributes-aPosCube"  count={count} array={posCube}  itemSize={3} />
       </bufferGeometry>
       <primitive object={material} attach="material" />
     </points>
@@ -826,16 +694,10 @@ export default function HeroOrb() {
   const lastPointer = useRef({ x: 0, y: 0 })
   const dragRaycaster = useMemo(() => new THREE.Raycaster(), [])
   const dragLocalSphere = useMemo(() => new THREE.Sphere(new THREE.Vector3(0, 0, 0), R * 1.05), [])
-  const dragLocalBox = useMemo(() => new THREE.Box3(
-    new THREE.Vector3(-R * 1.05, -R * 1.05, -R * 1.05),
-    new THREE.Vector3( R * 1.05,  R * 1.05,  R * 1.05)
-  ), [])
   const dragLocalRay = useMemo(() => new THREE.Ray(), [])
   const dragInvMat = useMemo(() => new THREE.Matrix4(), [])
   const tmpNdc = useMemo(() => new THREE.Vector2(), [])
 
-  // Once heavy elements are fully invisible (p > 0.80) we unmount them so
-  // their useFrame callbacks and GPU draw calls stop entirely.
   const [showHeavy, setShowHeavy] = useState(true)
   const heavyRef = useRef(true)
 
@@ -843,8 +705,6 @@ export default function HeroOrb() {
     const onScroll = () => {
       const max = window.innerHeight
       scrollState.progress = Math.min(1, Math.max(0, window.scrollY / max))
-      // Unmount the expensive sphere elements once they're invisible.
-      // They fade out between p=0 and p=0.78, so there's no visual jump.
       if (heavyRef.current && scrollState.progress > 0.80) {
         heavyRef.current = false
         setShowHeavy(false)
@@ -861,7 +721,6 @@ export default function HeroOrb() {
   useEffect(() => {
     const canvas = gl.domElement
     const onDown = (e) => {
-      const p = scrollState.progress
       const rect = canvas.getBoundingClientRect()
       tmpNdc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1
       tmpNdc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1
@@ -869,10 +728,7 @@ export default function HeroOrb() {
       if (!groupRef.current) return
       dragInvMat.copy(groupRef.current.matrixWorld).invert()
       dragLocalRay.copy(dragRaycaster.ray).applyMatrix4(dragInvMat)
-      const hitsOrb = p > 0.5
-        ? dragLocalRay.intersectsBox(dragLocalBox)
-        : dragLocalRay.intersectsSphere(dragLocalSphere)
-      if (!hitsOrb) return
+      if (!dragLocalRay.intersectsSphere(dragLocalSphere)) return
       e.preventDefault()
       isDragging.current = true
       snappingBack.current = false
@@ -904,7 +760,7 @@ export default function HeroOrb() {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
     }
-  }, [gl, camera, dragRaycaster, dragLocalSphere, dragLocalBox, dragLocalRay, dragInvMat, tmpNdc])
+  }, [gl, camera, dragRaycaster, dragLocalSphere, dragLocalRay, dragInvMat, tmpNdc])
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
