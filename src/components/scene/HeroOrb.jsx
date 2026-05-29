@@ -326,10 +326,10 @@ function _genCommandCube() {
     return Math.min(t, period - t) <= halfTooth ? R_TOOTH : R_BODY
   }
 
-  // Gear outline + crease corners. The corners are the only points whose depth
-  // is connected (the visible 3D edges); the rest of the side wall is left open.
+  // Gear outline + crease corners.
+  // NW=12: side-wall spacing ~0.043 scene units ≤ tiler jitter 0.05 → solid lines.
   const outline2d = [], corners = []
-  const NV = 20, NW = 9, NT = 18
+  const NV = 20, NW = 12, NT = 18
   for (let i = 0; i < N_TEETH; i++) {
     const θc = i * period
     const θv = θc - (period - halfTooth)
@@ -351,26 +351,22 @@ function _genCommandCube() {
       const r = R_TOOTH + (R_BODY-R_TOOTH)*j/NW
       outline2d.push([r*Math.cos(θf), r*Math.sin(θf)])
     }
-    // 4 crease corners of this tooth (base + tip on rising and falling walls)
     corners.push([R_BODY*Math.cos(θr), R_BODY*Math.sin(θr)])
     corners.push([R_TOOTH*Math.cos(θr), R_TOOTH*Math.sin(θr)])
     corners.push([R_TOOTH*Math.cos(θf), R_TOOTH*Math.sin(θf)])
     corners.push([R_BODY*Math.cos(θf), R_BODY*Math.sin(θf)])
   }
 
-  // Front + back outline — EQUAL passes so both gear faces are equally bright
+  // Front + back outline — equal passes so both gear faces are equally bright
   for (let pass = 0; pass < 3; pass++)
     for (const [x, y] of outline2d) addPt(x, y, FZ, 0.004, 0)
   for (let pass = 0; pass < 3; pass++)
     for (const [x, y] of outline2d) addPt(x, y, BZ, 0.004, 0)
 
-  // Connecting EDGES only — bright depth lines at the tooth crease corners,
-  // not the full wall surface. This gives the 3D read with clean edges.
+  // Tooth crease corner depth connectors — give the gear its 3D read
   for (const [x, y] of corners) edgeLine(x, y, 2, 11)
 
-  // Center hole — the two CIRCLES are bright edge lines (like the outer
-  // outline); the cylinder wall between them has NO connector lines, just a
-  // light surface scatter of normal-size orbs.
+  // Center hole circles (bright edge lines) + dim wall scatter
   const HC = 130
   for (let pass = 0; pass < 3; pass++)
     for (let i = 0; i < HC; i++) {
@@ -387,27 +383,19 @@ function _genCommandCube() {
     addPt(R_HOLE*Math.cos(a), R_HOLE*Math.sin(a), FZ - Math.random()*DEPTH, 0.012, 1)
   }
 
-  // Front face fill — densely populate the main surface (normal-size orbs)
-  let f = 0, fa = 0
-  while (f < 2600 && fa++ < 9000) {
-    const x = (Math.random()*2-1)*R_TOOTH*1.01, y = (Math.random()*2-1)*R_TOOTH*1.01
-    const r = Math.sqrt(x*x+y*y)
-    if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
-    addPt(x, y, FZ, 0.020, 1)
-    f++
+  // Grid fill — regular lattice matching Object 03 treatment
+  const inGear = (x, y) => {
+    const r = Math.sqrt(x*x + y*y)
+    return r >= R_HOLE && r <= gearR(Math.atan2(y, x))
   }
+  const gStep = R * 0.065
+  for (let gy = -R_TOOTH; gy <= R_TOOTH + 0.001; gy += gStep)
+    for (let gx = -R_TOOTH; gx <= R_TOOTH + 0.001; gx += gStep)
+      if (inGear(gx, gy)) addPt(gx, gy, FZ, 0.007, 1)
+  for (let gy = -R_TOOTH; gy <= R_TOOTH + 0.001; gy += gStep * 1.6)
+    for (let gx = -R_TOOTH; gx <= R_TOOTH + 0.001; gx += gStep * 1.6)
+      if (inGear(gx, gy)) addPt(gx, gy, BZ, 0.007, 1)
 
-  // Light back-face fill so the gear reads solid from its visible far edge
-  let b = 0, ba = 0
-  while (b < 500 && ba++ < 2000) {
-    const x = (Math.random()*2-1)*R_TOOTH*1.01, y = (Math.random()*2-1)*R_TOOTH*1.01
-    const r = Math.sqrt(x*x+y*y)
-    if (r < R_HOLE || r > gearR(Math.atan2(y, x))) continue
-    addPt(x, y, BZ, 0.020, 1)
-    b++
-  }
-
-  // Face normal (local) for hover — the card's flat surface plane orientation
   const out = _padToBigTagged(pts, tags, N_ORB)
   out.normal = tilt(0, 0, 1)
   return out
