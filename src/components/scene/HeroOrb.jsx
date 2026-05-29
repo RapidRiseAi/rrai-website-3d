@@ -513,7 +513,7 @@ function _genWorkflowPath() {
     [ R*0.65,  R*0.76, -R*0.03],
   ]
   const cR = R * 0.20   // sphere core radius
-  const aR = R * 0.38   // orbital arc radius — noticeably larger than core for clean separation
+  const aR = R * 0.40   // orbital arc radius — noticeably larger than core for clean separation
 
   const addPt = (x, y, z, jit, tag) => {
     pts.push(x+(Math.random()-.5)*jit, y+(Math.random()-.5)*jit, z+(Math.random()-.5)*jit)
@@ -543,11 +543,13 @@ function _genWorkflowPath() {
         addPt(nx+Math.cos(fa)*fr*r, ny+fy*r, nz+Math.sin(fa)*fr*r, 0.010, 0)
       }
 
-    // 2 orbital arcs — near-equatorial and near-meridional planes (gyroscope look).
-    // span=1.15π ≈ 207° leaves a clear 153° gap so each arc reads as a distinct C-shape,
-    // not a nearly-closed loop. nPts=50 gives spacing 0.040 ≤ 0.05 → solid lines.
-    drawArc(nx,ny,nz, aR,  0.25, 0.05, 0.45, Math.PI*1.15, 50, 3, 0)  // near-equatorial
-    drawArc(nx,ny,nz, aR,  1.48, 0.52, 0.65, Math.PI*1.15, 50, 3, 0)  // near-meridional ⊥
+    // 2 orbital arcs — gap faces the path direction (upper-right, ~49° from X = 2.19 rad
+    // offset). startA=2.19 places endpoints at ~126° and ~333°, neither near 49°, so the
+    // arc body sweeps LEFT/DOWN/RIGHT of the sphere instead of along the diagonal.
+    // Arc 1: face-on (tX=0.30, tZ=0) — large C-shape visible from front
+    // Arc 2: tZ=2.43 rotates v1 to 140° (⊥ to path) so it looks clearly different
+    drawArc(nx,ny,nz, aR,  0.30, 0.00, 2.19, Math.PI*1.15, 52, 3, 0)
+    drawArc(nx,ny,nz, aR,  0.70, 2.43, 2.19, Math.PI*1.15, 52, 3, 0)
   }
 
   // Connection paths n0→n1 and n1→n2 — solid lines, tag 0
