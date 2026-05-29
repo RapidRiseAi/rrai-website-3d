@@ -427,15 +427,14 @@ function _genCodeBlock() {
   const LIFT  = R * 0.20
   const SFZ   = FZ + LIFT
 
-  // Symbol: large bold </>, path-based so < and > apexes get exactly one
-  // depth connector pair (not two), and end-caps only at outer vertices.
-  const sHW  = R * 0.080
+  // Single-centerline </> — no stroke width so corner/overlap artifacts impossible.
+  // Each arm is one bright line of orbs. The V-shape of < and > reads cleanly.
   const ix   = R * 0.10, cw = R * 0.58, ch = R * 0.54
   const sltX = R * 0.075
   const glyphPaths = [
-    [[-ix,  ch], [-ix-cw, 0], [-ix, -ch]],
-    [[ ix,  ch], [ ix+cw, 0], [ ix, -ch]],
-    [[-sltX, -ch], [sltX, ch]],
+    [[-ix,  ch], [-ix-cw, 0], [-ix, -ch]],  // <
+    [[ ix,  ch], [ ix+cw, 0], [ ix, -ch]],  // >
+    [[-sltX, -ch], [sltX, ch]],             // /
   ]
 
   const TY = Math.PI * 0.15, TX = Math.PI * 0.05
@@ -452,11 +451,12 @@ function _genCodeBlock() {
   }
   const vline = (x, y, z0, z1, passes, n) => {
     for (let p = 0; p < passes; p++)
-      for (let k = 0; k <= n; k++) addPt(x, y, z0+(z1-z0)*k/n, 0.002, 0)
+      for (let k = 0; k <= n; k++) addPt(x, y, z0+(z1-z0)*k/n, 0.003, 0)
   }
 
-  // Slab perimeter
-  const nS = 26, nA = 13
+  // Dense perimeter — nS=60 gives adjacent points ~0.048R apart so tiler
+  // jitter (±0.025) fills gaps and the outline reads as a solid line.
+  const nS = 60, nA = 12
   const peri = []
   const ap = (x, y) => peri.push([x, y])
   for (let i=0; i<nS; i++) { const t=i/nS; ap(-HW+CR+t*(2*HW-2*CR), HH) }
@@ -468,12 +468,10 @@ function _genCodeBlock() {
   for (let i=1; i<nS; i++) { const t=i/nS; ap(-HW, -(HH-CR)+t*(2*HH-2*CR)) }
   for (let i=0; i<=nA; i++) { const a=Math.PI-Math.PI/2*i/nA; ap(-(HW-CR)+Math.cos(a)*CR, (HH-CR)+Math.sin(a)*CR) }
 
-  for (let pass=0; pass<3; pass++) for (const [x,y] of peri) addPt(x, y, FZ, 0.002, 0)
-  for (let pass=0; pass<3; pass++) for (const [x,y] of peri) addPt(x, y, BZ, 0.002, 0)
+  for (let pass=0; pass<3; pass++) for (const [x,y] of peri) addPt(x, y, FZ, 0.003, 0)
+  for (let pass=0; pass<3; pass++) for (const [x,y] of peri) addPt(x, y, BZ, 0.003, 0)
 
-  // NO depth connectors: no beveled-corner blobs, no mid-edge lines.
-  // Two offset rounded-rect outlines + side scatter give a clean 3D read.
-
+  // Side wall scatter — dim, no bright lines
   for (let i=0; i<280; i++) {
     const [x,y] = peri[Math.floor(Math.random()*peri.length)]
     addPt(x, y, FZ-Math.random()*DEPTH, 0.015, 1)
@@ -485,7 +483,6 @@ function _genCodeBlock() {
     if (ax<=HW-CR||ay<=HH-CR) return true
     return (ax-(HW-CR))**2+(ay-(HH-CR))**2<=CR*CR
   }
-  // Grid fills — regular pattern like the hero object
   const gStep = R * 0.065
   for (let gy=-HH; gy<=HH+0.001; gy+=gStep)
     for (let gx=-HW; gx<=HW+0.001; gx+=gStep)
@@ -494,60 +491,27 @@ function _genCodeBlock() {
     for (let gx=-HW; gx<=HW+0.001; gx+=gStep*1.6)
       if (inRR(gx, gy)) addPt(gx, gy, BZ, 0.007, 1)
 
-  // Raised symbol: each segment gets a tight orb-line at FZ (base edge) and
-  // SFZ (top edge). End caps only at path outer vertices. Depth connectors
-  // at outer vertices only — shared < and > apexes get zero connectors.
+  // Raised symbol: single-centerline approach.
+  // Each vertex gets a depth vline (FZ→SFZ). Each segment gets a dense line
+  // at SFZ (top, 5 passes = bright) and at FZ (base edge, 3 passes).
+  // No stroke-width math = no corner crossing or cap-overlap artifacts.
   for (const path of glyphPaths) {
+    // Depth connectors at every path vertex
+    for (const [vx, vy] of path) vline(vx, vy, FZ, SFZ, 2, 10)
     for (let s=0; s<path.length-1; s++) {
       const [ax,ay] = path[s], [bx,by] = path[s+1]
       const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)
-      const nx=-dy/L, ny=dx/L
-      const n = Math.round(L/(R*0.024))  // dense: orbs appear as solid line
-      const isFirst = s === 0
-      const isLast  = s === path.length-2
-      const emitLine = (z) => {
-        for (let pass=0; pass<3; pass++) {
-          for (let k=0; k<=n; k++) {
-            const t=k/n, px=ax+dx*t, py=ay+dy*t
-            addPt(px+nx*sHW, py+ny*sHW, z, 0.001, 0)
-            addPt(px-nx*sHW, py-ny*sHW, z, 0.001, 0)
-          }
-          if (isFirst)
-            for (let k=0; k<=6; k++) { const s2=sHW*(2*k/6-1); addPt(ax+nx*s2,ay+ny*s2,z,0.001,0) }
-          if (isLast)
-            for (let k=0; k<=6; k++) { const s2=sHW*(2*k/6-1); addPt(bx+nx*s2,by+ny*s2,z,0.001,0) }
-        }
-      }
-      emitLine(FZ)   // base edge at slab surface
-      emitLine(SFZ)  // top edge of raised symbol
-      // Grid fill on symbol top face
-      const fStep=R*0.068, nFL=Math.round(L/fStep), nFW=Math.max(1,Math.round(2*sHW/fStep))
-      for (let k=0; k<=nFL; k++) {
-        const t=k/nFL, px=ax+dx*t, py=ay+dy*t
-        for (let j=0; j<=nFW; j++) {
-          addPt(px+nx*sHW*(2*j/nFW-1)*0.85, py+ny*sHW*(2*j/nFW-1)*0.85, SFZ, 0.009, 1)
-        }
-      }
+      const n = Math.round(L/(R*0.024))
+      // Top line at SFZ — 5 passes gives a bold bright raised line
+      for (let pass=0; pass<5; pass++)
+        for (let k=0; k<=n; k++) { const t=k/n; addPt(ax+dx*t, ay+dy*t, SFZ, 0.003, 0) }
+      // Base line at FZ — 3 passes (edge where symbol roots into slab surface)
+      for (let pass=0; pass<3; pass++)
+        for (let k=0; k<=n; k++) { const t=k/n; addPt(ax+dx*t, ay+dy*t, FZ, 0.003, 0) }
     }
   }
 
-  // Depth connectors at 6 outer glyph vertices only (no apex doubling)
-  const L1    = Math.hypot(cw, ch)
-  const slashL = 2 * Math.hypot(sltX, ch)
-  const outerVerts = [
-    [-ix,   ch,  ch/L1, -cw/L1],
-    [-ix,  -ch,  ch/L1,  cw/L1],
-    [ ix,   ch,  ch/L1,  cw/L1],
-    [ ix,  -ch,  ch/L1, -cw/L1],
-    [-sltX, -ch, -2*ch/slashL, 2*sltX/slashL],
-    [ sltX,  ch, -2*ch/slashL, 2*sltX/slashL],
-  ]
-  for (const [ex,ey,enx,eny] of outerVerts) {
-    vline(ex+enx*sHW, ey+eny*sHW, FZ, SFZ, 2, 10)
-    vline(ex-enx*sHW, ey-eny*sHW, FZ, SFZ, 2, 10)
-  }
-
-  const out = _padToBigTagged(pts, tags, N_ORB, 0.012)
+  const out = _padToBigTagged(pts, tags, N_ORB)  // default tileJit=0.05
   out.normal = tilt(0, 0, 1)
   return out
 }
@@ -1371,9 +1335,26 @@ function IconPlane({ center, texIndex }) {
   )
 }
 
+const glowTexture = (() => {
+  const size = 256
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2)
+  grad.addColorStop(0,   'rgba(120,160,255,0.55)')
+  grad.addColorStop(0.3, 'rgba(80,120,220,0.22)')
+  grad.addColorStop(0.6, 'rgba(40, 80,180,0.08)')
+  grad.addColorStop(1,   'rgba(0,  0,  0, 0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  const tex = new THREE.CanvasTexture(canvas)
+  return tex
+})()
+
 export default function HeroOrb() {
   const { gl, camera } = useThree()
   const groupRef = useRef()
+  const glowRef = useRef()
   const isDragging = useRef(false)
   const snappingBack = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
@@ -1447,7 +1428,7 @@ export default function HeroOrb() {
     }
   }, [gl, camera, dragRaycaster, dragLocalSphere, dragLocalRay, dragInvMat, tmpNdc])
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return
     const p = scrollState.progress
     const targetX = ORB_X + (END_X - ORB_X) * p
@@ -1463,6 +1444,10 @@ export default function HeroOrb() {
     if (isDragging.current) return
     if (p < 0.85 || carouselState.activeCard === 0) {
       groupRef.current.rotation.y += delta * 0.044
+    } else {
+      const t = state.clock.getElapsedTime()
+      const oscTarget = Math.sin(t * 0.32) * 0.22
+      groupRef.current.rotation.y += (oscTarget - groupRef.current.rotation.y) * Math.min(1, delta * 1.5)
     }
     if (snappingBack.current) {
       const rot = groupRef.current.rotation
@@ -1473,10 +1458,17 @@ export default function HeroOrb() {
         snappingBack.current = false
       }
     }
+    if (glowRef.current) {
+      const targetOpacity = p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0
+      glowRef.current.material.opacity += (targetOpacity - glowRef.current.material.opacity) * Math.min(1, delta * 4)
+    }
   })
 
   return (
     <group ref={groupRef} position={[ORB_X, ORB_Y, 0]}>
+      <sprite ref={glowRef} renderOrder={0} scale={[R * 5.5, R * 5.5, 1]} position={[0, 0, -0.5]}>
+        <spriteMaterial map={glowTexture} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0} />
+      </sprite>
       <DepthOccluder />
       <InteractiveMiniOrbs groupRef={groupRef} />
       {showHeavy && <SoccerGridParticles />}
