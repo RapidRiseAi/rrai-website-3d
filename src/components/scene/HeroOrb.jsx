@@ -506,23 +506,19 @@ function _genCodeBlock() {
 function _genWorkflowPath() {
   const pts = [], tags = []
 
-  // Three process nodes on a lower-left → upper-right diagonal. Center node is the
-  // dominant logic hub: larger sphere and wider ring system than the outer two.
+  // Three process nodes on a lower-left → upper-right diagonal.
+  // r2 = outer concentric ring (1.50× iR), oR = bracket arc radius.
   const nodeParams = [
-    { pos: [-R*0.62, -R*0.72,  R*0.05], cR: R*0.130, iR: R*0.215, oR: R*0.385, N: 100 },
-    { pos: [ R*0.01,  R*0.02,  R*0.07], cR: R*0.170, iR: R*0.280, oR: R*0.495, N: 140 },
-    { pos: [ R*0.64,  R*0.74, -R*0.04], cR: R*0.130, iR: R*0.215, oR: R*0.385, N: 100 },
+    { pos: [-R*0.62, -R*0.72,  R*0.05], cR: R*0.112, iR: R*0.225, r2: R*0.338, oR: R*0.430, N: 78 },
+    { pos: [ R*0.01,  R*0.02,  R*0.07], cR: R*0.148, iR: R*0.295, r2: R*0.443, oR: R*0.540, N: 104 },
+    { pos: [ R*0.64,  R*0.74, -R*0.04], cR: R*0.112, iR: R*0.225, r2: R*0.338, oR: R*0.430, N: 78 },
   ]
 
-  // tag 1 = small crisp orb (half size under edge-boost) — used for spheres/rings/route
-  // tag 0 = large bright orb (2× under edge-boost) — reserved for signal beads + cores
   const addPt = (x, y, z, jit, tag) => {
     pts.push(x+(Math.random()-.5)*jit, y+(Math.random()-.5)*jit, z+(Math.random()-.5)*jit)
     tags.push(tag)
   }
 
-  // Ring/arc: local circle radius r, tilted tX about X then tZ about Z. nPts auto-set so
-  // point spacing ≤ `space` keeps the line solid after tiler jitter.
   const drawArc = (cx, cy, cz, r, tX, tZ, a0, span, passes, tag, jit=0.0035, space=0.025) => {
     const nPts = Math.max(Math.ceil(r * Math.abs(span) / space), 12)
     const cX=Math.cos(tX), sX=Math.sin(tX), cZ=Math.cos(tZ), sZ=Math.sin(tZ)
@@ -536,51 +532,49 @@ function _genWorkflowPath() {
       }
   }
 
-  for (const { pos: [nx, ny, nz], cR, iR, oR, N } of nodeParams) {
+  for (const { pos: [nx, ny, nz], cR, iR, r2, oR, N } of nodeParams) {
     const gold = Math.PI*(3-Math.sqrt(5))
 
-    // Sphere — tag-0 (bright 2× orbs) on outer shell so it reads as a glowing orb.
-    // Dense fibonacci surface shell (5 passes, tight radius) for a smooth bright orb.
-    for (let p=0; p<5; p++)
+    // Sphere: 3-pass fibonacci shell (tag-0 bright). Reduced from 5 to prevent bloom
+    // overexposure — 3 passes still gives a solid, clearly round glowing orb.
+    for (let p=0; p<3; p++)
       for (let i=0; i<N; i++) {
         const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
-        const rr=cR*(0.96+Math.random()*0.04)
+        const rr=cR*(0.95+Math.random()*0.05)
         addPt(nx+Math.cos(fa)*fr*rr, ny+fy*rr, nz+Math.sin(fa)*fr*rr, 0.003, 0)
       }
-    // Interior volume fill — tag-1 (smaller) fills the body so it isn't a hollow shell.
-    const nI = Math.floor(N*0.70)
+    const nI = Math.floor(N*0.55)
     for (let i=0; i<nI; i++) {
       const fy=1-(i/(nI-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i*1.7
-      const rr=cR*Math.cbrt(Math.random())*0.85
+      const rr=cR*Math.cbrt(Math.random())*0.82
       addPt(nx+Math.cos(fa)*fr*rr, ny+fy*rr, nz+Math.sin(fa)*fr*rr, 0.005, 1)
     }
 
-    // Inner orbital ring — tilted gyroscope ring (tX=0.82 → h/w ≈ 0.68 ellipse).
-    // Reads clearly as a 3D orbital ring, NOT a flat disc.
-    drawArc(nx,ny,nz, iR, 0.82, 0.12, 0, Math.PI*2, 4, 1)
+    // Ring 1 (inner) — tX=0.92 gives h/w≈0.60 from our front camera, matching the
+    // mockup's flat-disc rings as seen from its elevated camera angle.
+    drawArc(nx,ny,nz, iR, 0.92, 0.12, 0, Math.PI*2, 3, 1)
+    // Ring 2 (outer concentric) — same tilt plane, 1.50× inner radius.
+    drawArc(nx,ny,nz, r2, 0.92, 0.12, 0, Math.PI*2, 2, 1)
 
-    // Outer bracket arcs — two near-upright ( ) arcs at tX=0.45 (h/w≈0.90).
-    // span=0.68π (122°) each, centred at left and right, with clear top/bottom gaps.
-    drawArc(nx,ny,nz, oR, 0.45, 0.0, -Math.PI*0.34, Math.PI*0.68, 3, 1) // right
-    drawArc(nx,ny,nz, oR, 0.45, 0.0,  Math.PI*0.66, Math.PI*0.68, 3, 1) // left
+    // Bracket arcs — near-vertical plane (tX=0.28, h/w≈0.96), two C-arcs opening
+    // left and right, span=0.62π (112°) each with clear gaps at top/bottom.
+    drawArc(nx,ny,nz, oR, 0.28, 0.0, -Math.PI*0.31, Math.PI*0.62, 2, 1)  // right )
+    drawArc(nx,ny,nz, oR, 0.28, 0.0,  Math.PI*0.69, Math.PI*0.62, 2, 1)  // left (
   }
 
-  // Connection route — one bright continuous line through all three node centres.
   const [x0,y0,z0]=nodeParams[0].pos, [x1,y1,z1]=nodeParams[1].pos, [x2,y2,z2]=nodeParams[2].pos
   const segLine = (ax,ay,az, bx,by,bz) => {
     const n = Math.max(Math.ceil(Math.hypot(bx-ax,by-ay,bz-az)/0.016), 24)
-    for (let p=0; p<6; p++)
+    for (let p=0; p<5; p++)
       for (let i=0; i<=n; i++) { const t=i/n
         addPt(ax+(bx-ax)*t, ay+(by-ay)*t, az+(bz-az)*t, 0.0025, 1) }
   }
   segLine(x0,y0,z0, x1,y1,z1)
   segLine(x1,y1,z1, x2,y2,z2)
 
-  // Signal beads — bright (tag 0) points suggesting data moving through the workflow,
-  // 3 per segment at quarter intervals.
   const beads = (ax,ay,az, bx,by,bz) => {
     for (let k=1; k<=3; k++) { const t=k/4
-      for (let p=0; p<6; p++) addPt(ax+(bx-ax)*t, ay+(by-ay)*t, az+(bz-az)*t, 0.011, 0) }
+      for (let p=0; p<5; p++) addPt(ax+(bx-ax)*t, ay+(by-ay)*t, az+(bz-az)*t, 0.011, 0) }
   }
   beads(x0,y0,z0, x1,y1,z1)
   beads(x1,y1,z1, x2,y2,z2)
