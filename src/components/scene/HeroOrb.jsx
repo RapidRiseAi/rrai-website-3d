@@ -513,7 +513,7 @@ function _genWorkflowPath() {
     [ R*0.65,  R*0.76, -R*0.03],
   ]
   const cR = R * 0.20   // sphere core radius
-  const aR = R * 0.33   // orbital arc radius
+  const aR = R * 0.38   // orbital arc radius — noticeably larger than core for clean separation
 
   const addPt = (x, y, z, jit, tag) => {
     pts.push(x+(Math.random()-.5)*jit, y+(Math.random()-.5)*jit, z+(Math.random()-.5)*jit)
@@ -534,22 +534,23 @@ function _genWorkflowPath() {
   }
 
   for (const [nx, ny, nz] of nodes) {
-    // Dense fibonacci sphere core — tag 1 (surface, dim fill)
-    const N=90, gold=Math.PI*(3-Math.sqrt(5))
-    for (let i=0; i<N; i++) {
-      const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
-      const r=cR*(0.85+Math.random()*0.15)
-      addPt(nx+Math.cos(fa)*fr*r, ny+fy*r, nz+Math.sin(fa)*fr*r, 0.012, 1)
-    }
+    // Glowing sphere core — dense fibonacci shell, tag 0 so edge-boost makes it glow
+    const N=120, gold=Math.PI*(3-Math.sqrt(5))
+    for (let pass=0; pass<3; pass++)
+      for (let i=0; i<N; i++) {
+        const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
+        const r=cR*(0.88+Math.random()*0.12)
+        addPt(nx+Math.cos(fa)*fr*r, ny+fy*r, nz+Math.sin(fa)*fr*r, 0.010, 0)
+      }
 
-    // 3 orbital arc segments per node at distinct tilt angles — tag 0 (bright)
-    // nPts sized so spacing ≤ 0.05 (tiler jitter fills gaps → solid lines)
-    drawArc(nx,ny,nz, aR,  0.28,  0.08, 0.22, Math.PI*1.75, 62, 3, 0)  // near-equatorial
-    drawArc(nx,ny,nz, aR,  1.10,  0.40, 0.35, Math.PI*1.60, 56, 3, 0)  // steeply tilted
-    drawArc(nx,ny,nz, aR, -0.40,  0.88, 0.28, Math.PI*1.65, 60, 3, 0)  // perpendicular
+    // 2 orbital arcs — near-equatorial and near-meridional planes (gyroscope look).
+    // span=1.15π ≈ 207° leaves a clear 153° gap so each arc reads as a distinct C-shape,
+    // not a nearly-closed loop. nPts=50 gives spacing 0.040 ≤ 0.05 → solid lines.
+    drawArc(nx,ny,nz, aR,  0.25, 0.05, 0.45, Math.PI*1.15, 50, 3, 0)  // near-equatorial
+    drawArc(nx,ny,nz, aR,  1.48, 0.52, 0.65, Math.PI*1.15, 50, 3, 0)  // near-meridional ⊥
   }
 
-  // Straight connection lines n0→n1 and n1→n2 — dense path, tag 0
+  // Connection paths n0→n1 and n1→n2 — solid lines, tag 0
   const [x0,y0,z0]=nodes[0], [x1,y1,z1]=nodes[1], [x2,y2,z2]=nodes[2]
   const nPath = 48
   for (let pass=0; pass<2; pass++) {
@@ -560,12 +561,12 @@ function _genWorkflowPath() {
     }
   }
 
-  // Waypoint beads — bright concentrated clusters evenly spaced along each segment
-  for (let i=1; i<=6; i++) {
-    const t=i/7
+  // Waypoint beads — 5 bright dots per segment, evenly spaced
+  for (let i=1; i<=5; i++) {
+    const t=i/6
     for (let pass=0; pass<5; pass++) {
-      addPt(x0+(x1-x0)*t, y0+(y1-y0)*t, z0+(z1-z0)*t, 0.018, 0)
-      addPt(x1+(x2-x1)*t, y1+(y2-y1)*t, z1+(z2-z1)*t, 0.018, 0)
+      addPt(x0+(x1-x0)*t, y0+(y1-y0)*t, z0+(z1-z0)*t, 0.016, 0)
+      addPt(x1+(x2-x1)*t, y1+(y2-y1)*t, z1+(z2-z1)*t, 0.016, 0)
     }
   }
 
