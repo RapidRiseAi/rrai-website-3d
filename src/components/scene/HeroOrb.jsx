@@ -555,17 +555,14 @@ function _genWorkflowPath() {
       addPt(nx+Math.cos(fa)*fr*rr, ny+fy*rr, nz+Math.sin(fa)*fr*rr, 0.005, 1)
     }
 
-    // Inner ring — FLAT horizontal disc (Saturn-style) cutting through the equator.
-    // tX=1.22: h/w = cos(1.22) = 0.34 — a clearly flat disc, not an upright circle.
-    // iR ≈ 1.65× cR so the disc extends out past the sphere on both sides.
-    // tZ=0.10 tilts the major axis to follow the diagonal. Full loop, dense.
-    drawArc(nx,ny,nz, iR, 1.22, 0.10, 0, Math.PI*2, 4, 1)
+    // Inner orbital ring — tilted gyroscope ring (tX=0.82 → h/w ≈ 0.68 ellipse).
+    // Reads clearly as a 3D orbital ring, NOT a flat disc.
+    drawArc(nx,ny,nz, iR, 0.82, 0.12, 0, Math.PI*2, 4, 1)
 
-    // Outer halo — two UPRIGHT bracket arcs on a near-vertical plane (tX=0.52, so the
-    // arcs are clearly more upright than the flat inner disc → strong 3D layering).
-    // span=0.66π (119°) each, centred LEFT (180°) and RIGHT (0°), gaps ~61° top/bottom.
-    drawArc(nx,ny,nz, oR, 0.52, 0.0, -Math.PI*0.33, Math.PI*0.66, 3, 1) // right
-    drawArc(nx,ny,nz, oR, 0.52, 0.0,  Math.PI*0.67, Math.PI*0.66, 3, 1) // left
+    // Outer bracket arcs — two near-upright ( ) arcs at tX=0.45 (h/w≈0.90).
+    // span=0.68π (122°) each, centred at left and right, with clear top/bottom gaps.
+    drawArc(nx,ny,nz, oR, 0.45, 0.0, -Math.PI*0.34, Math.PI*0.68, 3, 1) // right
+    drawArc(nx,ny,nz, oR, 0.45, 0.0,  Math.PI*0.66, Math.PI*0.68, 3, 1) // left
   }
 
   // Connection route — one bright continuous line through all three node centres.
