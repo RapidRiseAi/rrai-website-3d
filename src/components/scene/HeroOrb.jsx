@@ -504,95 +504,55 @@ function _genCodeBlock() {
   return out
 }
 function _genWorkflowPath() {
-  // Premium 3D clock built from orbs — time symbol for Workflow Automation.
-  // Outer torus ring (with real tube thickness) + thin inner bezel ring + center
-  // hub + two tapered hands at a 10:10 luxury angle + four minimal markers.
-  // The whole form is tilted into a subtle 3/4 perspective so depth reads.
+  // Premium sparkle cluster: three 4-pointed sparkles (large / medium / small).
+  // Silhouette = 3D-puffed astroid  x = Rs·sin³t, y = Rs·cos³t.
   const pts = [], tags = []
 
-  // Overall scale — sized so the clock's diameter matches the neighbouring
-  // Object 03 (code block, ~1.84R tall) rather than reading much smaller.
-  const S = 1.4
-
-  // 3/4 tilt: rotate about Y then X so the disc shows depth, hands lift off the face.
-  const ax = 0.34, ay = 0.20
-  const cax = Math.cos(ax), sax = Math.sin(ax), cay = Math.cos(ay), say = Math.sin(ay)
+  const ax = 0.12, ay = 0.10
+  const cax=Math.cos(ax), sax=Math.sin(ax), cay=Math.cos(ay), say=Math.sin(ay)
   const addPt = (x, y, z, jit, tag) => {
-    x += (Math.random()-.5)*jit; y += (Math.random()-.5)*jit; z += (Math.random()-.5)*jit
-    const x1 = x*cay + z*say, z1 = -x*say + z*cay
-    const y2 = y*cax - z1*sax, z2 = y*sax + z1*cax
-    pts.push(x1, y2, z2); tags.push(tag)
+    x+=(Math.random()-.5)*jit; y+=(Math.random()-.5)*jit; z+=(Math.random()-.5)*jit
+    const x1=x*cay+z*say, z1=-x*say+z*cay
+    pts.push(x1, y*cax-z1*sax, y*sax+z1*cax); tags.push(tag)
   }
 
-  // Solid orb sphere: bright shell (tag-0) + light interior fill (tag-1).
-  const addSphere = (cx, cy, cz, r, N, passes, shellTag=0) => {
-    const gold = Math.PI*(3-Math.sqrt(5))
-    for (let p=0; p<passes; p++)
-      for (let i=0; i<N; i++) {
-        const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
-        const rr=r*(0.92+Math.random()*0.08)
-        addPt(cx+Math.cos(fa)*fr*rr, cy+fy*rr, cz+Math.sin(fa)*fr*rr, 0.006, shellTag)
+  const drawSparkle = (cx, cy, cz, Rs, d) => {
+    const Rs23 = Math.pow(Rs, 2/3)
+    const nE = Math.max(Math.round(Rs * 168), 42)
+
+    // Bright outer edge (tag-0): front rim (3 passes), back rim, two side bands
+    for (let pass = 0; pass < 3; pass++)
+      for (let i = 0; i < nE; i++) {
+        const t = (i/nE + pass/(3*nE)) * Math.PI*2
+        const st=Math.sin(t), ct=Math.cos(t)
+        addPt(cx+Rs*st*st*st, cy+Rs*ct*ct*ct, cz+d*0.44, 0.006, 0)
       }
-    const nI=Math.floor(N*0.5)
-    for (let i=0; i<nI; i++) {
-      const fy=1-(i/(nI-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i*1.7
-      const rr=r*Math.cbrt(Math.random())*0.8
-      addPt(cx+Math.cos(fa)*fr*rr, cy+fy*rr, cz+Math.sin(fa)*fr*rr, 0.006, 1)
+    for (let i = 0; i < nE; i++) {
+      const t = (i/nE)*Math.PI*2
+      const ex=Rs*Math.sin(t)*Math.sin(t)*Math.sin(t)
+      const ey=Rs*Math.cos(t)*Math.cos(t)*Math.cos(t)
+      addPt(cx+ex, cy+ey, cz-d*0.20, 0.006, 0)  // back rim
+      addPt(cx+ex, cy+ey, cz+d*0.10, 0.006, 0)  // mid side
+      addPt(cx+ex, cy+ey, cz+d*0.28, 0.006, 0)  // near-front side
     }
-  }
 
-  // Torus ring: major circle radius Rmaj, tube thickness tubeR. Outward-facing
-  // cross-section orbs are tag-0 (bright crisp rim), inner-facing are tag-1.
-  const addTorus = (Rmaj, tubeR, Nmaj, Nmin, brightOuter=true) => {
-    for (let i=0; i<Nmaj; i++) {
-      const a=(i/Nmaj)*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a)
-      for (let j=0; j<Nmin; j++) {
-        const b=(j/Nmin)*Math.PI*2
-        const rr=tubeR*(0.9+Math.random()*0.1)
-        const R0=Rmaj+Math.cos(b)*rr
-        const tag = brightOuter ? (Math.cos(b)>0.15 ? 0 : 1) : 1
-        addPt(ca*R0, sa*R0, Math.sin(b)*rr, 0.005, tag)
+    // Interior fill (tag-1): jittered grid, z follows dome profile
+    const step = Rs * 0.066
+    for (let gx = -Rs; gx <= Rs+0.001; gx += step)
+      for (let gy = -Rs; gy <= Rs+0.001; gy += step) {
+        const jx = gx + (Math.random()-.5)*step*0.55
+        const jy = gy + (Math.random()-.5)*step*0.55
+        const v = Math.pow(Math.abs(jx), 2/3) + Math.pow(Math.abs(jy), 2/3)
+        if (v <= Rs23*0.96) {
+          const zF = cz + d*Math.sqrt(Math.max(0, 1-v/Rs23))*0.72
+          addPt(cx+jx, cy+jy, zF, 0.010, 1)
+        }
       }
-    }
   }
 
-  // Tapered hand: volumetric tube from hub outward, lifted above the face in +z.
-  const drawHand = (ang, len, w0, w1, zLift) => {
-    const dx=Math.cos(ang), dy=Math.sin(ang)
-    const px=-dy, py=dx  // perpendicular in face plane
-    const nSeg=Math.max(Math.ceil(len/0.011), 14)
-    for (let s=0; s<=nSeg; s++) {
-      const t=s/nSeg
-      const cx=dx*len*t, cy=dy*len*t
-      const w=w0+(w1-w0)*t
-      const ringN=8
-      for (let k=0; k<ringN; k++) {
-        const b=(k/ringN)*Math.PI*2
-        const rr=w*(0.82+Math.random()*0.18)
-        addPt(cx+Math.cos(b)*rr*px, cy+Math.cos(b)*rr*py, zLift+Math.sin(b)*rr, 0.005, 0)
-      }
-    }
-  }
-
-  // Outer frame — substantial bright torus (the dominant, most readable silhouette).
-  addTorus(R*0.60*S, R*0.055*S, 240, 14, true)
-  // Inner bezel — thin subtle ring for the premium watch-face feel.
-  addTorus(R*0.485*S, R*0.018*S, 210, 7, false)
-
-  // Center hub — small dense bright orb, anchor of the hands.
-  addSphere(0, 0, R*0.055*S, R*0.062*S, 70, 3, 0)
-
-  // Two hands at a 10:10 luxury display angle (12 o'clock = +Y / 90°).
-  // Hour (short) → 10 o'clock = 150°; minute (long) → 2 o'clock = 30°.
-  // Minute hand lifted slightly higher so it layers above the hour hand.
-  drawHand(Math.PI*5/6, R*0.34*S, R*0.034*S, R*0.015*S, R*0.050*S)  // hour, 10 o'clock
-  drawHand(Math.PI/6,   R*0.46*S, R*0.030*S, R*0.012*S, R*0.075*S)  // minute, 2 o'clock
-
-  // Four minimal markers at 12 / 3 / 6 / 9.
-  const mR=R*0.475*S
-  for (const ma of [Math.PI/2, 0, -Math.PI/2, Math.PI]) {
-    addSphere(Math.cos(ma)*mR, Math.sin(ma)*mR, R*0.02*S, R*0.034*S, 30, 2, 0)
-  }
+  drawSparkle(-R*0.18,  0,       0,   R*0.55, R*0.17)  // large (slightly left)
+  drawSparkle( R*0.50,  R*0.37,  0,   R*0.30, R*0.09)  // medium (upper-right)
+  drawSparkle( R*0.47, -R*0.33,  0,   R*0.20, R*0.06)  // small (lower-right)
 
   const out = _padToBigTagged(pts, tags, N_ORB, 0.035)
   out.normal = [0, 0, 1]
