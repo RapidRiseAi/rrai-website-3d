@@ -709,23 +709,87 @@ function _genConnectedCubes() {
   return out
 }
 function _genFunnel() {
-  const pts=[], topW=R*.82, botW=R*.12, topY=R*.70, botY=-R*.68, D=R*.30, H=topY-botY
-  _addLine(pts, -topW,topY,D*.5, -botW,botY,0, 40, 0.038)
-  _addLine(pts,  topW,topY,D*.5,  botW,botY,0, 40, 0.038)
-  _addLine(pts, -topW,topY,D*.5,  topW,topY,D*.5, 52, 0.038)
-  _addLine(pts, -botW,botY,0, botW,botY,0, 12, 0.025)
-  _addLine(pts, -topW*.88,topY*.96,-D*.5, -botW*.88,botY*.96,0, 28, 0.038)
-  _addLine(pts,  topW*.88,topY*.96,-D*.5,  botW*.88,botY*.96,0, 28, 0.038)
-  _addLine(pts, -topW*.88,topY*.96,-D*.5,  topW*.88,topY*.96,-D*.5, 40, 0.038)
-  for (let lv=1; lv<=2; lv++) {
-    const t=lv/3, y=topY-H*t, wl=(topW+(botW-topW)*t)*.80, zl=D*.5*(1-t)
-    _addLine(pts, -wl,y,zl, wl,y,zl, Math.ceil(wl*11), 0.030)
+  // Premium 3D marketing funnel built from orbs — wide elliptical top rim,
+  // tapered cone-of-revolution body, cylindrical output neck, and a short
+  // decreasing vertical stream of leads dropping out the bottom.
+  const pts = [], tags = []
+
+  // Slightly elevated front view: tilt forward about X so the top opening
+  // reads as an ellipse and the inner surface is visible.
+  const ax = 0.42, ay = 0.0
+  const cax=Math.cos(ax), sax=Math.sin(ax), cay=Math.cos(ay), say=Math.sin(ay)
+  const addPt = (x, y, z, jit, tag) => {
+    x+=(Math.random()-.5)*jit; y+=(Math.random()-.5)*jit; z+=(Math.random()-.5)*jit
+    const x1=x*cay+z*say, z1=-x*say+z*cay
+    pts.push(x1, y*cax-z1*sax, y*sax+z1*cax); tags.push(tag)
   }
-  for (let k=0; k<38; k++) {
-    const t=Math.random(), y=topY-H*t, wl=(topW+(botW-topW)*t)*.68, zl=D*.5*(1-t)
-    pts.push((Math.random()-.5)*wl*2, y, (Math.random()-.5)*zl*2+zl*.5)
+
+  const topR = R*0.86   // wide top opening radius
+  const neckR= R*0.13   // output neck radius
+  const topY = R*0.74   // top rim height
+  const coneB= -R*0.36  // where the cone meets the neck
+  const neckB= -R*0.66  // bottom of the neck
+
+  // A horizontal ring of orbs at height y, radius rad. brightRim → all tag-0.
+  const ring = (y, rad, n, jit, brightRim) => {
+    for (let i=0; i<n; i++) {
+      const a=(i/n)*Math.PI*2
+      // front-facing arc (toward camera, sin a < 0 after tilt) reads as silhouette edge
+      const tag = brightRim ? 0 : 1
+      addPt(Math.cos(a)*rad, y, Math.sin(a)*rad, jit, tag)
+    }
   }
-  return _padToBig(pts, N_ORB)
+
+  // ── Top rim — dense, bright, crisp (double pass for a solid luminous lip) ──
+  ring(topY, topR, 200, 0.004, true)
+  ring(topY, topR*0.992, 200, 0.004, true)
+
+  // ── Cone body — stacked rings tapering top→neck. Outer left/right edges and
+  //    the rim of each ring are the crisp silhouette; surface fill is softer. ──
+  const coneRows = 30
+  for (let r=0; r<=coneRows; r++) {
+    const t = r/coneRows
+    const y = topY + (coneB-topY)*t
+    const rad = topR + (neckR-topR)*t
+    const n = Math.max(Math.round(rad*150), 30)
+    for (let i=0; i<n; i++) {
+      const a=(i/n)*Math.PI*2, sa=Math.sin(a)
+      // Side silhouette edges (left/right, |sin a|≈... actually cos a≈±1) stay bright.
+      const ca=Math.cos(a)
+      const tag = (Math.abs(ca) > 0.86) ? 0 : 1   // left & right outer edges crisp
+      addPt(Math.cos(a)*rad, y, sa*rad, 0.006, tag)
+    }
+  }
+
+  // ── Output neck — short cylinder, dense enough to read as a clean channel ──
+  const neckRows = 8
+  for (let r=0; r<=neckRows; r++) {
+    const t=r/neckRows
+    const y=coneB+(neckB-coneB)*t
+    ring(y, neckR, 46, 0.005, r===0 || r===neckRows)  // top & bottom rims brighter
+    if (r!==0 && r!==neckRows) ring(y, neckR, 46, 0.005, false)
+  }
+
+  // ── Output stream — larger glowing orbs decreasing as they fall, centered ──
+  const drops = [
+    [neckB - R*0.16, R*0.060],
+    [neckB - R*0.34, R*0.046],
+    [neckB - R*0.50, R*0.033],
+    [neckB - R*0.63, R*0.022],
+  ]
+  const gold = Math.PI*(3-Math.sqrt(5))
+  for (const [dy, dr] of drops) {
+    const N=64
+    for (let i=0;i<N;i++){
+      const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
+      const rr=dr*(0.9+Math.random()*0.1)
+      addPt(Math.cos(fa)*fr*rr, dy+fy*rr, Math.sin(fa)*fr*rr, 0.004, 0)
+    }
+  }
+
+  const out = _padToBigTagged(pts, tags, N_ORB, 0.035)
+  out.normal = [0, 0, 1]
+  return out
 }
 
 const CARD_GENERATORS = [
@@ -1040,8 +1104,8 @@ function InteractiveMiniOrbs({ groupRef }) {
     const usedCardMorph = p >= 0.38 ? finalCardMorph : 0.0
 
     // Edge-orb size boost applies only to cards that tag edge vs surface (globe,
-    // gear, code block, clock, sparkle, rings). For all other cards uSizeScale stays 1.0 → orbs revert.
-    const usesEdgeBoost = activeRef.current === 0 || activeRef.current === 1 || activeRef.current === 2 || activeRef.current === 3 || activeRef.current === 4 || activeRef.current === 5
+    // gear, code block, clock, sparkle, rings, funnel). For all other cards uSizeScale stays 1.0 → orbs revert.
+    const usesEdgeBoost = activeRef.current === 0 || activeRef.current === 1 || activeRef.current === 2 || activeRef.current === 3 || activeRef.current === 4 || activeRef.current === 5 || activeRef.current === 6
 
     // Always fully opaque — the transform is purely positional, never fades
     material.uniforms.uMorph.value      = collapseT
