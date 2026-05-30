@@ -178,10 +178,14 @@ function getCardAnim(pos, offset) {
 
 /* ── Active card content ────────────────────────────────────────────────────── */
 function ActiveContent({ card }) {
+  const Icon = card.icon
   return (
     <div className="ec-inner ec-inner--active">
 
-      {/* Category only — arrow and title live permanently on the card outside this layer */}
+      {/* Internal atmosphere — faint dotted tech grid + lower-right blue bloom */}
+      <div className="ec-active-atmos" aria-hidden="true" />
+
+      {/* Category — arrow and title live permanently on the card outside this layer */}
       <div className="ec-toprow">
         <motion.span className="ec-category"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.28)}>
@@ -200,39 +204,39 @@ function ActiveContent({ card }) {
         {card.intro}
       </motion.p>
 
-      {/* Flex spacer */}
-      <div className="ec-spacer" />
-
-      {/* Business Value */}
-      <motion.div className="ec-value-block"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.24 }}>
-        <p className="ec-section-label">Business Value</p>
-        <p className="ec-value-text">{card.businessValue}</p>
-      </motion.div>
-
       {/* Divider sweeps from left */}
       <motion.div className="ec-divider" aria-hidden="true"
         initial={{ opacity: 0, scaleX: 0 }} animate={{ opacity: 1, scaleX: 1 }}
         style={{ originX: 0 }}
-        transition={{ duration: 0.36, ease: 'easeOut', delay: 0.30 }} />
+        transition={{ duration: 0.42, ease: 'easeOut', delay: 0.22 }} />
 
-      {/* What We Build — fills remaining space at the bottom */}
+      {/* What We Build — fills the flexible middle so the value panel anchors the base */}
       <motion.div className="ec-cap-block"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.40, ease: [0.22, 1, 0.36, 1], delay: 0.32 }}>
+        transition={{ duration: 0.40, ease: [0.22, 1, 0.36, 1], delay: 0.28 }}>
         <p className="ec-section-label">What We Build</p>
         <ul className="ec-bullets">
           {card.whatWeBuild.map((item, i) => (
             <motion.li key={i}
               initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.28, ease: 'easeOut', delay: 0.36 + i * 0.04 }}>
+              transition={{ duration: 0.28, ease: 'easeOut', delay: 0.32 + i * 0.05 }}>
               {item}
             </motion.li>
           ))}
         </ul>
+      </motion.div>
+
+      {/* Business Value — nested premium inset panel anchoring the lower portion */}
+      <motion.div className="ec-value-panel"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.46, ease: [0.22, 1, 0.36, 1], delay: 0.40 }}>
+        <div className="ec-value-icon" aria-hidden="true"><Icon /></div>
+        <div className="ec-value-body">
+          <p className="ec-section-label">Business Value</p>
+          <p className="ec-value-text">{card.businessValue}</p>
+        </div>
       </motion.div>
 
     </div>
