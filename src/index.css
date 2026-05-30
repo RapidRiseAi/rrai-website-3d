@@ -1155,6 +1155,14 @@ h2 {
   inset: 0;
 }
 
+/* Permanent arrow — sits on the card outside AnimatePresence so it never animates */
+.ec-arrow-btn.ec-arrow-permanent {
+  position: absolute;
+  top: 28px;
+  right: 26px;
+  z-index: 10;
+}
+
 /* ── Shared inner wrapper ─────────────────────────────────────────────────── */
 .ec-inner {
   padding: 26px 24px 22px;

@@ -156,16 +156,17 @@ function computeOffset() {
 const SLIDE_TRANS = { duration: 1.65, ease: [0.22, 1, 0.36, 1] }
 const FADE        = (delay = 0) => ({ duration: 0.38, ease: 'easeOut', delay })
 
-// Direction-aware curtain: dir >= 0 → enter from below/exit top; dir < 0 → enter from above/exit bottom
+// Direction-aware curtain: dir >= 0 → enter from below; dir < 0 → enter from above
+// Exit is always a quick fade so the layoutId title can morph cleanly
 const CURTAIN = {
   initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
-  animate: { y: '0%', transition: { duration: 0.62, ease: [0.22, 1, 0.36, 1] } },
-  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }),
+  animate: { y: '0%', transition: { duration: 0.90, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, transition: { duration: 0.20 } },
 }
 const CURTAIN_PREVIEW = {
   initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
-  animate: { y: '0%', transition: { duration: 0.48, ease: [0.22, 1, 0.36, 1] } },
-  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }),
+  animate: { y: '0%', transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, transition: { duration: 0.16 } },
 }
 
 function getCardAnim(pos, offset) {
@@ -177,26 +178,23 @@ function getCardAnim(pos, offset) {
 }
 
 /* ── Active card content ────────────────────────────────────────────────────── */
-function ActiveContent({ card, onNavigate }) {
+function ActiveContent({ card }) {
   return (
     <div className="ec-inner ec-inner--active">
 
-      {/* Category + arrow — arrow has no entrance animation */}
+      {/* Category only — arrow lives permanently on the card outside this layer */}
       <div className="ec-toprow">
         <motion.span className="ec-category"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.22)}>
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.28)}>
           {card.category}
         </motion.span>
-        <button className="ec-arrow-btn" onClick={onNavigate} aria-label={`Explore ${card.title}`}>
-          <ArrowIcon />
-        </button>
       </div>
 
-      {/* Title — leads the reveal: the curtain lifts from below so the title enters first */}
-      <motion.h3 className="ec-title"
-        initial={{ opacity: 0, y: 22, scale: 0.94 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.56, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}>
+      {/* Title — shared layoutId element: morphs from preview position/size to here */}
+      <motion.h3
+        layoutId={`title-${card.number}`}
+        className="ec-title"
+        transition={{ duration: 0.88, ease: [0.22, 1, 0.36, 1] }}>
         {card.title}
       </motion.h3>
 
@@ -248,21 +246,16 @@ function ActiveContent({ card, onNavigate }) {
 }
 
 /* ── Preview (inactive) card content ───────────────────────────────────────── */
-function PreviewContent({ card, onNavigate }) {
+function PreviewContent({ card }) {
   return (
     <div className="ec-inner ec-inner--preview">
       {/* Bottom-right glow */}
       <div className="ec-preview-glow" aria-hidden="true" />
 
-      {/* Number + arrow */}
+      {/* Number only — arrow lives permanently on the card outside this layer */}
       <motion.div className="ec-toprow"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.05)}>
         <span className="ec-preview-num">{card.number}</span>
-        <button className="ec-arrow-btn"
-          onClick={(e) => { e.stopPropagation(); onNavigate() }}
-          aria-label={`Explore ${card.title}`}>
-          <ArrowIcon />
-        </button>
       </motion.div>
 
       {/* Category label */}
@@ -275,11 +268,15 @@ function PreviewContent({ card, onNavigate }) {
       <motion.div className="ec-preview-dots" aria-hidden="true"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.12)} />
 
-      {/* Title at bottom */}
-      <motion.div className="ec-preview-footer"
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.60, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}>
-        <h3 className="ec-preview-title">{card.title}</h3>
-      </motion.div>
+      {/* Title at bottom — shared layoutId element: morphs to active position/size */}
+      <div className="ec-preview-footer">
+        <motion.h3
+          layoutId={`title-${card.number}`}
+          className="ec-preview-title"
+          transition={{ duration: 0.88, ease: [0.22, 1, 0.36, 1] }}>
+          {card.title}
+        </motion.h3>
+      </div>
     </div>
   )
 }
@@ -369,7 +366,16 @@ export default function ExpertiseCarousel() {
                   }
                 }}
               >
-                <AnimatePresence mode="wait" custom={direction} initial={false}>
+                {/* Arrow lives outside AnimatePresence so it never animates or disappears */}
+                <button
+                  className="ec-arrow-btn ec-arrow-permanent"
+                  onClick={(e) => { e.stopPropagation(); navigate(card.route) }}
+                  aria-label={`Explore ${card.title}`}
+                >
+                  <ArrowIcon />
+                </button>
+
+                <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                   {isActive ? (
                     <motion.div
                       key={`a-${card.number}`}
@@ -380,7 +386,7 @@ export default function ExpertiseCarousel() {
                       animate="animate"
                       exit="exit"
                     >
-                      <ActiveContent card={card} onNavigate={() => navigate(card.route)} />
+                      <ActiveContent card={card} />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -392,7 +398,7 @@ export default function ExpertiseCarousel() {
                       animate="animate"
                       exit="exit"
                     >
-                      <PreviewContent card={card} onNavigate={() => navigate(card.route)} />
+                      <PreviewContent card={card} />
                     </motion.div>
                   )}
                 </AnimatePresence>
