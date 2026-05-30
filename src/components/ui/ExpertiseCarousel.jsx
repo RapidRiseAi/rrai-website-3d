@@ -154,8 +154,19 @@ function computeOffset() {
 
 /* ── Animation helpers ──────────────────────────────────────────────────────── */
 const SLIDE_TRANS = { duration: 1.65, ease: [0.22, 1, 0.36, 1] }
-const RISE        = (delay = 0) => ({ duration: 0.60, ease: [0.16, 1, 0.3, 1], delay })
 const FADE        = (delay = 0) => ({ duration: 0.38, ease: 'easeOut', delay })
+
+// Direction-aware curtain: dir >= 0 → enter from below/exit top; dir < 0 → enter from above/exit bottom
+const CURTAIN = {
+  initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
+  animate: { y: '0%', transition: { duration: 0.62, ease: [0.22, 1, 0.36, 1] } },
+  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }),
+}
+const CURTAIN_PREVIEW = {
+  initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
+  animate: { y: '0%', transition: { duration: 0.48, ease: [0.22, 1, 0.36, 1] } },
+  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }),
+}
 
 function getCardAnim(pos, offset) {
   if (pos <= -1) return { x: -offset,    opacity: 0,    scale: 0.86 }
@@ -167,67 +178,71 @@ function getCardAnim(pos, offset) {
 
 /* ── Active card content ────────────────────────────────────────────────────── */
 function ActiveContent({ card, onNavigate }) {
-  const Icon = card.icon
   return (
     <div className="ec-inner ec-inner--active">
 
-      {/* Top metadata row */}
-      <motion.div className="ec-toprow"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.22)}>
-        <div className="ec-meta">
-          <span className="ec-number">{card.number}</span>
-          <span className="ec-category">{card.category}</span>
-        </div>
+      {/* Category + arrow — arrow has no entrance animation */}
+      <div className="ec-toprow">
+        <motion.span className="ec-category"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.22)}>
+          {card.category}
+        </motion.span>
         <button className="ec-arrow-btn" onClick={onNavigate} aria-label={`Explore ${card.title}`}>
           <ArrowIcon />
         </button>
-      </motion.div>
+      </div>
 
-      {/* Icon tile */}
-      <motion.div className="ec-icon-box" aria-hidden="true"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE(0.28)}>
-        <Icon />
-      </motion.div>
-
-      {/* Title */}
+      {/* Title — leads the reveal: the curtain lifts from below so the title enters first */}
       <motion.h3 className="ec-title"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.40, delay: 0.30 }}>
+        initial={{ opacity: 0, y: 22, scale: 0.94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.56, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}>
         {card.title}
       </motion.h3>
 
       {/* Intro */}
       <motion.p className="ec-intro"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.38, delay: 0.35 }}>
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.50, ease: [0.22, 1, 0.36, 1], delay: 0.16 }}>
         {card.intro}
       </motion.p>
+
+      {/* Flex spacer */}
+      <div className="ec-spacer" />
+
+      {/* Business Value */}
+      <motion.div className="ec-value-block"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.24 }}>
+        <p className="ec-section-label">Business Value</p>
+        <p className="ec-value-text">{card.businessValue}</p>
+      </motion.div>
 
       {/* Divider sweeps from left */}
       <motion.div className="ec-divider" aria-hidden="true"
         initial={{ opacity: 0, scaleX: 0 }} animate={{ opacity: 1, scaleX: 1 }}
         style={{ originX: 0 }}
-        transition={{ duration: 0.38, ease: 'easeOut', delay: 0.40 }} />
+        transition={{ duration: 0.36, ease: 'easeOut', delay: 0.30 }} />
 
-      {/* What We Build + Business Value — inside the flexible cap-block */}
+      {/* What We Build — fills remaining space at the bottom */}
       <motion.div className="ec-cap-block"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.38, delay: 0.44 }}>
-
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.40, ease: [0.22, 1, 0.36, 1], delay: 0.32 }}>
         <p className="ec-section-label">What We Build</p>
         <ul className="ec-bullets">
           {card.whatWeBuild.map((item, i) => (
             <motion.li key={i}
-              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.34, ease: 'easeOut', delay: 0.34 + i * 0.048 }}>
+              initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.28, ease: 'easeOut', delay: 0.36 + i * 0.04 }}>
               {item}
             </motion.li>
           ))}
         </ul>
-
-        <div className="ec-value-block">
-          <p className="ec-section-label">Business Value</p>
-          <p className="ec-value-text">{card.businessValue}</p>
-        </div>
-
       </motion.div>
+
     </div>
   )
 }
@@ -272,6 +287,7 @@ function PreviewContent({ card, onNavigate }) {
 /* ── Main component ─────────────────────────────────────────────────────────── */
 export default function ExpertiseCarousel() {
   const [activeCard, setActiveCard] = useState(0)
+  const [direction, setDirection]   = useState(1)
   const [cardOffset, setCardOffset] = useState(() => computeOffset())
   const activeCardRef = useRef(0)
   const navigate = useNavigate()
@@ -282,13 +298,15 @@ export default function ExpertiseCarousel() {
     carouselState.activeCard = activeCard
   }, [activeCard])
 
-  /* screenshot harness hook — only attached when the page is opened with ?shot,
-     lets the Playwright capture script jump straight to any card. No effect in
-     normal use. */
+  /* screenshot harness hook */
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!new URLSearchParams(window.location.search).has('shot')) return
-    window.__wfSetCard = (i) => setActiveCard(Math.max(0, Math.min(CARDS.length - 1, i)))
+    window.__wfSetCard = (i) => {
+      const clamped = Math.max(0, Math.min(CARDS.length - 1, i))
+      setDirection(clamped >= activeCardRef.current ? 1 : -1)
+      setActiveCard(clamped)
+    }
     return () => { delete window.__wfSetCard }
   }, [])
 
@@ -300,8 +318,10 @@ export default function ExpertiseCarousel() {
 
   useEffect(() => {
     registerCarousel({
-      onAdvance: (dir) =>
-        setActiveCard(prev => Math.max(0, Math.min(CARDS.length - 1, prev + dir))),
+      onAdvance: (dir) => {
+        setDirection(dir)
+        setActiveCard(prev => Math.max(0, Math.min(CARDS.length - 1, prev + dir)))
+      },
       activeRef: activeCardRef,
       total: CARDS.length,
     })
@@ -332,31 +352,46 @@ export default function ExpertiseCarousel() {
                 style={{ zIndex: isActive ? 3 : isPreview ? 2 : isVisible ? 1 : 0 }}
                 animate={getCardAnim(pos, cardOffset)}
                 transition={SLIDE_TRANS}
-                onClick={() => isPreview && setActiveCard(i)}
+                onClick={() => {
+                  if (isPreview) {
+                    setDirection(i > activeCardRef.current ? 1 : -1)
+                    setActiveCard(i)
+                  }
+                }}
                 role={isPreview ? 'button' : undefined}
                 aria-label={isPreview ? `Show ${card.title}` : undefined}
                 tabIndex={isVisible ? 0 : -1}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && isPreview) {
-                    e.preventDefault(); setActiveCard(i)
+                    e.preventDefault()
+                    setDirection(i > activeCardRef.current ? 1 : -1)
+                    setActiveCard(i)
                   }
                 }}
               >
-                <AnimatePresence mode="wait" initial={false}>
+                <AnimatePresence mode="wait" custom={direction} initial={false}>
                   {isActive ? (
-                    <motion.div key={`a-${card.number}`} className="ec-content-layer"
-                      initial={{ y: '100%' }}
-                      animate={{ y: '0%' }}
-                      exit={{ y: '110%', transition: { duration: 0.26, ease: [0.4, 0, 1, 1] } }}
-                      transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}>
+                    <motion.div
+                      key={`a-${card.number}`}
+                      className="ec-content-layer"
+                      custom={direction}
+                      variants={CURTAIN}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                    >
                       <ActiveContent card={card} onNavigate={() => navigate(card.route)} />
                     </motion.div>
                   ) : (
-                    <motion.div key={`p-${card.number}`} className="ec-content-layer"
-                      initial={{ y: '100%' }}
-                      animate={{ y: '0%' }}
-                      exit={{ y: '110%', transition: { duration: 0.20, ease: [0.4, 0, 1, 1] } }}
-                      transition={{ duration: 0.50, ease: [0.22, 1, 0.36, 1] }}>
+                    <motion.div
+                      key={`p-${card.number}`}
+                      className="ec-content-layer"
+                      custom={direction}
+                      variants={CURTAIN_PREVIEW}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                    >
                       <PreviewContent card={card} onNavigate={() => navigate(card.route)} />
                     </motion.div>
                   )}

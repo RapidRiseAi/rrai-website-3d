@@ -1251,7 +1251,7 @@ h2 {
   font-size: 0.855rem;
   line-height: 1.57;
   color: rgba(196, 217, 240, 0.70);
-  margin-bottom: 12px;
+  margin-bottom: 0;
   flex-shrink: 0;
 }
 
@@ -1289,9 +1289,15 @@ h2 {
   margin-bottom: 7px;
 }
 
+.ec-spacer {
+  flex: 1;
+  min-height: 12px;
+  max-height: 40px;
+}
+
 .ec-value-block {
-  margin-top: 11px;
   flex-shrink: 0;
+  margin-bottom: 10px;
 }
 
 .ec-value-text {
