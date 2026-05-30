@@ -504,80 +504,92 @@ function _genCodeBlock() {
   return out
 }
 function _genWorkflowPath() {
+  // Redesigned to match mockup: 4 spheres (large-L, medium-T, medium-B, large-R)
+  // connected by thick volumetric particle tubes forming a diamond/loop shape.
   const pts = [], tags = []
-
-  // Three process nodes on a lower-left → upper-right diagonal.
-  // r2 = outer concentric ring (1.50× iR), oR = bracket arc radius.
-  const nodeParams = [
-    { pos: [-R*0.62, -R*0.72,  R*0.05], cR: R*0.112, iR: R*0.225, r2: R*0.338, oR: R*0.430, N: 78 },
-    { pos: [ R*0.01,  R*0.02,  R*0.07], cR: R*0.148, iR: R*0.295, r2: R*0.443, oR: R*0.540, N: 104 },
-    { pos: [ R*0.64,  R*0.74, -R*0.04], cR: R*0.112, iR: R*0.225, r2: R*0.338, oR: R*0.430, N: 78 },
-  ]
 
   const addPt = (x, y, z, jit, tag) => {
     pts.push(x+(Math.random()-.5)*jit, y+(Math.random()-.5)*jit, z+(Math.random()-.5)*jit)
     tags.push(tag)
   }
 
-  const drawArc = (cx, cy, cz, r, tX, tZ, a0, span, passes, tag, jit=0.0035, space=0.025) => {
-    const nPts = Math.max(Math.ceil(r * Math.abs(span) / space), 12)
-    const cX=Math.cos(tX), sX=Math.sin(tX), cZ=Math.cos(tZ), sZ=Math.sin(tZ)
-    for (let p=0; p<passes; p++)
-      for (let i=0; i<=nPts; i++) {
-        const a = a0 + span*i/nPts
-        const rx=Math.cos(a)*r, ry=Math.sin(a)*r
-        const ry1=ry*cX, rz1=ry*sX
-        const rx2=rx*cZ-ry1*sZ, ry2=rx*sZ+ry1*cZ
-        addPt(cx+rx2, cy+ry2, cz+rz1, jit, tag)
-      }
-  }
+  // 4 node positions — horizontal diamond layout
+  const NL = [-R*0.70,  0,      0]  // large left
+  const NT = [ 0,       R*0.38, 0]  // medium top
+  const NB = [ 0,      -R*0.38, 0]  // medium bottom
+  const NR = [ R*0.70,  0,      0]  // large right
 
-  for (const { pos: [nx, ny, nz], cR, iR, r2, oR, N } of nodeParams) {
+  // Dense fibonacci sphere: bright shell (tag-0) + interior fill (tag-1)
+  const addSphere = ([cx,cy,cz], r, N, passes) => {
     const gold = Math.PI*(3-Math.sqrt(5))
-
-    // Sphere: 3-pass fibonacci shell (tag-0 bright). Reduced from 5 to prevent bloom
-    // overexposure — 3 passes still gives a solid, clearly round glowing orb.
-    for (let p=0; p<3; p++)
+    for (let p=0; p<passes; p++)
       for (let i=0; i<N; i++) {
         const fy=1-(i/(N-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i
-        const rr=cR*(0.95+Math.random()*0.05)
-        addPt(nx+Math.cos(fa)*fr*rr, ny+fy*rr, nz+Math.sin(fa)*fr*rr, 0.003, 0)
+        const rr=r*(0.93+Math.random()*0.07)
+        addPt(cx+Math.cos(fa)*fr*rr, cy+fy*rr, cz+Math.sin(fa)*fr*rr, 0.007, 0)
       }
     const nI = Math.floor(N*0.55)
     for (let i=0; i<nI; i++) {
       const fy=1-(i/(nI-1))*2, fr=Math.sqrt(1-fy*fy), fa=gold*i*1.7
-      const rr=cR*Math.cbrt(Math.random())*0.82
-      addPt(nx+Math.cos(fa)*fr*rr, ny+fy*rr, nz+Math.sin(fa)*fr*rr, 0.005, 1)
+      const rr=r*Math.cbrt(Math.random())*0.82
+      addPt(cx+Math.cos(fa)*fr*rr, cy+fy*rr, cz+Math.sin(fa)*fr*rr, 0.007, 1)
     }
-
-    // Ring 1 (inner) — tX=0.92 gives h/w≈0.60 from our front camera, matching the
-    // mockup's flat-disc rings as seen from its elevated camera angle.
-    drawArc(nx,ny,nz, iR, 0.92, 0.12, 0, Math.PI*2, 3, 1)
-    // Ring 2 (outer concentric) — same tilt plane, 1.50× inner radius.
-    drawArc(nx,ny,nz, r2, 0.92, 0.12, 0, Math.PI*2, 2, 1)
-
-    // Bracket arcs — near-vertical plane (tX=0.28, h/w≈0.96), two C-arcs opening
-    // left and right, span=0.62π (112°) each with clear gaps at top/bottom.
-    drawArc(nx,ny,nz, oR, 0.28, 0.0, -Math.PI*0.31, Math.PI*0.62, 2, 1)  // right )
-    drawArc(nx,ny,nz, oR, 0.28, 0.0,  Math.PI*0.69, Math.PI*0.62, 2, 1)  // left (
   }
 
-  const [x0,y0,z0]=nodeParams[0].pos, [x1,y1,z1]=nodeParams[1].pos, [x2,y2,z2]=nodeParams[2].pos
-  const segLine = (ax,ay,az, bx,by,bz) => {
-    const n = Math.max(Math.ceil(Math.hypot(bx-ax,by-ay,bz-az)/0.016), 24)
-    for (let p=0; p<5; p++)
-      for (let i=0; i<=n; i++) { const t=i/n
-        addPt(ax+(bx-ax)*t, ay+(by-ay)*t, az+(bz-az)*t, 0.0025, 1) }
+  // Cubic Bezier position + tangent (curves in XY plane, z=0)
+  const bez3 = (t, a, b, c, d) => {
+    const u=1-t
+    return [u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0],
+            u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1]]
   }
-  segLine(x0,y0,z0, x1,y1,z1)
-  segLine(x1,y1,z1, x2,y2,z2)
+  const bez3T = (t, a, b, c, d) => {
+    const u=1-t
+    return [3*(u*u*(b[0]-a[0])+2*u*t*(c[0]-b[0])+t*t*(d[0]-c[0])),
+            3*(u*u*(b[1]-a[1])+2*u*t*(c[1]-b[1])+t*t*(d[1]-c[1]))]
+  }
 
-  const beads = (ax,ay,az, bx,by,bz) => {
-    for (let k=1; k<=3; k++) { const t=k/4
-      for (let p=0; p<5; p++) addPt(ax+(bx-ax)*t, ay+(by-ay)*t, az+(bz-az)*t, 0.011, 0) }
+  // Volumetric particle tube along a cubic Bezier.
+  // Cross-section: circle perpendicular to tangent (XY-perp + Z depth).
+  // Bright outer ring = tag-0 (glowing edge), interior fill = tag-1.
+  const drawTube = (p0, cp1, cp2, p3, tubeR, nSeg, ringN, passes) => {
+    for (let s=0; s<=nSeg; s++) {
+      const t=s/nSeg
+      const [cx,cy]=bez3(t,p0,cp1,cp2,p3)
+      const [tx,ty]=bez3T(t,p0,cp1,cp2,p3)
+      const tl=Math.sqrt(tx*tx+ty*ty)+1e-9
+      const ux=-ty/tl, uy=tx/tl  // perpendicular to tangent in XY
+      // Outer ring: tag-0 (bright, creates glowing silhouette)
+      for (let p=0; p<passes; p++)
+        for (let j=0; j<ringN; j++) {
+          const ang=(j/ringN+p/(passes*ringN))*Math.PI*2
+          const rr=tubeR*(0.87+Math.random()*0.13)
+          addPt(cx+Math.cos(ang)*rr*ux, cy+Math.cos(ang)*rr*uy, Math.sin(ang)*rr, 0.009, 0)
+        }
+      // Interior fill: tag-1 (dense body)
+      const nF=Math.floor(ringN*0.9)
+      for (let j=0; j<nF; j++) {
+        const rr=tubeR*Math.sqrt(Math.random())*0.82, ang=Math.random()*Math.PI*2
+        addPt(cx+Math.cos(ang)*rr*ux, cy+Math.cos(ang)*rr*uy, Math.sin(ang)*rr, 0.009, 1)
+      }
+    }
   }
-  beads(x0,y0,z0, x1,y1,z1)
-  beads(x1,y1,z1, x2,y2,z2)
+
+  // Spheres
+  addSphere(NL, R*0.200, 110, 3)
+  addSphere(NT, R*0.165, 78,  3)
+  addSphere(NB, R*0.165, 78,  3)
+  addSphere(NR, R*0.200, 110, 3)
+
+  // Four curved tube paths forming the diamond loop.
+  // Large spheres: exit/enter at ±21° from horizontal (natural fork/merge).
+  // Medium spheres: enter/exit horizontally (smooth pass-through).
+  const tubeR=R*0.072, nSeg=30, ringN=10, passes=3
+  const Ty=R*0.38, By=-R*0.38
+
+  drawTube(NL, [-R*0.37, R*0.13, 0], [-R*0.28, Ty,      0], NT, tubeR, nSeg, ringN, passes)
+  drawTube(NL, [-R*0.37,-R*0.13, 0], [-R*0.28, By,      0], NB, tubeR, nSeg, ringN, passes)
+  drawTube(NT, [ R*0.28, Ty,     0], [ R*0.37,-R*0.13,  0], NR, tubeR, nSeg, ringN, passes)
+  drawTube(NB, [ R*0.28, By,     0], [ R*0.37, R*0.13,  0], NR, tubeR, nSeg, ringN, passes)
 
   const out = _padToBigTagged(pts, tags, N_ORB, 0.035)
   out.normal = [0, 0, 1]
