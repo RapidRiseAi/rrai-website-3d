@@ -823,8 +823,9 @@ const CARD_GENERATORS = [
 /* ── Section 3 — the funnel's orbs rearranged into a tall vertical helix ───────
    No new particles: the last card's funnel buffer (cardBufs[6]) is lerped into
    this helix target as Section 3 scrolls in. Tiled to N_ORB so it morphs 1:1. */
-const SEC3_DX = -1.55   // extra leftward world shift so the helix clears the cards
-const SEC3_OP = 0.42    // subtle opacity once the helix is fully formed
+const SEC3_DX   = -1.3    // leftward world shift — helix sits partly off-screen left
+const SEC3_OP   = 0.4     // subtle ambient opacity (was bright) once fully formed
+const SEC3_SIZE = 1.0     // finer atmospheric particles (was the 2× edge-boosted size)
 const HELIX_TARGET = (() => {
   const pts = []
   const TURNS = 3.0, H = R * 2.35, RAD = R * 0.60, PER = 150
@@ -1175,7 +1176,9 @@ function InteractiveMiniOrbs({ groupRef }) {
     material.uniforms.uOpacity.value    = MAX_CARD_OP + (SEC3_OP - MAX_CARD_OP) * smoothstep(sec3)
     material.uniforms.uTime.value       = clock.getElapsedTime()
     material.uniforms.uScale.value      = size.height / 2
-    material.uniforms.uSizeScale.value  = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    // Section 3 shrinks the orbs to fine particles (overrides the edge-size boost)
+    const baseSize = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    material.uniforms.uSizeScale.value  = baseSize + (SEC3_SIZE - baseSize) * smoothstep(sec3)
     material.uniforms.uRadius.value     = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
