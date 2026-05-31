@@ -831,16 +831,19 @@ const SEC3_SIZE = 0.9     // finer atmospheric particles (was the 2× edge-boost
 // hard dotted rope. Same overall helix shape, just diffuse.
 const HELIX_TARGET = (() => {
   const out = new Float32Array(N_ORB * 3)
-  const TURNS = 3.0, H = R * 2.35, RAD = R * 0.62, SPREAD = 0.62
+  const TURNS = 3.0, H = R * 2.35, RAD = R * 0.62
   const g = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.6667 // ~gaussian [-1,1]
   for (let i = 0; i < N_ORB; i++) {
     const strand = i % 2
     const t  = Math.random()
     const a  = strand * Math.PI + t * TURNS * Math.PI * 2
     const rr = RAD * (0.78 + 0.22 * Math.sin(t * Math.PI))
-    out[i * 3]     = Math.cos(a) * rr + g() * SPREAD
-    out[i * 3 + 1] = (t - 0.5) * 2 * H + g() * SPREAD * 1.4
-    out[i * 3 + 2] = Math.sin(a) * rr + g() * SPREAD
+    // ~64% of orbs hug the two strands tightly (dense, defined helix); the rest
+    // diffuse outward (biased near the strand) into a soft mist around them.
+    const sp = Math.random() < 0.64 ? 0.07 : (0.3 + Math.random() * Math.random() * 0.95)
+    out[i * 3]     = Math.cos(a) * rr + g() * sp
+    out[i * 3 + 1] = (t - 0.5) * 2 * H + g() * sp * 1.3
+    out[i * 3 + 2] = Math.sin(a) * rr + g() * sp
   }
   return out
 })()
@@ -1773,7 +1776,8 @@ export default function HeroOrb() {
       }
     }
     if (glowRef.current) {
-      const targetOpacity = p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0
+      // Glow halo only in the hero / Section 2 — faded out across Section 3.
+      const targetOpacity = (p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0) * (1 - scrollState.sec3)
       glowRef.current.material.opacity += (targetOpacity - glowRef.current.material.opacity) * Math.min(1, delta * 4)
     }
   })
