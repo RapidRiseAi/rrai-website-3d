@@ -159,15 +159,16 @@ const FADE        = (delay = 0) => ({ duration: 0.38, ease: 'easeOut', delay })
 // Curtain ONLY between the preview and presented slots. A presented card that
 // slides off to — or returns from — the hidden stack does not curtain; it stays
 // as-is and just fades with the card.
-//  · advancing (dir > 0): the incoming preview→presented card curtains up into
+//  · advancing (dir > 0): the incoming preview→presented card curtains UP into
 //    view; the outgoing presented→hidden card simply fades (no curtain).
-//  · going back (dir < 0): the demoted presented→preview card curtains up and
-//    out; the returning hidden→presented card just fades in (comes back as-is).
+//  · going back (dir < 0): the demoted presented→preview card curtains DOWN and
+//    out — the mirror of the rise — while the returning hidden→presented card
+//    just fades in (comes back as-is).
 const CURTAIN = {
   initial: (dir) => (dir > 0 ? { y: '105%', opacity: 1 } : { y: '0%', opacity: 0 }),
   animate: { y: '0%', opacity: 1, transition: { duration: 0.90, ease: [0.22, 1, 0.36, 1] } },
   exit:    (dir) => (dir < 0
-    ? { y: '-105%', opacity: 1, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } }
+    ? { y: '105%', opacity: 1, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } }
     : { opacity: 0, transition: { duration: 0.22, ease: 'easeOut' } }),
 }
 // Preview content: quiet cross-fade, never a curtain.
