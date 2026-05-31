@@ -1654,7 +1654,7 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #2EA8FF;
+  color: #38B0FF;
   margin-bottom: 0.95rem;
 }
 
@@ -1672,8 +1672,8 @@ h2 {
   color: #F6F9FD;
 }
 .fp-dot {
-  -webkit-text-fill-color: #2EA8FF;
-  color: #2EA8FF;
+  -webkit-text-fill-color: #38B0FF;
+  color: #38B0FF;
 }
 
 .fp-sub {
@@ -1691,16 +1691,16 @@ h2 {
   font-size: 0.82rem;
   font-weight: 500;
   letter-spacing: 0.004em;
-  color: rgba(190, 224, 255, 0.92);
-  background: rgba(47, 148, 255, 0.06);
-  border: 1px solid rgba(82, 165, 255, 0.24);
+  color: rgba(200, 230, 255, 0.97);
+  background: rgba(48, 138, 250, 0.10);
+  border: 1px solid rgba(80, 164, 255, 0.38);
   border-radius: 999px;
   padding: 9px 18px;
   box-shadow:
-    0 0 26px rgba(20, 110, 235, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 0 30px rgba(30, 120, 242, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-.fp-payment-pill svg { color: #3aa4ff; flex-shrink: 0; }
+.fp-payment-pill svg { color: #5ab6ff; flex-shrink: 0; }
 
 /* ── Product card grid ────────────────────────────────────────────────────── */
 .fp-grid {
@@ -1719,10 +1719,10 @@ h2 {
   padding: 30px 24px 26px;
   border-radius: 22px;
   background: linear-gradient(162deg,
-    rgba(11, 18, 33, 0.93) 0%,
-    rgba(6, 11, 22, 0.95) 52%,
-    rgba(3, 6, 13, 0.97) 100%);
-  border: 1px solid rgba(66, 140, 248, 0.28);
+    rgba(8, 14, 27, 0.96) 0%,
+    rgba(4, 8, 17, 0.975) 52%,
+    rgba(2, 4, 10, 0.985) 100%);
+  border: 1px solid rgba(64, 142, 252, 0.34);
   overflow: hidden;
   will-change: transform;
   box-shadow:
@@ -1789,26 +1789,26 @@ h2 {
 .fp-card:hover .fp-card-shine { opacity: 1; }
 
 .fp-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 13px;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5cb4ff;
-  background: rgba(46, 130, 245, 0.13);
-  border: 1px solid rgba(92, 170, 255, 0.32);
+  color: #66bdff;
+  background: rgba(46, 132, 250, 0.18);
+  border: 1px solid rgba(100, 178, 255, 0.42);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 0 18px rgba(40, 120, 240, 0.10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 24px rgba(44, 128, 248, 0.20);
   margin-bottom: 24px;
   transition: background 0.28s, border-color 0.28s, color 0.28s, box-shadow 0.28s;
 }
 .fp-card:hover .fp-card-icon {
-  background: rgba(50, 140, 250, 0.20);
-  border-color: rgba(108, 184, 255, 0.50);
-  color: #7cc6ff;
-  box-shadow: 0 0 26px rgba(46, 140, 250, 0.28);
+  background: rgba(54, 146, 255, 0.26);
+  border-color: rgba(120, 192, 255, 0.58);
+  color: #8ed0ff;
+  box-shadow: 0 0 32px rgba(50, 148, 255, 0.34);
 }
 
 .fp-card-title {
@@ -1836,8 +1836,8 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #4aa6f8;
-  opacity: 0.95;
+  color: #5cb8ff;
+  opacity: 1;
   margin-bottom: 5px;
 }
 
@@ -1859,10 +1859,10 @@ h2 {
   margin-bottom: 12px;
 }
 .fp-card-monthly {
-  font-size: 1.02rem;
-  font-weight: 700;
+  font-size: 1.04rem;
+  font-weight: 750;
   letter-spacing: -0.01em;
-  color: #4fb0ff;
+  color: #5cb8ff;
 }
 .fp-card-monthly-note {
   font-size: 0.78rem;
@@ -1876,16 +1876,19 @@ h2 {
   align-self: flex-start;
   margin-top: auto;        /* pins badge + button to the bottom, aligned across cards */
   margin-bottom: 18px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.73rem;
+  font-weight: 650;
   letter-spacing: 0.002em;
-  color: rgba(152, 210, 255, 0.88);
-  background: rgba(47, 148, 255, 0.07);
-  border: 1px solid rgba(47, 148, 255, 0.17);
+  color: rgba(190, 226, 255, 0.96);
+  background: rgba(50, 140, 250, 0.12);
+  border: 1px solid rgba(76, 162, 255, 0.36);
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 7px 13px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 18px rgba(42, 124, 244, 0.10);
 }
-.fp-card-badge svg { color: #4aa8ff; flex-shrink: 0; }
+.fp-card-badge svg { color: #62bcff; flex-shrink: 0; }
 
 /* ── Card / custom CTA buttons ────────────────────────────────────────────── */
 .fp-card-btn {
@@ -1896,30 +1899,31 @@ h2 {
   width: 100%;
   padding: 14px 18px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #1366d8 0%, #2f9bff 100%);
+  background: linear-gradient(135deg, #1c7df2 0%, #46a8ff 100%);
   color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: 0.92rem;
+  font-weight: 680;
   letter-spacing: 0.004em;
   text-decoration: none;
-  border: 1px solid rgba(120, 195, 255, 0.25);
+  border: 1px solid rgba(142, 206, 255, 0.38);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 22px rgba(0, 130, 240, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 28px rgba(40, 142, 255, 0.42),
+    0 4px 16px rgba(18, 78, 200, 0.30);
   transition: box-shadow 0.25s, transform 0.2s, background 0.25s;
 }
 .fp-card-btn:hover {
-  background: linear-gradient(135deg, #1670e6 0%, #45a9ff 100%);
+  background: linear-gradient(135deg, #2689ff 0%, #57b2ff 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 0 40px rgba(0, 160, 255, 0.50),
-    0 6px 20px rgba(0, 70, 180, 0.30);
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 0 50px rgba(48, 162, 255, 0.64),
+    0 7px 22px rgba(20, 90, 210, 0.40);
 }
 .fp-card:hover .fp-card-btn {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 0 34px rgba(0, 150, 255, 0.42),
-    0 5px 18px rgba(0, 65, 170, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 44px rgba(44, 156, 255, 0.56),
+    0 6px 20px rgba(18, 84, 200, 0.36);
 }
 .fp-btn-arrow {
   flex-shrink: 0;
@@ -1992,25 +1996,26 @@ h2 {
   gap: 9px;
   padding: 13px 24px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #1366d8 0%, #2f9bff 100%);
+  background: linear-gradient(135deg, #1c7df2 0%, #46a8ff 100%);
   color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: 0.92rem;
+  font-weight: 680;
   letter-spacing: 0.004em;
   text-decoration: none;
-  border: 1px solid rgba(120, 195, 255, 0.25);
+  border: 1px solid rgba(142, 206, 255, 0.38);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 24px rgba(0, 130, 240, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 30px rgba(40, 142, 255, 0.46),
+    0 4px 16px rgba(18, 78, 200, 0.30);
   transition: box-shadow 0.25s, transform 0.18s, background 0.25s;
 }
 .fp-custom-btn:hover {
-  background: linear-gradient(135deg, #1670e6 0%, #45a9ff 100%);
+  background: linear-gradient(135deg, #2689ff 0%, #57b2ff 100%);
   transform: translateY(-1px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 0 42px rgba(0, 160, 255, 0.55),
-    0 6px 22px rgba(0, 80, 200, 0.32);
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 0 52px rgba(48, 162, 255, 0.66),
+    0 7px 24px rgba(20, 90, 210, 0.40);
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */

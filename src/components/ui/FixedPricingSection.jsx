@@ -3,25 +3,25 @@ import { Link } from 'react-router-dom'
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 const MonitorCodeIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="3" width="20" height="14" rx="2" />
     <path d="M8 21h8M12 17v4" />
     <path d="M9.5 8 7.5 10l2 2M14.5 8l2 2-2 2" />
   </svg>
 )
 const UserPortalIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="8" r="3.4" />
     <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
   </svg>
 )
 const DashboardIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 20V10M9.3 20V4M14.6 20v-7M20 20V8" />
   </svg>
 )
 const ChatAgentIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 15.5a2 2 0 0 1-2 2H9l-4 3v-3H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
     <path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01" />
   </svg>

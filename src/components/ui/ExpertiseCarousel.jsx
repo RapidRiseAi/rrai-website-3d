@@ -156,16 +156,25 @@ function computeOffset() {
 const SLIDE_TRANS = { duration: 1.65, ease: [0.22, 1, 0.36, 1] }
 const FADE        = (delay = 0) => ({ duration: 0.38, ease: 'easeOut', delay })
 
-// Direction-aware curtain: dir >= 0 → enter from below/exit top; dir < 0 → enter from above/exit bottom
+// Curtain ONLY between the preview and presented slots. A presented card that
+// slides off to — or returns from — the hidden stack does not curtain; it stays
+// as-is and just fades with the card.
+//  · advancing (dir > 0): the incoming preview→presented card curtains up into
+//    view; the outgoing presented→hidden card simply fades (no curtain).
+//  · going back (dir < 0): the demoted presented→preview card curtains up and
+//    out; the returning hidden→presented card just fades in (comes back as-is).
 const CURTAIN = {
-  initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
-  animate: { y: '0%', transition: { duration: 0.90, ease: [0.22, 1, 0.36, 1] } },
-  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } }),
+  initial: (dir) => (dir > 0 ? { y: '105%', opacity: 1 } : { y: '0%', opacity: 0 }),
+  animate: { y: '0%', opacity: 1, transition: { duration: 0.90, ease: [0.22, 1, 0.36, 1] } },
+  exit:    (dir) => (dir < 0
+    ? { y: '-105%', opacity: 1, transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } }
+    : { opacity: 0, transition: { duration: 0.22, ease: 'easeOut' } }),
 }
+// Preview content: quiet cross-fade, never a curtain.
 const CURTAIN_PREVIEW = {
-  initial: (dir) => ({ y: dir >= 0 ? '105%' : '-105%' }),
-  animate: { y: '0%', transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } },
-  exit:    (dir) => ({ y: dir >= 0 ? '-105%' : '105%', transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } }),
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, transition: { duration: 0.20, ease: 'easeOut' } },
 }
 
 function getCardAnim(pos, offset) {
