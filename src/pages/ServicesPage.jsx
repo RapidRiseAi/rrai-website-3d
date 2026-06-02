@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PageLayout from '../components/ui/PageLayout'
+import ParticleWave from '../components/scene/ParticleWave'
 import { FIXED_PRICE, CUSTOM_SERVICES } from '../data/services'
 
 function ServiceCard({ service }) {
@@ -80,6 +81,7 @@ export default function ServicesPage() {
       </section>
 
       <section className="services-section pricing-section">
+        <ParticleWave />
         <div className="services-section-title">Fixed Price Products — Pricing</div>
         <div className="pricing-grid">
           {PRICING.map(p => <PricingCard key={p.slug} {...p} />)}

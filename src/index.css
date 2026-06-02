@@ -882,7 +882,60 @@ h2 {
    PRICING CARDS (on Services & Pricing page)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.pricing-section { padding-top: 56px; }
+.pricing-section {
+  padding-top: 56px;
+  /* Room at the bottom for the decorative particle wave to breathe below the
+     content. The wave is layered behind everything via .particle-wave. */
+  padding-bottom: clamp(150px, 20vh, 280px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Keep all real content above the wave decoration. */
+.pricing-section > *:not(.particle-wave) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Particle wave — reusable horizontal bottom decoration ─────────────────────
+   A wide, landscape, glowing blue particle wave that anchors a section from
+   below. Spans the full section width, sits in the bottom band, behind content
+   and never intercepts pointer events. Reusable on any positioned section. */
+.particle-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* height comes from the component's `height` prop (default 60%) */
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle-wave__canvas {
+  position: absolute !important;
+  inset: 0;
+  display: block;
+}
+
+/* Soft blue bloom behind the dots — concentrated low-centre, fades to dark
+   at the edges so the wave reads as integrated into the page background. */
+.particle-wave__bloom {
+  position: absolute;
+  left: 50%;
+  bottom: -12%;
+  width: 120%;
+  height: 150%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 100%,
+      rgba(26, 110, 230, 0.20) 0%,
+      rgba(18, 80, 200, 0.10) 32%,
+      rgba(10, 50, 150, 0.04) 55%,
+      transparent 75%);
+  filter: blur(6px);
+}
 
 .pricing-grid {
   display: grid;
