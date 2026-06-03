@@ -13,6 +13,7 @@ import { useRef, useMemo, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import { getGlowDotTexture } from '../../utils/iconTextures'
 
+const BASE_OPACITY = 0.8    // wave brightness once fully faded in
 const COLS = 192
 const ROWS = 72
 const HW   = 14.0    // half-width (world)
@@ -139,6 +140,11 @@ function WaveField() {
     // Hover on the wave is disabled for now (per request); keep the plumbing so
     // it's a one-line re-enable later.
     u.uCursorOn.value = 0
+    // Fade IN as the top-layer funnel→wave morph hands off (sec3 0.5 → 0.85), so
+    // the behind-the-cards wave takes over seamlessly once Section 3 has settled.
+    const sec3 = Math.min(1, Math.max(0, window.scrollY / window.innerHeight - 1))
+    const f = Math.max(0, Math.min(1, (sec3 - 0.5) / 0.35))
+    u.uOpacity.value = BASE_OPACITY * (f * f * (3 - 2 * f))
   })
 
   return (
@@ -166,10 +172,10 @@ export default function PricingWave() {
   const [active, setActive] = useState(false)
   useEffect(() => {
     const onScroll = () => {
-      const sec = document.querySelector('.fp-section')
-      if (!sec) return
-      const top = sec.getBoundingClientRect().top
-      setActive(top < window.innerHeight * 0.9)   // reached Section 3 → keep on for the rest
+      // Render from partway through the carousel→Section-3 morph (so it's ready to
+      // fade in) and keep it on for the rest of the page.
+      const sec3 = Math.min(1, Math.max(0, window.scrollY / window.innerHeight - 1))
+      setActive(sec3 > 0.2)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })

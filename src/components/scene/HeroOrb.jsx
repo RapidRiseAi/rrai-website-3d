@@ -837,10 +837,10 @@ const WAVE_CX    = 0.0      // group recentres horizontally
 const WAVE_CY    = -2.6     // group drops low so the wave sits in the bottom band, below cards
 const WAVE_SCALE = 1.0      // group scales up from the carousel-end 0.55
 const WAVE_OP    = 1.5      // bright (electric) — low green keeps it from going white
-const WAVE_SIZE  = 1.55     // big soft halos → strong bloom/glow around the dots
+const WAVE_SIZE  = 0.8      // crisp wave dots during the morph (matches PricingWave)
 // Vivid electric blue: raw RGB, blue-dominant with a LOW green so additive
 // overlap stays a saturated electric blue instead of clipping toward white.
-const WAVE_COLOR = (() => { const c = new THREE.Color(); c.r = 0.12; c.g = 0.36; c.b = 1.5; return c })()
+const WAVE_COLOR = (() => { const c = new THREE.Color(); c.r = 0.10; c.g = 0.30; c.b = 1.35; return c })()
 const _waveCol   = new THREE.Color()             // scratch for the per-frame tint
 // Static per-orb grid (local x, edge-lift y, z); the gentle undulation is added
 // on top per-frame in the render loop.
@@ -1182,22 +1182,42 @@ function InteractiveMiniOrbs({ groupRef }) {
     // gear, code block, clock, sparkle, rings, funnel). For all other cards uSizeScale stays 1.0 → orbs revert.
     const usesEdgeBoost = activeRef.current === 0 || activeRef.current === 1 || activeRef.current === 2 || activeRef.current === 3 || activeRef.current === 4 || activeRef.current === 5 || activeRef.current === 6
 
-    // Section 3: the funnel's exact orbs (cardBufs[6]) rearrange into the wide
-    // bottom wave, undulating gently, and ease to a subtle ambient opacity.
-    // Gated past the carousel (sec3>0) and to the funnel card (6). sec3: 0 in the
-    // carousel → 1 in Section 3.
-    // Section 3's wave is now its own behind-content layer (PricingWave). Here
-    // the shared hero/carousel orb (the funnel) simply fades out as Section 3
-    // scrolls in, so nothing is parked on the top canvas over the cards.
+    // Section 3 transition: the funnel's exact orbs (cardBufs[6]) morph into the
+    // wave grid (SAME orbs — the reuse you want), undulating. This top-layer copy
+    // is what you SEE form during the scroll; once Section 3 settles it fades out
+    // and hands off to the behind-the-cards PricingWave (so cards stay solid).
     const sec3 = scrollState.sec3
     const wave = smoothstep(sec3)
+    if (activeRef.current === 6 && sec3 > 0.001) {
+      const t  = clock.getElapsedTime()
+      const fn = cardBufs[6]
+      for (let i = 0; i < N_ORB; i++) {
+        const ix = i * 3
+        const lx = WAVE_GRID[ix], by = WAVE_GRID[ix + 1], lz = WAVE_GRID[ix + 2]
+        const wy = by
+          + 0.16 * Math.sin(lx * 1.7 + t * 0.5)
+          + 0.12 * Math.sin(lx * 2.9 - lz * 0.9 + t * 0.8)
+          + 0.12 * Math.sin(lz * 1.5 + t * 0.45)
+          + 0.07 * Math.sin((lx * 3.4 + lz * 1.7) + t * 1.05)
+        posTarget[ix]     = fn[ix]     + (lx - fn[ix])     * wave
+        posTarget[ix + 1] = fn[ix + 1] + (wy - fn[ix + 1]) * wave
+        posTarget[ix + 2] = fn[ix + 2] + (lz - fn[ix + 2]) * wave
+      }
+      if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+    }
+    // hand-off: full while the orbs morph (sec3 ≤ 0.5), then fade out by ~0.85 as
+    // the behind-content PricingWave fades in at the same spot.
+    const handoff = 1.0 - smoothstep(Math.max(0, Math.min(1, (sec3 - 0.5) / 0.35)))
+    _waveCol.setStyle(CARD_COLORS[activeRef.current]).lerp(WAVE_COLOR, wave)
+    material.uniforms.uColorCard.value.copy(_waveCol)
     material.uniforms.uMorph.value      = collapseT
     material.uniforms.uMorphCard.value  = usedCardMorph
-    material.uniforms.uWaveFade.value   = 0.0
-    material.uniforms.uOpacity.value    = MAX_CARD_OP * (1.0 - wave)
+    material.uniforms.uWaveFade.value   = wave
+    material.uniforms.uOpacity.value    = MAX_CARD_OP * handoff
     material.uniforms.uTime.value       = clock.getElapsedTime()
     material.uniforms.uScale.value      = size.height / 2
-    material.uniforms.uSizeScale.value  = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    const baseSize = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    material.uniforms.uSizeScale.value  = baseSize + (WAVE_SIZE - baseSize) * wave
     material.uniforms.uRadius.value     = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
