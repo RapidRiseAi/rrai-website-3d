@@ -859,6 +859,10 @@ const WAVE_GRID = (() => {
 
 const TRAIL_LEN = 24
 const TRAIL_LIFETIME = 1.0
+// Hover: sample every Nth orb when finding the one nearest the cursor ray, and
+// only light up if that orb is within HOVER_HIT (world units) of the ray.
+const HOVER_STEP = 24
+const HOVER_HIT2 = 0.25     // (0.5 world units)²
 
 /* ── Surface-orb shader ─────────────────────────────────────────────────────────
    uMorph = 0  →  sphere surface (full size, full opacity)
@@ -1218,19 +1222,30 @@ function InteractiveMiniOrbs({ groupRef }) {
     if (groupRef?.current && (p < 0.62 || p >= 0.85)) {
       invMat.copy(groupRef.current.matrixWorld).invert()
       localRay.copy(raycaster.ray).applyMatrix4(invMat)
-      // Flat card shapes (gear etc.) expose a face normal: intersect that face
-      // plane in local space so the hover spot tracks the surface at every
-      // rotation angle. Globe card + sphere mode: intersect the sphere shell.
-      const hn = p >= 0.85 ? cardNormals[activeRef.current] : null
-      if (hn) {
-        localPlane.normal.set(hn[0], hn[1], hn[2])
-        localPlane.constant = 0
-        if (localRay.intersectPlane(localPlane, localHit)) {
+      if (p >= 0.85) {
+        // Card / wave mode: anchor the hover on the orb nearest the cursor ray so
+        // it tracks the real surface of ANY shape (globe, gear, funnel, the wave)
+        // at every angle — not a single plane/sphere that misses most orbs.
+        localRay.direction.normalize()
+        const lo = localRay.origin, ld = localRay.direction
+        let bestD2 = Infinity
+        for (let i = 0; i < N_ORB; i += HOVER_STEP) {
+          const ix = i * 3
+          const ox = posTarget[ix] - lo.x, oy = posTarget[ix + 1] - lo.y, oz = posTarget[ix + 2] - lo.z
+          const t = ox * ld.x + oy * ld.y + oz * ld.z   // projection onto the ray
+          if (t < 0) continue
+          const cx = ox - t * ld.x, cy = oy - t * ld.y, cz = oz - t * ld.z
+          const d2 = cx * cx + cy * cy + cz * cz          // perpendicular dist²
+          if (d2 < bestD2) { bestD2 = d2; localHit.set(posTarget[ix], posTarget[ix + 1], posTarget[ix + 2]) }
+        }
+        const sc = groupRef.current.scale.x
+        if (bestD2 * sc * sc < HOVER_HIT2) {
           hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
           hasHit = true
         }
       } else {
-        localSphere.radius = p >= 0.85 ? R * 1.28 : R * Math.max(0.05, 1.0 - collapseT)
+        // Hero sphere mode: intersect the collapsing sphere shell.
+        localSphere.radius = R * Math.max(0.05, 1.0 - collapseT)
         if (localRay.intersectSphere(localSphere, localHit)) {
           hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
           hasHit = true
