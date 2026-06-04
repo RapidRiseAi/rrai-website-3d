@@ -613,29 +613,42 @@ function _genIntelligenceOrbit() {
     pts.push(x1, y*cax-z1*sax, y*sax+z1*cax); tags.push(tag)
   }
 
-  // Smooth SURFACE star (a shell, NOT a solid — a solid makes bigger stars project
-  // denser). Front + back domes at a fixed spacing → same surface density on every
-  // star. The back face is dropped right at the rim so the two faces don't pile up
-  // into a bright seam, and the front face covers the silhouette so there's no gap.
-  const STEP = R * 0.017
+  // One smooth, CLOSED surface per star (a shell, NOT a solid — a solid makes
+  // bigger stars project denser).  A puffed astroid swept by a polar angle φ:
+  // front pole (φ=0) → equator/rim (φ=π/2) → back pole (φ=π) is ONE continuous
+  // skin, so the two faces join in a single ROUNDED edge — no gap and no sharp
+  // seam where they meet.  Steps are sized to a fixed world-space spacing so
+  // every star carries the same surface density regardless of size.
+  const STEP = R * 0.026
+  const TWO_PI = Math.PI * 2
   const drawSparkle = (cx, cy, cz, Rs, d) => {
-    const Rs23 = Math.pow(Rs, 2/3)
-    for (let gx = -Rs; gx <= Rs+0.001; gx += STEP)
-      for (let gy = -Rs; gy <= Rs+0.001; gy += STEP) {
-        const v = Math.pow(Math.abs(gx), 2/3) + Math.pow(Math.abs(gy), 2/3)
-        if (v > Rs23) continue
-        const dome = d * Math.sqrt(Math.max(0, 1 - v/Rs23))
-        const jx = gx + (Math.random()-.5)*STEP*0.6
-        const jy = gy + (Math.random()-.5)*STEP*0.6
-        addPt(cx+jx, cy+jy, cz + dome, 0.007, 1)                    // front face (reaches the edge)
-        if (dome > STEP) addPt(cx+jx, cy+jy, cz - dome, 0.007, 1)   // back face (skip at rim → no seam)
+    for (let phi = 0; phi <= Math.PI + 1e-4; ) {
+      const s = Math.sin(phi)            // radial scale of this ring
+      const z = d * Math.cos(phi)        // height of this ring
+      if (s < 1e-3) {
+        addPt(cx, cy, cz + z, 0.006, 1)  // pole (front / back)
+      } else {
+        const ringR = Rs * s
+        const nT = Math.max(6, Math.round(6 * ringR / STEP))  // astroid perim ≈ 6R
+        const t0 = Math.random() * TWO_PI
+        for (let i = 0; i < nT; i++) {
+          const t = t0 + (i / nT) * TWO_PI
+          const st = Math.sin(t), ct = Math.cos(t)
+          addPt(cx + ringR*st*st*st, cy + ringR*ct*ct*ct, cz + z, 0.006, 1)
+        }
       }
+      // advance φ so the meridian (radial+z) step stays ≈ STEP everywhere
+      const c = Math.cos(phi)
+      const ds = Math.sqrt(Rs*Rs*c*c + d*d*s*s)
+      phi += STEP / Math.max(ds, 1e-3)
+    }
   }
 
-  // Spaced cluster (a clear gap between the three) sized to match the others.
-  drawSparkle( 0,        0,        0,  R*0.88, R*0.56)  // large — centred
-  drawSparkle( R*0.92,   R*0.70,   0,  R*0.38, R*0.24)  // medium — upper-right
-  drawSparkle( R*0.80,  -R*0.60,   0,  R*0.27, R*0.18)  // small  — lower-right
+  // Spaced cluster (a clear gap between the three), sized to match the others;
+  // thickness (d) is half the previous values per the brief.
+  drawSparkle( 0,        0,        0,  R*0.88, R*0.28)  // large — centred
+  drawSparkle( R*0.92,   R*0.70,   0,  R*0.38, R*0.12)  // medium — upper-right
+  drawSparkle( R*0.80,  -R*0.60,   0,  R*0.27, R*0.09)  // small  — lower-right
 
   const out = _padToBigTagged(pts, tags, N_ORB, 0.035)
   out.normal = [0, 0, 1]
