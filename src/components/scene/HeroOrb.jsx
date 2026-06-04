@@ -613,23 +613,22 @@ function _genIntelligenceOrbit() {
     pts.push(x1, y*cax-z1*sax, y*sax+z1*cax); tags.push(tag)
   }
 
-  // Uniform, edge-less SOLID 3D star: NO rim, and FILLED through the whole volume
-  // (not a hollow front/back shell) so it never looks empty when rotated. A fixed
-  // 3D spacing means every star shares the same orb density regardless of size.
-  const STEP = R * 0.042
+  // Smooth SURFACE star (a shell, NOT a solid — a solid makes bigger stars project
+  // denser). Front + back domes at a fixed spacing → same surface density on every
+  // star. The back face is dropped right at the rim so the two faces don't pile up
+  // into a bright seam, and the front face covers the silhouette so there's no gap.
+  const STEP = R * 0.017
   const drawSparkle = (cx, cy, cz, Rs, d) => {
     const Rs23 = Math.pow(Rs, 2/3)
     for (let gx = -Rs; gx <= Rs+0.001; gx += STEP)
       for (let gy = -Rs; gy <= Rs+0.001; gy += STEP) {
         const v = Math.pow(Math.abs(gx), 2/3) + Math.pow(Math.abs(gy), 2/3)
         if (v > Rs23) continue
-        const dome = d * Math.sqrt(Math.max(0, 1 - v/Rs23))  // half-thickness at (gx,gy)
-        for (let gz = -dome; gz <= dome+0.001; gz += STEP) {
-          const jx = gx + (Math.random()-.5)*STEP*0.6
-          const jy = gy + (Math.random()-.5)*STEP*0.6
-          const jz = gz + (Math.random()-.5)*STEP*0.6
-          addPt(cx+jx, cy+jy, cz+jz, 0.006, 1)   // solid fill
-        }
+        const dome = d * Math.sqrt(Math.max(0, 1 - v/Rs23))
+        const jx = gx + (Math.random()-.5)*STEP*0.6
+        const jy = gy + (Math.random()-.5)*STEP*0.6
+        addPt(cx+jx, cy+jy, cz + dome, 0.007, 1)                    // front face (reaches the edge)
+        if (dome > STEP) addPt(cx+jx, cy+jy, cz - dome, 0.007, 1)   // back face (skip at rim → no seam)
       }
   }
 
