@@ -1,102 +1,131 @@
 import { useEffect, useRef } from 'react'
-import { tryCarouselAdvance } from '../utils/carouselControl'
+import { getStopsPx } from '../utils/scrollLayout'
 
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-const DURATION   = 2000
-const CARD_LOCK  = 500
+const STEP_COOLDOWN = 110   // min ms between discrete wheel/key steps
+const IDLE_MS       = 150   // quiet period after a native scroll before snapping
+const PER_VH_MS     = 1000  // animation duration scales with distance
+const MIN_DUR       = 480
+const MAX_DUR       = 1500
 
+// Snap-scroll controller. Scroll position is the single source of truth (the
+// scene + carousel read window.scrollY), so all this does is keep the page
+// resting ON a stop:
+//   · wheel / arrow keys → step exactly one stop (one card or one section)
+//   · scrollbar drag / middle-click autoscroll / touch → free native scroll
+//     (which live-scrubs the cards), then snap to the nearest stop when it
+//     goes idle. This kills the "stuck halfway / premature scroll" glitches.
 export default function useScrollSnap() {
-  const lockRef = useRef(false)
-  const rafRef  = useRef(null)
+  const rafRef     = useRef(null)
+  const animating  = useRef(false)
+  const idleTimer  = useRef(null)
+  const lastStepAt = useRef(0)
 
   useEffect(() => {
-    const getSections = () =>
-      Array.from(document.querySelectorAll('#scroll-content section'))
+    let stops = getStopsPx()
+    const onResize = () => { stops = getStopsPx() }
 
-    const scrollTo = (target) => {
+    const cancelAnim = () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      const start     = window.scrollY
-      const distance  = target - start
-      const startTime = performance.now()
+      rafRef.current = null
+      animating.current = false
+    }
 
+    const animateTo = (target) => {
+      cancelAnim()
+      const start = window.scrollY
+      const dist  = target - start
+      if (Math.abs(dist) < 2) return
+      const vh  = window.innerHeight || 1
+      const dur = Math.min(MAX_DUR, Math.max(MIN_DUR, (Math.abs(dist) / vh) * PER_VH_MS))
+      const t0  = performance.now()
+      animating.current = true
       const step = (now) => {
-        const progress = Math.min((now - startTime) / DURATION, 1)
-        window.scrollTo(0, start + distance * easeInOutCubic(progress))
-        if (progress < 1) {
+        const k = Math.min((now - t0) / dur, 1)
+        const y = Math.round(start + dist * easeInOutCubic(k))
+        window.scrollTo(0, y)
+        if (k < 1) {
           rafRef.current = requestAnimationFrame(step)
         } else {
-          lockRef.current = false
+          rafRef.current = null
+          animating.current = false
         }
       }
       rafRef.current = requestAnimationFrame(step)
     }
 
-    const snapTo = (direction) => {
-      if (lockRef.current) return
-      const sections = getSections()
-      if (!sections.length) return
-
-      const scrollY = window.scrollY
-      const vh      = window.innerHeight
-
-      let currentIndex = 0
-      for (let i = 0; i < sections.length; i++) {
-        if (scrollY >= sections[i].offsetTop - vh * 0.3) currentIndex = i
+    const nearestIndex = (y) => {
+      let bi = 0, bd = Infinity
+      for (let i = 0; i < stops.length; i++) {
+        const d = Math.abs(stops[i] - y)
+        if (d < bd) { bd = d; bi = i }
       }
+      return bi
+    }
 
-      // If current section is a carousel, try advancing cards first
-      const currentSection = sections[currentIndex]
-      if (currentSection && currentSection.hasAttribute('data-carousel')) {
-        const consumed = tryCarouselAdvance(direction)
-        if (consumed) {
-          lockRef.current = true
-          setTimeout(() => { lockRef.current = false }, CARD_LOCK)
-          return
-        }
-        // carousel exhausted — fall through to page snap
+    const stepBy = (dir) => {
+      const now = performance.now()
+      if (now - lastStepAt.current < STEP_COOLDOWN) return
+      lastStepAt.current = now
+      cancelAnim()
+      const y = window.scrollY
+      const i = nearestIndex(y)
+      let ti
+      if (dir > 0) ti = stops[i] > y + 4 ? i : i + 1
+      else         ti = stops[i] < y - 4 ? i : i - 1
+      ti = Math.max(0, Math.min(stops.length - 1, ti))
+      animateTo(stops[ti])
+    }
+
+    const scheduleIdleSnap = () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current)
+      idleTimer.current = setTimeout(() => {
+        idleTimer.current = null
+        if (animating.current) return
+        const i = nearestIndex(window.scrollY)
+        if (Math.abs(stops[i] - window.scrollY) > 2) animateTo(stops[i])
+      }, IDLE_MS)
+    }
+
+    const onWheel = (e) => { e.preventDefault(); stepBy(e.deltaY > 0 ? 1 : -1) }
+
+    const onKey = (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault(); stepBy(1)
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault(); stepBy(-1)
+      } else if (e.key === 'Home') {
+        e.preventDefault(); cancelAnim(); animateTo(stops[0])
+      } else if (e.key === 'End') {
+        e.preventDefault(); cancelAnim(); animateTo(stops[stops.length - 1])
       }
-
-      const targetIndex =
-        direction > 0
-          ? Math.min(currentIndex + 1, sections.length - 1)
-          : Math.max(currentIndex - 1, 0)
-
-      if (targetIndex === currentIndex) return
-
-      lockRef.current = true
-      scrollTo(sections[targetIndex].offsetTop)
     }
 
-    const onWheel = (e) => {
-      e.preventDefault()
-      snapTo(e.deltaY)
+    const onScroll = () => {
+      // While our own snap animation runs, every scroll event is ours — ignore
+      // them (diffing positions is unreliable: scroll events fire async, so a
+      // one-frame lag would look like the user scrolling and abort the snap).
+      // The wheel/key handlers cancel the animation directly if the user acts.
+      if (animating.current) return
+      // A genuine native scroll (scrollbar / middle-click / touch / momentum):
+      // let it scrub freely, then snap to the nearest stop once it goes idle.
+      scheduleIdleSnap()
     }
 
-    let touchStartY = 0
-    const onTouchStart = (e) => { touchStartY = e.touches[0].clientY }
-    const onTouchEnd   = (e) => {
-      const delta = touchStartY - e.changedTouches[0].clientY
-      if (Math.abs(delta) > 40) snapTo(delta)
-    }
-
-    const onKeyDown = (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); snapTo(1) }
-      if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); snapTo(-1) }
-    }
-
-    window.addEventListener('wheel',      onWheel,      { passive: false })
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchend',   onTouchEnd,   { passive: true })
-    window.addEventListener('keydown',    onKeyDown)
+    window.addEventListener('wheel',  onWheel, { passive: false })
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('scroll',  onScroll, { passive: true })
+    window.addEventListener('resize',  onResize)
 
     return () => {
-      window.removeEventListener('wheel',      onWheel)
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchend',   onTouchEnd)
-      window.removeEventListener('keydown',    onKeyDown)
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      window.removeEventListener('wheel',  onWheel)
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll',  onScroll)
+      window.removeEventListener('resize',  onResize)
+      cancelAnim()
+      if (idleTimer.current) clearTimeout(idleTimer.current)
     }
   }, [])
 }

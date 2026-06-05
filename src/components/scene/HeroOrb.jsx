@@ -6,14 +6,16 @@ import {
 } from '../../utils/soccerBall'
 import { createIconTexture, getGlowDotTexture } from '../../utils/iconTextures'
 import { carouselState } from '../../utils/carouselState'
+import { deriveScroll } from '../../utils/scrollLayout'
 
 const R = 1.70
 const ORB_X = 2.45
 const ORB_Y = 0.18
 const END_X = -3.3
-const END_SCALE = 0.55
+const END_SCALE = 0.715   // carousel/card-mode group scale (+30% — Section-2 object size)
 
-const scrollState = { progress: 0 }
+const scrollState = { progress: 0, sec3: 0 }
+let shotRotY = null   // ?shot harness: force a card-object rotation for capture
 
 const { vertices, edges, hexCenters } = buildSoccerBall()
 
@@ -603,8 +605,8 @@ function _genIntelligenceOrbit() {
   // Silhouette = 3D-puffed astroid  x = Rs·sin³t, y = Rs·cos³t.
   const pts = [], tags = []
 
-  // Subtle 3/4 tilt — enough to read as 3D without hiding the silhouette.
-  const ax = 0.18, ay = 0.15
+  // 3/4 tilt — enough to read the rounded 3D volume (not a flat outline).
+  const ax = 0.26, ay = 0.40
   const cax=Math.cos(ax), sax=Math.sin(ax), cay=Math.cos(ay), say=Math.sin(ay)
   const addPt = (x, y, z, jit, tag) => {
     x+=(Math.random()-.5)*jit; y+=(Math.random()-.5)*jit; z+=(Math.random()-.5)*jit
@@ -612,44 +614,42 @@ function _genIntelligenceOrbit() {
     pts.push(x1, y*cax-z1*sax, y*sax+z1*cax); tags.push(tag)
   }
 
+  // One smooth, CLOSED surface per star (a shell, NOT a solid — a solid makes
+  // bigger stars project denser).  A puffed astroid swept by a polar angle φ:
+  // front pole (φ=0) → equator/rim (φ=π/2) → back pole (φ=π) is ONE continuous
+  // skin, so the two faces join in a single ROUNDED edge — no gap and no sharp
+  // seam where they meet.  Steps are sized to a fixed world-space spacing so
+  // every star carries the same surface density regardless of size.
+  const STEP = R * 0.026
+  const TWO_PI = Math.PI * 2
   const drawSparkle = (cx, cy, cz, Rs, d) => {
-    const Rs23 = Math.pow(Rs, 2/3)
-    const nE = Math.max(Math.round(Rs * 200), 50)
-
-    // Bright outer edge (tag-0): four passes on front rim, plus back rim & two side bands
-    for (let pass = 0; pass < 4; pass++)
-      for (let i = 0; i < nE; i++) {
-        const t = (i/nE + pass/(4*nE)) * Math.PI*2
-        const st=Math.sin(t), ct=Math.cos(t)
-        addPt(cx+Rs*st*st*st, cy+Rs*ct*ct*ct, cz+d*0.44, 0.005, 0)
-      }
-    for (let i = 0; i < nE; i++) {
-      const t = (i/nE)*Math.PI*2
-      const ex=Rs*Math.sin(t)*Math.sin(t)*Math.sin(t)
-      const ey=Rs*Math.cos(t)*Math.cos(t)*Math.cos(t)
-      addPt(cx+ex, cy+ey, cz-d*0.18, 0.005, 0)  // back rim
-      addPt(cx+ex, cy+ey, cz+d*0.12, 0.005, 0)  // mid side
-      addPt(cx+ex, cy+ey, cz+d*0.30, 0.005, 0)  // near-front side
-    }
-
-    // Interior fill (tag-1): sparser grid for airy premium feel, z follows dome
-    const step = Rs * 0.082
-    for (let gx = -Rs; gx <= Rs+0.001; gx += step)
-      for (let gy = -Rs; gy <= Rs+0.001; gy += step) {
-        const jx = gx + (Math.random()-.5)*step*0.60
-        const jy = gy + (Math.random()-.5)*step*0.60
-        const v = Math.pow(Math.abs(jx), 2/3) + Math.pow(Math.abs(jy), 2/3)
-        if (v <= Rs23*0.94) {
-          const zF = cz + d*Math.sqrt(Math.max(0, 1-v/Rs23))*0.68
-          addPt(cx+jx, cy+jy, zF, 0.012, 1)
+    for (let phi = 0; phi <= Math.PI + 1e-4; ) {
+      const s = Math.sin(phi)            // radial scale of this ring
+      const z = d * Math.cos(phi)        // height of this ring
+      if (s < 1e-3) {
+        addPt(cx, cy, cz + z, 0.006, 1)  // pole (front / back)
+      } else {
+        const ringR = Rs * s
+        const nT = Math.max(6, Math.round(6 * ringR / STEP))  // astroid perim ≈ 6R
+        const t0 = Math.random() * TWO_PI
+        for (let i = 0; i < nT; i++) {
+          const t = t0 + (i / nT) * TWO_PI
+          const st = Math.sin(t), ct = Math.cos(t)
+          addPt(cx + ringR*st*st*st, cy + ringR*ct*ct*ct, cz + z, 0.006, 1)
         }
       }
+      // advance φ so the meridian (radial+z) step stays ≈ STEP everywhere
+      const c = Math.cos(phi)
+      const ds = Math.sqrt(Rs*Rs*c*c + d*d*s*s)
+      phi += STEP / Math.max(ds, 1e-3)
+    }
   }
 
-  // Scaled-up, recentred cluster: large dominant, medium & small well-separated.
-  drawSparkle(-R*0.12,  0,       0,   R*0.82, R*0.26)  // large — near-centred
-  drawSparkle( R*0.74,  R*0.56,  0,   R*0.44, R*0.14)  // medium — upper-right
-  drawSparkle( R*0.68, -R*0.50,  0,   R*0.28, R*0.09)  // small  — lower-right
+  // Spaced cluster (a clear gap between the three), sized to match the others;
+  // thickness (d) is half the previous values per the brief.
+  drawSparkle( 0,        0,        0,  R*0.88, R*0.28)  // large — centred
+  drawSparkle( R*0.92,   R*0.70,   0,  R*0.38, R*0.12)  // medium — upper-right
+  drawSparkle( R*0.80,  -R*0.60,   0,  R*0.27, R*0.09)  // small  — lower-right
 
   const out = _padToBigTagged(pts, tags, N_ORB, 0.035)
   out.normal = [0, 0, 1]
@@ -820,8 +820,51 @@ const CARD_GENERATORS = [
   _genIntelligenceOrbit, _genConnectedCubes, _genFunnel,
 ]
 
+/* ── Section 3 — the funnel's orbs rearranged into a wide bottom wave ──────────
+   No new particles: the last carousel card's funnel buffer (cardBufs[6]) is
+   lerped into this wave grid as Section 3 scrolls in (scrollState.sec3 0→1), and
+   the group drops low / recentres / scales up so the SAME orbs read as a wide
+   wave receding across the bottom of the viewport. Placement was dialled in with
+   scripts/wave-proto.mjs (projected through the real Scene camera). */
+const WAVE_COLS  = 192
+const WAVE_ROWS  = 72       // 192×72 = 13824 = N_ORB, so orbs map 1:1 to the grid
+const WAVE_HW    = 14.0     // local half-width (spans full viewport width when low)
+const WAVE_ZN    = 2.0      // near row z (toward camera, clipped just below the viewport)
+const WAVE_ZF    = -2.5     // far row z — close so the BACK projects very low on screen
+const WAVE_LIFT  = 0.9      // far L/R edges rise into the empty side gutters
+const WAVE_TILT  = 0.0      // flat (no tilt) so the back edge stays low, like the mockup
+const WAVE_CX    = 0.0      // group recentres horizontally
+const WAVE_CY    = -2.6     // group drops low so the wave sits in the bottom band, below cards
+const WAVE_SCALE = 1.0      // group scales up from the carousel-end 0.55
+const WAVE_OP    = 1.3      // wave brightness in Section 3 (calm, vivid blue — not white)
+const WAVE_SIZE  = 0.72     // crisp wave dots (the funnel's actual orbs)
+// Vivid electric blue: raw RGB, blue-dominant with a LOW green so additive
+// overlap stays a saturated electric blue instead of clipping toward white.
+const WAVE_COLOR = (() => { const c = new THREE.Color(); c.r = 0.10; c.g = 0.30; c.b = 1.35; return c })()
+const _waveCol   = new THREE.Color()             // scratch for the per-frame tint
+// Static per-orb grid (local x, edge-lift y, z); the gentle undulation is added
+// on top per-frame in the render loop.
+const WAVE_GRID = (() => {
+  const out = new Float32Array(N_ORB * 3)
+  for (let i = 0; i < N_ORB; i++) {
+    const col = i % WAVE_COLS
+    const row = (i / WAVE_COLS) | 0
+    const nx  = col / (WAVE_COLS - 1) - 0.5            // -0.5 … 0.5
+    out[i * 3]     = nx * 2 * WAVE_HW
+    out[i * 3 + 1] = WAVE_LIFT * (nx * nx * 4)          // 0 centre → WAVE_LIFT edges
+    out[i * 3 + 2] = WAVE_ZN + (WAVE_ZF - WAVE_ZN) * (row / (WAVE_ROWS - 1))
+  }
+  return out
+})()
+
 const TRAIL_LEN = 24
 const TRAIL_LIFETIME = 1.0
+// Hover: sample every Nth orb when finding the one nearest the cursor ray, and
+// only light up if that orb is within HOVER_HIT (world units) of the ray. The
+// Section-3 wave is far wider than the section-2 objects, so sample densely
+// enough that the nearest sample is still close on the spread-out wave.
+const HOVER_STEP = 24       // sample stride for the nearest-orb hover (Section 2)
+const HOVER_HIT2 = 0.25     // (0.5 world units)²
 
 /* ── Surface-orb shader ─────────────────────────────────────────────────────────
    uMorph = 0  →  sphere surface (full size, full opacity)
@@ -840,18 +883,25 @@ const MINI_VERT = `
   uniform float uCursorActive;
   uniform float uMorph;
   uniform float uMorphCard;
+  uniform float uWaveFade;
   attribute float aSize;
   attribute float aSeed;
   attribute float aSizeTag;
   attribute vec3 aPosTarget;
   varying float vGlow;
   varying float vCardBlend;
+  varying float vWaveFade;
 
   void main() {
     /* Phase 1: collapse sphere toward centre (uMorph 0→0.5) */
     vec3 collapsedPos = position * (1.0 - uMorph);
     /* Phase 2: rearrange from collapsed position to card shape (uMorphCard 0→1) */
     vec3 basePos = mix(collapsedPos, aPosTarget, uMorphCard);
+
+    /* Section-3 wave only: fade the far/back rows toward dark so the wave recedes
+       and barely touches the cards (front = bottom of screen stays bright). */
+    float wDepth = clamp((aPosTarget.z - (${WAVE_ZF.toFixed(1)})) / (${(WAVE_ZN - WAVE_ZF).toFixed(1)}), 0.0, 1.0);
+    vWaveFade = mix(1.0, 0.06 + 0.94 * wDepth, uWaveFade);
 
     float cursorOff = 1.0 - uMorphCard;
     vec3 worldPos = (modelMatrix * vec4(basePos, 1.0)).xyz;
@@ -885,7 +935,7 @@ const MINI_VERT = `
     vec4 mv = modelViewMatrix * vec4(displacedPos, 1.0);
     float globeFactor = max(0.0, uSizeScale - 1.0);
     float effectiveScale = uSizeScale * (1.0 - aSizeTag * globeFactor * 0.50);
-    gl_PointSize = aSize * effectiveScale * 2.0 * (1.0 + vGlow * 6.6) * (uScale / -mv.z);
+    gl_PointSize = aSize * effectiveScale * 2.0 * (1.0 + vGlow * 3.2) * (uScale / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
 `
@@ -898,6 +948,7 @@ const MINI_FRAG = `
   uniform float uMorph;
   varying float vGlow;
   varying float vCardBlend;
+  varying float vWaveFade;
 
   void main() {
     vec4 tex = texture2D(uMap, gl_PointCoord);
@@ -905,8 +956,8 @@ const MINI_FRAG = `
     vec3 sphereCol = mix(uColorBase, uColorHot, vGlow);
     vec3 col = mix(sphereCol, uColorCard, vCardBlend);
     float opMult = mix(mix(0.8, 1.0, uMorph), 1.0, vCardBlend);
-    float a = tex.a * uOpacity * opMult * (1.0 + vGlow * 1.4);
-    gl_FragColor = vec4(col * (1.0 + vGlow * 1.0), a);
+    float a = tex.a * uOpacity * opMult * (1.0 + vGlow * 0.8) * vWaveFade;
+    gl_FragColor = vec4(col * (1.0 + vGlow * 0.5), a);
   }
 `
 
@@ -1046,6 +1097,7 @@ function InteractiveMiniOrbs({ groupRef }) {
       uCursorActive:  { value: 0.0 },
       uMorph:         { value: 0.0 },
       uMorphCard:     { value: 0.0 },
+      uWaveFade:      { value: 0.0 },   // Section-3 only: dim the wave's far/back rows
     },
     vertexShader: MINI_VERT,
     fragmentShader: MINI_FRAG,
@@ -1130,38 +1182,79 @@ function InteractiveMiniOrbs({ groupRef }) {
     // gear, code block, clock, sparkle, rings, funnel). For all other cards uSizeScale stays 1.0 → orbs revert.
     const usesEdgeBoost = activeRef.current === 0 || activeRef.current === 1 || activeRef.current === 2 || activeRef.current === 3 || activeRef.current === 4 || activeRef.current === 5 || activeRef.current === 6
 
-    // Always fully opaque — the transform is purely positional, never fades
+    // Section 3: the funnel's exact orbs (cardBufs[6]) morph into the wave grid
+    // (the SAME orbs — no copy) and stay as the wave, undulating. The scene canvas
+    // drops behind the content in Section 3 (scroll handler) so these real orbs
+    // render behind the cards.
+    const sec3 = scrollState.sec3
+    const wave = smoothstep(sec3)
+    if (activeRef.current === 6 && sec3 > 0.001) {
+      const t  = clock.getElapsedTime()
+      const fn = cardBufs[6]
+      for (let i = 0; i < N_ORB; i++) {
+        const ix = i * 3
+        const lx = WAVE_GRID[ix], by = WAVE_GRID[ix + 1], lz = WAVE_GRID[ix + 2]
+        const wy = by
+          + 0.16 * Math.sin(lx * 1.7 + t * 0.5)
+          + 0.12 * Math.sin(lx * 2.9 - lz * 0.9 + t * 0.8)
+          + 0.12 * Math.sin(lz * 1.5 + t * 0.45)
+          + 0.07 * Math.sin((lx * 3.4 + lz * 1.7) + t * 1.05)
+        posTarget[ix]     = fn[ix]     + (lx - fn[ix])     * wave
+        posTarget[ix + 1] = fn[ix + 1] + (wy - fn[ix + 1]) * wave
+        posTarget[ix + 2] = fn[ix + 2] + (lz - fn[ix + 2]) * wave
+      }
+      if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+    }
+    // The funnel's ACTUAL orbs stay as the wave in Section 3 (no hand-off). The
+    // scene canvas drops behind the content (see the scroll handler) so these
+    // real orbs render behind the cards.
+    _waveCol.setStyle(CARD_COLORS[activeRef.current]).lerp(WAVE_COLOR, wave)
+    material.uniforms.uColorCard.value.copy(_waveCol)
     material.uniforms.uMorph.value      = collapseT
     material.uniforms.uMorphCard.value  = usedCardMorph
-    material.uniforms.uOpacity.value    = MAX_CARD_OP
+    material.uniforms.uWaveFade.value   = wave
+    material.uniforms.uOpacity.value    = MAX_CARD_OP + (WAVE_OP - MAX_CARD_OP) * wave
     material.uniforms.uTime.value       = clock.getElapsedTime()
     material.uniforms.uScale.value      = size.height / 2
-    material.uniforms.uSizeScale.value  = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    const baseSize = 1.0 + (usesEdgeBoost ? 1.0 : 0.0) * usedCardMorph
+    material.uniforms.uSizeScale.value  = baseSize + (WAVE_SIZE - baseSize) * wave
     material.uniforms.uRadius.value     = 0.58 * scale
 
     for (let i = 0; i < TRAIL_LEN; i++) {
       trail[i].w = Math.min(trail[i].w + delta, TRAIL_LIFETIME + 1)
     }
 
-    // Cursor interaction in sphere mode and card mode
+    // Cursor interaction — hero sphere + Section-2 card objects only. The hover
+    // effect is intentionally OFF in Section 3 onward (sec3 ≥ 0.5).
     raycaster.setFromCamera(ndc, camera)
     let hasHit = false
-    if (groupRef?.current && (p < 0.62 || p >= 0.85)) {
+    if (groupRef?.current && (p < 0.62 || (p >= 0.85 && scrollState.sec3 < 0.5))) {
       invMat.copy(groupRef.current.matrixWorld).invert()
       localRay.copy(raycaster.ray).applyMatrix4(invMat)
-      // Flat card shapes (gear etc.) expose a face normal: intersect that face
-      // plane in local space so the hover spot tracks the surface at every
-      // rotation angle. Globe card + sphere mode: intersect the sphere shell.
-      const hn = p >= 0.85 ? cardNormals[activeRef.current] : null
-      if (hn) {
-        localPlane.normal.set(hn[0], hn[1], hn[2])
-        localPlane.constant = 0
-        if (localRay.intersectPlane(localPlane, localHit)) {
+      if (p >= 0.85) {
+        // Section-2 card object: anchor the hover on the orb nearest the cursor
+        // ray (the orb directly under the cursor) so the glow tracks the surface
+        // of any shape at every angle.
+        localRay.direction.normalize()
+        const lo = localRay.origin, ld = localRay.direction
+        let bestD2 = Infinity
+        for (let i = 0; i < N_ORB; i += HOVER_STEP) {
+          const ix = i * 3
+          const ox = posTarget[ix] - lo.x, oy = posTarget[ix + 1] - lo.y, oz = posTarget[ix + 2] - lo.z
+          const t = ox * ld.x + oy * ld.y + oz * ld.z
+          if (t < 0) continue
+          const cx = ox - t * ld.x, cy = oy - t * ld.y, cz = oz - t * ld.z
+          const d2 = cx * cx + cy * cy + cz * cz          // perpendicular dist²
+          if (d2 < bestD2) { bestD2 = d2; localHit.set(posTarget[ix], posTarget[ix + 1], posTarget[ix + 2]) }
+        }
+        const sc = groupRef.current.scale.x
+        if (bestD2 * sc * sc < HOVER_HIT2) {
           hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
           hasHit = true
         }
       } else {
-        localSphere.radius = p >= 0.85 ? R * 1.28 : R * Math.max(0.05, 1.0 - collapseT)
+        // Hero sphere mode: intersect the collapsing sphere shell.
+        localSphere.radius = R * Math.max(0.05, 1.0 - collapseT)
         if (localRay.intersectSphere(localSphere, localHit)) {
           hit.copy(localHit).applyMatrix4(groupRef.current.matrixWorld)
           hasHit = true
@@ -1607,11 +1700,42 @@ export default function HeroOrb() {
 
   const [showHeavy, setShowHeavy] = useState(true)
   const heavyRef = useRef(true)
+  const behindRef = useRef(false)
+  const atmosRef = useRef(false)
 
   useEffect(() => {
     const onScroll = () => {
       const max = window.innerHeight
       scrollState.progress = Math.min(1, Math.max(0, window.scrollY / max))
+      // The carousel now has real scroll distance (its cards are scroll-driven —
+      // see scrollLayout), so sec3 only climbs 0→1 AFTER the last card, across
+      // the scroll-out into Section 3. progress stays clamped at 1 throughout, so
+      // the collapse/card-mode visuals are unchanged.
+      scrollState.sec3 = deriveScroll(window.scrollY).sec3
+      // Section 3+: drop the scene canvas BEHIND the page content so the wave —
+      // the funnel's ACTUAL orbs, morphed — renders behind the cards (keeps them
+      // solid). On top again for the hero/carousel. Hysteresis avoids flicker if
+      // the scroll position hovers around the threshold.
+      const s3 = scrollState.sec3
+      let behind = behindRef.current
+      if (!behind && s3 > 0.55) behind = true
+      else if (behind && s3 < 0.45) behind = false
+      if (behind !== behindRef.current) {
+        behindRef.current = behind
+        const cc = document.getElementById('canvas-container')
+        if (cc) cc.style.zIndex = behind ? '1' : '3'
+      }
+      // Fixed atmospheric glow: ease it on once Section 3 is approaching and keep
+      // it on for the rest of the page (constant). Hysteresis + the CSS opacity
+      // transition give the soft, slow fade.
+      let atmos = atmosRef.current
+      if (!atmos && s3 > 0.25) atmos = true
+      else if (atmos && s3 < 0.08) atmos = false
+      if (atmos !== atmosRef.current) {
+        atmosRef.current = atmos
+        const el = document.getElementById('scene-atmosphere')
+        if (el) el.classList.toggle('is-visible', atmos)
+      }
       if (heavyRef.current && scrollState.progress > 0.80) {
         heavyRef.current = false
         setShowHeavy(false)
@@ -1633,7 +1757,12 @@ export default function HeroOrb() {
         heavyRef.current = heavy
         setShowHeavy(heavy)
       }
-      cleanupShot = () => { delete window.__wfSetProgress }
+      window.__wfSetRotY = (y) => { shotRotY = y }
+      window.__wfSetSec3 = (v) => { scrollState.sec3 = Math.min(1, Math.max(0, v)) }
+      cleanupShot = () => {
+        delete window.__wfSetProgress; delete window.__wfSetRotY; delete window.__wfSetSec3
+        shotRotY = null
+      }
     }
     return () => { window.removeEventListener('scroll', onScroll); cleanupShot && cleanupShot() }
   }, [])
@@ -1685,9 +1814,16 @@ export default function HeroOrb() {
   useFrame((state, delta) => {
     if (!groupRef.current) return
     const p = scrollState.progress
-    const targetX = ORB_X + (END_X - ORB_X) * p
-    const targetY = ORB_Y + (0 - ORB_Y) * p
-    const targetScale = 1.0 + (END_SCALE - 1.0) * p
+    const sec3 = scrollState.sec3
+    const e3 = smoothstep(sec3)
+    // Section 3: recentre (x→0), drop to the bottom band (y→WAVE_CY) and scale up
+    // so the funnel's orbs spread into a wide wave.
+    let targetX = ORB_X + (END_X - ORB_X) * p
+    let targetY = ORB_Y + (0 - ORB_Y) * p
+    let targetScale = 1.0 + (END_SCALE - 1.0) * p
+    targetX += (WAVE_CX - targetX) * e3
+    targetY += (WAVE_CY - targetY) * e3
+    targetScale += (WAVE_SCALE - targetScale) * e3
     const lerpAmt = Math.min(1, delta * 8)
     groupRef.current.position.x += (targetX - groupRef.current.position.x) * lerpAmt
     groupRef.current.position.y += (targetY - groupRef.current.position.y) * lerpAmt
@@ -1696,7 +1832,16 @@ export default function HeroOrb() {
     groupRef.current.scale.setScalar(newS)
 
     if (isDragging.current) return
-    if (p < 0.85 || carouselState.activeCard === 0) {
+    if (shotRotY !== null) { groupRef.current.rotation.set(0.2, shotRotY, 0); return }
+    if (sec3 > 0.01) {
+      // Tilt the wave slightly toward the camera (head-on + perspective) and hold
+      // it still — the orbs animate themselves (undulation).
+      enteredOsc.current = false
+      const k = Math.min(1, delta * 2.5)
+      groupRef.current.rotation.x += (WAVE_TILT - groupRef.current.rotation.x) * k
+      groupRef.current.rotation.y += (0 - groupRef.current.rotation.y) * k
+      groupRef.current.rotation.z += (0 - groupRef.current.rotation.z) * k
+    } else if (p < 0.85 || carouselState.activeCard === 0) {
       enteredOsc.current = false
       let y = groupRef.current.rotation.y + delta * 0.044
       if (y > Math.PI)  y -= Math.PI * 2
@@ -1722,7 +1867,8 @@ export default function HeroOrb() {
       }
     }
     if (glowRef.current) {
-      const targetOpacity = p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0
+      // Glow halo only in the hero / Section 2 — faded out across Section 3.
+      const targetOpacity = (p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0) * (1 - scrollState.sec3)
       glowRef.current.material.opacity += (targetOpacity - glowRef.current.material.opacity) * Math.min(1, delta * 4)
     }
   })

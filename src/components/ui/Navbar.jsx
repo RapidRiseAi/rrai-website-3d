@@ -44,6 +44,7 @@ function ServicesDropdown() {
 export default function Navbar({ loaded }) {
   const navRef  = useRef()
   const [scrolled, setScrolled] = useState(false)
+  const [hidden, setHidden]     = useState(false)
 
   useEffect(() => {
     if (!loaded) return
@@ -54,14 +55,28 @@ export default function Navbar({ loaded }) {
     )
   }, [loaded])
 
+  // Auto-hide: slide the bar away when scrolling down past the hero, bring it
+  // back when scrolling up (or near the top).
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 30)
+    let lastY = window.scrollY
+    const fn = () => {
+      const y = window.scrollY
+      setScrolled(y > 30)
+      if (y < 90) setHidden(false)
+      else if (y > lastY + 5) setHidden(true)   // scrolling down
+      else if (y < lastY - 5) setHidden(false)  // scrolling up
+      lastY = y
+    }
     window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
   return (
-    <nav ref={navRef} className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} style={{ opacity: 0 }}>
+    <nav
+      ref={navRef}
+      className={`navbar${scrolled ? ' navbar--scrolled' : ''}${hidden ? ' navbar--hidden' : ''}`}
+      style={{ opacity: 0 }}
+    >
       <div className="navbar-inner">
 
         <Link to="/" className="navbar-brand">
