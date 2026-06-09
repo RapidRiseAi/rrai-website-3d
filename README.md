@@ -57,8 +57,11 @@ npm run lint && npm run build && npm test   # gate before pushing
 ```
 
 Then commit and push to a feature branch and open a PR. CI
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same
-lint + build + tests on every pull request.
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint + build as
+hard gates on every pull request, and runs the verification tests as a
+**non-blocking** step — they're sensitive to the software-rendered (SwiftShader)
+browser used in CI, so `npm test` on real hardware locally is the reliable
+pass/fail signal.
 
 ## Versioning
 
