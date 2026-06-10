@@ -31,20 +31,19 @@ body {
    behind the pricing cards. The transparent Section-3+ backgrounds let it show. */
 
 /* Atmospheric glow — a FIXED background layer behind the wave (z-index 0, below
-   the wave canvas's z1). Persistent + eased so it stays constant while scrolling
-   and fades slowly/softly (not a harsh, flickering section filter). */
+   the wave canvas's z1). Opacity is driven inline by HeroOrb's scroll handler as
+   a pure function of scroll position — no CSS transition: a time-based fade here
+   lags the scroll and lingers into Section 2 when scrolling back up. */
 #scene-atmosphere {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.8s ease;
   background:
     radial-gradient(150% 56% at 50% 122%, rgba(30, 92, 202, 0.32) 0%, rgba(16, 50, 130, 0.14) 38%, transparent 68%),
     linear-gradient(to top, rgba(12, 30, 70, 0.34) 0%, rgba(8, 18, 44, 0.12) 26%, transparent 52%);
 }
-#scene-atmosphere.is-visible { opacity: 1; }
 
 /* ── Electric blue corner glow ───────────────────────────────────────────── */
 .corner-glow {

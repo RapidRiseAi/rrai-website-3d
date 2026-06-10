@@ -16,6 +16,7 @@ const END_SCALE = 0.715   // carousel/card-mode group scale (+30% — Section-2 
 
 const scrollState = { progress: 0, sec3: 0 }
 let shotRotY = null   // ?shot harness: force a card-object rotation for capture
+let waveBufDirty = false  // wave wrote posTarget; one repair pass owed when it exits
 
 const { vertices, edges, hexCenters } = buildSoccerBall()
 
@@ -1204,6 +1205,14 @@ function InteractiveMiniOrbs({ groupRef }) {
         posTarget[ix + 2] = fn[ix + 2] + (lz - fn[ix + 2]) * wave
       }
       if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+      waveBufDirty = true
+    } else if (waveBufDirty && activeRef.current === 6) {
+      // An instant scroll jump (scrollbar fling, Home key) can cross the gate
+      // above in one frame and freeze the buffer mid-wave; restore the funnel's
+      // exact positions once. Card swaps repair their own buffer.
+      posTarget.set(cardBufs[6])
+      if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
+      waveBufDirty = false
     }
     // The funnel's ACTUAL orbs stay as the wave in Section 3 (no hand-off). The
     // scene canvas drops behind the content (see the scroll handler) so these
@@ -1701,7 +1710,8 @@ export default function HeroOrb() {
   const [showHeavy, setShowHeavy] = useState(true)
   const heavyRef = useRef(true)
   const behindRef = useRef(false)
-  const atmosRef = useRef(false)
+  const atmosRef = useRef(-1)       // last atmosphere opacity written (-1 = force first write)
+  const glowBaseRef = useRef(0)     // lerped progress part of the glow halo opacity
 
   useEffect(() => {
     const onScroll = () => {
@@ -1714,31 +1724,31 @@ export default function HeroOrb() {
       scrollState.sec3 = deriveScroll(window.scrollY).sec3
       // Section 3+: drop the scene canvas BEHIND the page content so the wave —
       // the funnel's ACTUAL orbs, morphed — renders behind the cards (keeps them
-      // solid). On top again for the hero/carousel. Hysteresis avoids flicker if
-      // the scroll position hovers around the threshold.
+      // solid). On top again for the hero/carousel. The flip is symmetric about
+      // the transition midpoint (tiny hysteresis gap against jitter only):
+      // direction-dependent thresholds meant the same scroll position rendered
+      // different layering depending on travel direction — the root of the
+      // "turns blue on scroll-up" bug. Mid-snap is also peak scroll velocity,
+      // where the discrete flip is least visible.
       const s3 = scrollState.sec3
       let behind = behindRef.current
-      if (!behind && s3 > 0.55) behind = true
-      else if (behind && s3 < 0.10) behind = false
+      if (!behind && s3 > 0.52) behind = true
+      else if (behind && s3 < 0.48) behind = false
       if (behind !== behindRef.current) {
         behindRef.current = behind
         const cc = document.getElementById('canvas-container')
         if (cc) cc.style.zIndex = behind ? '1' : '3'
       }
-      // Fixed atmospheric glow: ease it on once Section 3 is approaching and keep
-      // it on for the rest of the page (constant). Hysteresis + the CSS opacity
-      // transition give the soft, slow fade.
-      let atmos = atmosRef.current
-      if (!atmos && s3 > 0.25) atmos = true
-      else if (atmos && s3 < 0.15) atmos = false
-      if (atmos !== atmosRef.current) {
-        atmosRef.current = atmos
+      // Atmospheric glow: opacity is a pure function of scroll position — no
+      // hysteresis, no CSS transition — so both directions render the identical
+      // frame and nothing can linger into Section 2. The scroll snap is eased,
+      // which keeps the ramp smooth on wheel/key steps; it completes exactly as
+      // a down-snap lands and starts shrinking immediately on the way up.
+      const atmosOp = Math.min(1, Math.max(0, (s3 - 0.15) / 0.85))
+      if (atmosOp !== atmosRef.current) {
+        atmosRef.current = atmosOp
         const el = document.getElementById('scene-atmosphere')
-        if (el) {
-          // Fade in slowly (CSS 1.8s), fade out quickly so glow is gone before Section 2
-          el.style.transition = atmos ? '' : 'opacity 0.3s ease'
-          el.classList.toggle('is-visible', atmos)
-        }
+        if (el) el.style.opacity = String(atmosOp)
       }
       if (heavyRef.current && scrollState.progress > 0.80) {
         heavyRef.current = false
@@ -1856,10 +1866,14 @@ export default function HeroOrb() {
       const oscTarget = Math.sin(t * 0.32) * 0.22
       if (!enteredOsc.current) {
         enteredOsc.current = true
-        groupRef.current.rotation.y = oscTarget
-      } else {
-        groupRef.current.rotation.y += (oscTarget - groupRef.current.rotation.y) * Math.min(1, delta * 1.5)
+        // Jump straight to the oscillation only when far off (arriving from the
+        // hero's free spin); returning from the wave (rotation ≈ 0) the jump was
+        // a visible single-frame pop, so from nearby lerp in instead.
+        if (Math.abs(groupRef.current.rotation.y - oscTarget) > 0.6) {
+          groupRef.current.rotation.y = oscTarget
+        }
       }
+      groupRef.current.rotation.y += (oscTarget - groupRef.current.rotation.y) * Math.min(1, delta * 1.5)
     }
     if (snappingBack.current) {
       const rot = groupRef.current.rotation
@@ -1872,8 +1886,13 @@ export default function HeroOrb() {
     }
     if (glowRef.current) {
       // Glow halo only in the hero / Section 2 — faded out across Section 3.
-      const targetOpacity = (p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0) * (1 - scrollState.sec3)
-      glowRef.current.material.opacity += (targetOpacity - glowRef.current.material.opacity) * Math.min(1, delta * 4)
+      // Only the progress part goes through the lerp; the Section-3 factor is
+      // applied instantly so the halo tracks scroll symmetrically — lerping it
+      // made the halo bloom in late on scroll-up, a blue glow that scroll-down
+      // never shows at the same position.
+      const glowBase = p >= 0.85 ? Math.min(1, (p - 0.85) / 0.10) * 0.7 : 0
+      glowBaseRef.current += (glowBase - glowBaseRef.current) * Math.min(1, delta * 4)
+      glowRef.current.material.opacity = glowBaseRef.current * (1 - smoothstep(scrollState.sec3))
     }
   })
 
