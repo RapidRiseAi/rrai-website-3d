@@ -12,6 +12,8 @@ const R = 1.70
 const ORB_X = 2.45
 const ORB_Y = 0.18
 const END_X = -3.3
+const END_Y = -0.42       // card-mode group centre — projects to ~60% viewport height,
+                          // the measured vertical centre of the carousel card column
 const END_SCALE = 0.715   // carousel/card-mode group scale (+30% — Section-2 object size)
 
 const scrollState = { progress: 0, sec3: 0 }
@@ -821,6 +823,40 @@ const CARD_GENERATORS = [
   _genIntelligenceOrbit, _genConnectedCubes, _genFunnel,
 ]
 
+/* Match every card object's visual footprint to card 0 (the globe): centre
+   each shape's robust bounding box on the group origin and scale it so its
+   largest robust dimension equals the globe's. The 5th–95th percentile box
+   ignores sparse outliers (funnel stream dots, sparkle satellites) so the
+   normalisation tracks the shape's visual mass, not its extremes. Keeps all
+   seven objects the same on-screen size, centred on the rotation axis. */
+function normalizeCardShapes(bufs) {
+  const robustBox = (pos) => {
+    const n = pos.length / 3
+    const xs = new Float32Array(n), ys = new Float32Array(n), zs = new Float32Array(n)
+    for (let i = 0; i < n; i++) {
+      xs[i] = pos[i * 3]; ys[i] = pos[i * 3 + 1]; zs[i] = pos[i * 3 + 2]
+    }
+    const lo = Math.floor(n * 0.05), hi = Math.ceil(n * 0.95) - 1
+    const span = (a) => { a.sort(); return [a[lo], a[hi]] }
+    const [x0, x1] = span(xs), [y0, y1] = span(ys), [z0, z1] = span(zs)
+    return {
+      cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, cz: (z0 + z1) / 2,
+      half: Math.max(x1 - x0, y1 - y0, z1 - z0) / 2,
+    }
+  }
+  const ref = robustBox(bufs[0])
+  bufs.forEach((pos, k) => {
+    const b = robustBox(pos)
+    /* card 0 defines the footprint (s=1) but is recentred like the rest */
+    const s = k === 0 ? 1 : Math.min(1.45, Math.max(0.9, ref.half / b.half))
+    for (let i = 0; i < pos.length; i += 3) {
+      pos[i]     = (pos[i]     - b.cx) * s
+      pos[i + 1] = (pos[i + 1] - b.cy) * s
+      pos[i + 2] = (pos[i + 2] - b.cz) * s
+    }
+  })
+}
+
 /* ── Section 3 — the funnel's orbs rearranged into a wide bottom wave ──────────
    No new particles: the last carousel card's funnel buffer (cardBufs[6]) is
    lerped into this wave grid as Section 3 scrolls in (scrollState.sec3 0→1), and
@@ -1065,12 +1101,16 @@ function InteractiveMiniOrbs({ groupRef }) {
   // plain Float32Array of positions, or { pos, tags } when they differentiate
   // edge vs surface orbs (globe + gear). posTarget/tagTarget are the live GPU
   // buffers swapped on card change, exactly like aPosTarget.
-  const cardData = useMemo(() => CARD_GENERATORS.map(g => {
-    const r = g()
-    if (r instanceof Float32Array)
-      return { pos: r, tags: new Float32Array(r.length / 3), normal: [0, 0, 1] }
-    return { pos: r.pos, tags: r.tags, normal: r.normal || null }
-  }), [])
+  const cardData = useMemo(() => {
+    const datas = CARD_GENERATORS.map(g => {
+      const r = g()
+      if (r instanceof Float32Array)
+        return { pos: r, tags: new Float32Array(r.length / 3), normal: [0, 0, 1] }
+      return { pos: r.pos, tags: r.tags, normal: r.normal || null }
+    })
+    normalizeCardShapes(datas.map(d => d.pos))
+    return datas
+  }, [])
   const cardBufs    = useMemo(() => cardData.map(d => d.pos),    [cardData])
   const cardTags    = useMemo(() => cardData.map(d => d.tags),   [cardData])
   const cardNormals = useMemo(() => cardData.map(d => d.normal), [cardData])
@@ -1833,7 +1873,7 @@ export default function HeroOrb() {
     // Section 3: recentre (x→0), drop to the bottom band (y→WAVE_CY) and scale up
     // so the funnel's orbs spread into a wide wave.
     let targetX = ORB_X + (END_X - ORB_X) * p
-    let targetY = ORB_Y + (0 - ORB_Y) * p
+    let targetY = ORB_Y + (END_Y - ORB_Y) * p
     let targetScale = 1.0 + (END_SCALE - 1.0) * p
     targetX += (WAVE_CX - targetX) * e3
     targetY += (WAVE_CY - targetY) * e3

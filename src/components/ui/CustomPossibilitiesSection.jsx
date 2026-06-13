@@ -1,9 +1,7 @@
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  CUSTOM_SECTION_COPY,
-  customSolutionGroups,
-  possibilityChips,
-} from '../../data/customSolutions'
+import { Link } from 'react-router-dom'
+import { CUSTOM_SECTION_COPY, possibilityChips } from '../../data/customSolutions'
 
 /* ── Icons (thin line style, consistent with the rest of the site) ──────────
    Keyed by the `icon` strings used in src/data/customSolutions.js. */
@@ -108,6 +106,21 @@ const ICONS = {
       <path d="m12 2.5 9 5-9 5-9-5z" /><path d="m3 12.5 9 5 9-5M3 17.5l9 5 9-5" />
     </svg>
   ),
+  search: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" /><path d="m20.5 20.5-4.4-4.4" />
+    </svg>
+  ),
+  book: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 6.5c-1.6-1.6-3.9-2-6.5-2-.9 0-1.7.1-2.5.3v14.4c.8-.2 1.6-.3 2.5-.3 2.6 0 4.9.5 6.5 2 1.6-1.5 3.9-2 6.5-2 .9 0 1.7.1 2.5.3V4.8c-.8-.2-1.6-.3-2.5-.3-2.6 0-4.9.4-6.5 2z" /><path d="M12 6.5V21" />
+    </svg>
+  ),
+  users: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3.6" /><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0" /><path d="M16 4.9a3.6 3.6 0 0 1 0 6.5M18.2 15.2a6.5 6.5 0 0 1 3.3 5.3" />
+    </svg>
+  ),
 }
 const iconFor = (key) => ICONS[key] ?? ICONS.spark
 
@@ -116,19 +129,255 @@ const ArrowIcon = () => (
     <path d="M2 7.5h11M8 3l4.5 4.5L8 12" />
   </svg>
 )
-const CheckIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.5 12.5l4.6 4.6L19.5 6.5" />
+
+/* Trust-line icons (check circle / shield / star, matching the mockup) */
+const TrustCheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" /><path d="m8.2 12.3 2.5 2.5 5.1-5.4" />
+  </svg>
+)
+const TrustShieldIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8 7.5 10 4.3-2 7.5-5.4 7.5-10v-6z" /><path d="m8.8 11.8 2.3 2.3 4.1-4.4" />
+  </svg>
+)
+const TrustStarIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.9z" />
   </svg>
 )
 
 /* How many chips from the possibilityChips library ride the horizon arc. */
-const HORIZON_CHIP_COUNT = 14
+const HORIZON_CHIP_COUNT = 12
+/* Reduced-motion fallback shows the same set as static rows (6 per row). */
+const STATIC_CHIP_COUNT = 12
 
 const EASE = [0.16, 1, 0.3, 1]
 const inView = { once: true, amount: 0.2, margin: '-60px' }
 
-/* Planet-horizon arc placement (flattened by the ≤1100px media query). */
+/* ── Horizon orbit ───────────────────────────────────────────────────────────
+   Chips live on a virtual loop longer than the visible stage. One rAF loop
+   advances a phase per lane and maps every chip to: x along the stage,
+   y/tilt/scale from the arc curve, opacity from the edge-fade window.
+   Transforms + opacity only — no layout writes, no React re-renders. */
+const LANE_SPECS = [
+  { dir: -1, speed: 26, tilt: 8, scaleEdge: 0.09, fadeEdge: 0.12, baseScale: 1, baseFade: 1 },
+  { dir: 1, speed: 19, tilt: 6, scaleEdge: 0.08, fadeEdge: 0.14, baseScale: 0.95, baseFade: 0.94 },
+]
+
+const MIN_CHIP_GAP = 18 /* px between chips on the loop */
+const EDGE_FADE_ZONE = 0.14 /* outer fraction of the half-stage where chips fade */
+const HOVER_SPEED_MULT = 0.35 /* lane speed while the pointer rests on the band */
+
+/* Compact laptop heights shrink the chip lanes via CSS media queries (940px /
+   800px breakpoints) — the arc drop must shrink in step or edge chips overflow
+   their lane and collide with the row below. Keep in sync with index.css. */
+const heightScale = () => {
+  const h = typeof window === 'undefined' ? 1000 : window.innerHeight
+  /* <= matches the inclusive CSS max-height media queries exactly */
+  return h <= 800 ? 0.62 : h <= 940 ? 0.8 : 1
+}
+
+/* Arc depth per lane, flattened as the stage narrows or the viewport shortens */
+const arcDrop = (width, lane) => {
+  const base = (width < 640 ? [16, 12] : width < 1100 ? [42, 30] : [72, 52])[lane]
+  return width < 1100 ? base : base * heightScale()
+}
+
+const smooth01 = (v) => {
+  const t = Math.min(Math.max(v, 0), 1)
+  return t * t * (3 - 2 * t)
+}
+
+/* Live subscription — framer's useReducedMotion reads the preference once at
+   mount, so a mid-session OS toggle would never swap the orbit out. */
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = (e) => setReduced(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return reduced
+}
+
+function HorizonOrbit({ rows }) {
+  const wrapRef = useRef(null)
+  const chipEls = useRef(rows.map(() => []))
+
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return undefined
+
+    const lanes = LANE_SPECS.map((spec, li) => ({
+      spec,
+      els: chipEls.current[li].filter(Boolean),
+      offsets: [],
+      loop: 1,
+      drop: 0,
+      speed: spec.speed,
+      phase: 0,
+    }))
+    let stageHalf = 0
+    let speedMult = 1
+    let targetMult = 1
+    let raf = 0
+    let last = 0
+    let disposed = false
+
+    /* Distribute chips around the loop with equal gaps based on real widths,
+       so they never overlap; the loop always exceeds the stage so the mod
+       wrap happens off-screen — the cycle restarts without a visible jump. */
+    const measure = () => {
+      const width = wrap.clientWidth
+      stageHalf = width / 2
+      lanes.forEach((lane, li) => {
+        const widths = lane.els.map((el) => el.offsetWidth)
+        const total = widths.reduce((sum, w) => sum + w, 0)
+        lane.loop = Math.max(width * 1.15, total + widths.length * MIN_CHIP_GAP)
+        const gap = (lane.loop - total) / (widths.length || 1)
+        let cursor = 0
+        lane.offsets = widths.map((w) => {
+          const center = cursor + w / 2
+          cursor += w + gap
+          return center
+        })
+        lane.drop = arcDrop(width, li)
+        lane.speed = lane.spec.speed * (width < 640 ? 0.75 : 1)
+      })
+    }
+
+    const render = () => {
+      lanes.forEach((lane) => {
+        const { spec } = lane
+        lane.els.forEach((el, i) => {
+          let p = (lane.offsets[i] + lane.phase) % lane.loop
+          if (p < 0) p += lane.loop
+          const x = p - lane.loop / 2
+          const u = stageHalf > 0 ? x / stageHalf : 0
+          const au = Math.abs(u)
+          if (au > 1.05) {
+            el.style.visibility = 'hidden'
+            return
+          }
+          const cu = Math.min(au, 1)
+          const edge = smooth01((1 - cu) / EDGE_FADE_ZONE)
+          const y = lane.drop * cu * cu
+          const tilt = spec.tilt * Math.max(-1, Math.min(1, u))
+          const scale = spec.baseScale * (1 - spec.scaleEdge * cu)
+          el.style.visibility = 'visible'
+          el.style.opacity = (spec.baseFade * (1 - spec.fadeEdge * cu) * edge).toFixed(3)
+          el.style.transform =
+            `translate(calc(${x.toFixed(1)}px - 50%), ${y.toFixed(1)}px) ` +
+            `rotate(${tilt.toFixed(2)}deg) scale(${scale.toFixed(3)})`
+        })
+      })
+    }
+
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000, 0.064) /* tame tab-restore jumps */
+      last = now
+      speedMult += (targetMult - speedMult) * Math.min(1, dt * 4)
+      lanes.forEach((lane) => {
+        lane.phase = (lane.phase + dt * lane.speed * speedMult * lane.spec.dir) % lane.loop
+      })
+      render()
+      raf = requestAnimationFrame(tick)
+    }
+    const start = () => {
+      if (raf) return
+      last = performance.now()
+      raf = requestAnimationFrame(tick)
+    }
+    const stop = () => {
+      cancelAnimationFrame(raf)
+      raf = 0
+    }
+
+    measure()
+    render()
+
+    /* Only animate while the band is on screen */
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) start()
+      else stop()
+    })
+    io.observe(wrap)
+
+    const ro = new ResizeObserver(() => {
+      measure()
+      render()
+    })
+    ro.observe(wrap)
+    /* RO above only fires on wrap WIDTH changes; the arc drop also depends on
+       window HEIGHT (compact-laptop scale), so re-measure on window resize. */
+    const onWinResize = () => {
+      measure()
+      render()
+    }
+    window.addEventListener('resize', onWinResize)
+    document.fonts?.ready?.then(() => {
+      if (disposed) return
+      measure()
+      render()
+    })
+
+    const slow = () => { targetMult = HOVER_SPEED_MULT }
+    const restore = () => { targetMult = 1 }
+    wrap.addEventListener('pointerenter', slow)
+    wrap.addEventListener('pointerleave', restore)
+
+    return () => {
+      disposed = true
+      stop()
+      io.disconnect()
+      ro.disconnect()
+      window.removeEventListener('resize', onWinResize)
+      wrap.removeEventListener('pointerenter', slow)
+      wrap.removeEventListener('pointerleave', restore)
+    }
+  }, [])
+
+  return (
+    <motion.div
+      ref={wrapRef}
+      className="cp-lanes"
+      aria-hidden="true"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={inView}
+      transition={{ duration: 0.8, ease: EASE }}
+    >
+      {rows.map((row, li) => (
+        <div key={li} className={`cp-lane cp-lane--${li === 0 ? 'a' : 'b'}`}>
+          {row.map((chip, i) => {
+            const Icon = iconFor(chip.icon)
+            return (
+              <span
+                key={chip.label}
+                ref={(el) => { chipEls.current[li][i] = el }}
+                className="cp-chip cp-chip--orbit"
+                style={{ visibility: 'hidden' }}
+                title={chip.category}
+              >
+                <span className="cp-chip-inner">
+                  <Icon />
+                  {chip.label}
+                </span>
+              </span>
+            )
+          })}
+        </div>
+      ))}
+    </motion.div>
+  )
+}
+
+/* Planet-horizon arc placement for the static reduced-motion fallback
+   (flattened by the ≤1100px media query). */
 function arcStyle(i, n, { drop, tilt, scaleEdge, fadeEdge, baseScale = 1, baseFade = 1 }) {
   const t = n > 1 ? (i - (n - 1) / 2) / ((n - 1) / 2) : 0
   return {
@@ -139,52 +388,33 @@ function arcStyle(i, n, { drop, tilt, scaleEdge, fadeEdge, baseScale = 1, baseFa
   }
 }
 
+/* Static chip — shown only when the user prefers reduced motion. The entrance
+   fade lives on the inner span so the outer keeps its CSS arc fade
+   (framer leaves a persistent inline opacity that would override it). */
 function PossibilityChip({ chip, style, index }) {
   const Icon = iconFor(chip.icon)
   return (
-    <motion.span
-      className="cp-chip"
-      style={style}
-      title={chip.category}
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={inView}
-      transition={{ duration: 0.45, delay: 0.08 + index * 0.035, ease: EASE }}
-    >
-      <span className="cp-chip-inner">
+    <span className="cp-chip" style={style} title={chip.category}>
+      <motion.span
+        className="cp-chip-inner"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={inView}
+        transition={{ duration: 0.45, delay: 0.05 + index * 0.03, ease: EASE }}
+      >
         <Icon />
         {chip.label}
-      </span>
-    </motion.span>
-  )
-}
-
-function SolutionGroup({ group, index }) {
-  const Icon = iconFor(group.icon)
-  return (
-    <motion.article
-      className="cp-group"
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={inView}
-      transition={{ duration: 0.55, delay: 0.05 + index * 0.07, ease: EASE }}
-    >
-      <div className="cp-group-head">
-        <span className="cp-group-icon" aria-hidden="true"><Icon /></span>
-        <h3 className="cp-group-title">{group.title}</h3>
-      </div>
-      <p className="cp-group-value">{group.businessValue}</p>
-      <ul className="cp-group-list">
-        {group.examples.map((ex) => (
-          <li key={ex}><CheckIcon />{ex}</li>
-        ))}
-      </ul>
-    </motion.article>
+      </motion.span>
+    </span>
   )
 }
 
 export default function CustomPossibilitiesSection() {
-  const horizonChips = possibilityChips.slice(0, HORIZON_CHIP_COUNT)
+  const reducedMotion = usePrefersReducedMotion()
+  const horizonChips = possibilityChips.slice(
+    0,
+    reducedMotion ? STATIC_CHIP_COUNT : HORIZON_CHIP_COUNT,
+  )
   const rowA = horizonChips.slice(0, Math.ceil(horizonChips.length / 2))
   const rowB = horizonChips.slice(Math.ceil(horizonChips.length / 2))
 
@@ -205,39 +435,38 @@ export default function CustomPossibilitiesSection() {
           <p className="cp-sub">{CUSTOM_SECTION_COPY.sub}</p>
         </motion.header>
 
-        {/* Possibility horizon — featured chips on a subtle curved band */}
+        {/* Possibility horizon — chips orbit the curved band, fading at the edges */}
         <div className="cp-stage">
-          <div className="cp-row cp-row--a">
-            {rowA.map((chip, i) => (
-              <PossibilityChip
-                key={chip.label}
-                chip={chip}
-                index={i}
-                style={arcStyle(i, rowA.length, { drop: 26, tilt: 5, scaleEdge: 0.09, fadeEdge: 0.22 })}
-              />
-            ))}
-          </div>
-          <div className="cp-row cp-row--b">
-            {rowB.map((chip, i) => (
-              <PossibilityChip
-                key={chip.label}
-                chip={chip}
-                index={i + rowA.length}
-                style={arcStyle(i, rowB.length, { drop: 20, tilt: 4, scaleEdge: 0.08, fadeEdge: 0.24, baseScale: 0.95, baseFade: 0.92 })}
-              />
-            ))}
-          </div>
+          {reducedMotion ? (
+            <>
+              <div className="cp-row cp-row--a">
+                {rowA.map((chip, i) => (
+                  <PossibilityChip
+                    key={chip.label}
+                    chip={chip}
+                    index={i}
+                    style={arcStyle(i, rowA.length, { drop: 72, tilt: 8, scaleEdge: 0.09, fadeEdge: 0.12 })}
+                  />
+                ))}
+              </div>
+              <div className="cp-row cp-row--b">
+                {rowB.map((chip, i) => (
+                  <PossibilityChip
+                    key={chip.label}
+                    chip={chip}
+                    index={i + rowA.length}
+                    style={arcStyle(i, rowB.length, { drop: 52, tilt: 6, scaleEdge: 0.08, fadeEdge: 0.14, baseScale: 0.95, baseFade: 0.94 })}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <HorizonOrbit rows={[rowA, rowB]} />
+          )}
           <div className="cp-horizon" aria-hidden="true" />
         </div>
 
-        {/* Grouped idea library — real systems for real business problems */}
-        <div className="cp-groups">
-          {customSolutionGroups.map((group, i) => (
-            <SolutionGroup key={group.title} group={group} index={i} />
-          ))}
-        </div>
-
-        {/* CTA block */}
+        {/* CTA card: the visual destination of the section, inside the arc */}
         <motion.div
           className="cp-cta"
           initial={{ opacity: 0, y: 24 }}
@@ -245,20 +474,46 @@ export default function CustomPossibilitiesSection() {
           viewport={{ once: true, amount: 0, margin: '0px 0px 30% 0px' }}
           transition={{ duration: 0.6, delay: 0.08, ease: EASE }}
         >
-          <h3 className="cp-cta-title">Need something that does not fit into a package?</h3>
+          <span className="cp-cta-badge" aria-hidden="true">
+            {ICONS.users()}
+          </span>
+          <h3 className="cp-cta-title">Need a system built around your workflow?</h3>
           <p className="cp-cta-sub">
-            Tell us what you are trying to build. We will help shape the right
-            system, scope, and starting point for your budget.
+            Tell us what you need to improve. Whether it&rsquo;s client
+            communication, admin, reporting, bookings, or operations,
+            we&rsquo;ll help shape the right custom solution.
           </p>
           <div className="cp-cta-actions">
-            <a className="cp-btn-primary" href="mailto:team@rapidriseai.com?subject=Custom%20build%20enquiry">
-              Start a Custom Build
+            <Link className="cp-btn-primary" to="/contact">
+              Tell Us What You Need
               <ArrowIcon />
-            </a>
-            <a className="cp-btn-ghost" href="mailto:team@rapidriseai.com?subject=Quote%20request">
-              Request a Quote
-            </a>
+            </Link>
+            <button
+              className="cp-btn-ghost"
+              type="button"
+              onClick={() => {
+                document.querySelector('.fp-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            >
+              See Pricing
+            </button>
           </div>
+          <p className="cp-cta-trust">
+            <span className="cp-cta-trust-item">
+              <TrustCheckIcon />
+              Free consultation
+            </span>
+            <span className="cp-cta-trust-dot" aria-hidden="true">•</span>
+            <span className="cp-cta-trust-item">
+              <TrustShieldIcon />
+              No pressure
+            </span>
+            <span className="cp-cta-trust-dot" aria-hidden="true">•</span>
+            <span className="cp-cta-trust-item">
+              <TrustStarIcon />
+              Tailored recommendation
+            </span>
+          </p>
         </motion.div>
       </div>
     </section>

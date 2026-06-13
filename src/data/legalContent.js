@@ -6,12 +6,9 @@
 // Body format per section: a string renders as a paragraph; an array of
 // strings renders as a bullet list. Occurrences of the contact email become
 // mailto links automatically.
-//
-// PLACEHOLDERS — [Add …] values are intentional and must be replaced with
-// verified details before publishing. Do not invent them.
 
 export const LEGAL_EMAIL = 'team@rapidriseai.com'
-export const LEGAL_LAST_UPDATED = 'Last updated: [Add date]'
+export const LEGAL_LAST_UPDATED = 'Last updated: 11 June 2026'
 
 export const LEGAL_NAV = [
   { slug: 'privacy-policy',             label: 'Privacy Policy' },
@@ -247,8 +244,9 @@ export const LEGAL_DOCS = {
       {
         heading: 'Information Officer',
         body: [
-          'Information Officer: [Add Information Officer name]',
+          'Information Officer: Xander Blumenthal, CEO',
           'Email: team@rapidriseai.com',
+          'Phone / WhatsApp: 064 903 1234',
         ],
       },
       {
@@ -296,15 +294,16 @@ export const LEGAL_DOCS = {
         heading: 'Company details',
         body: [
           'Company name: Rapid Rise AI (Pty) Ltd',
-          'Registration number: [Add company registration number]',
-          'Registered address: [Add registered business address]',
+          'Registration number: K2024727338',
+          'Location: South Africa',
           'Email: team@rapidriseai.com',
-          'Website: [Add website URL]',
+          'Phone / WhatsApp: 064 903 1234',
+          'Website: https://www.rapidriseai.com',
         ],
       },
       {
         heading: 'Head of private body / Information Officer',
-        body: ['Name: [Add name]', 'Email: team@rapidriseai.com'],
+        body: ['Name: Xander', 'Email: team@rapidriseai.com'],
       },
       {
         heading: 'Purpose of this manual',

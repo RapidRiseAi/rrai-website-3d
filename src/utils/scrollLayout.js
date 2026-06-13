@@ -12,7 +12,7 @@
 // the cards) its section is made tall and pinned; CARD_VH is the scroll budget
 // per card in viewport-height units.
 
-export const CARD_VH = 0.7          // viewport-heights of scroll per carousel card
+export const CARD_VH = 0.55         // viewport-heights of scroll per carousel card
 export const N_CARDS = 7
 
 // The pinned carousel only makes sense on the desktop (row) layout. On narrow
@@ -45,9 +45,22 @@ export function getStops() {
 export function getStopsPx() {
   const vh = window.innerHeight
   const px = getStops().map((v) => Math.round(v * vh))
-  // The footer sits below the last vh-based stop (and the custom-possibilities
-  // section is taller than one viewport). Give the document bottom its own
-  // stop so the last wheel steps walk through the section and land on the
+  // The vh math above assumes each post-carousel section is exactly one
+  // viewport tall. On shorter laptops their content can overflow and push the
+  // LATER sections down, leaving the theoretical stop above the real section
+  // top (the section then sits partly below the fold when the snap rests).
+  // Anchor those three stops to the real section tops instead.
+  if (isDesktopLayout()) {
+    const anchors = ['.fp-section', '.ow-section', '.cp-section']
+    anchors.forEach((sel, k) => {
+      const el = document.querySelector(sel)
+      if (!el) return
+      px[px.length - anchors.length + k] =
+        Math.round(el.getBoundingClientRect().top + window.scrollY)
+    })
+  }
+  // The footer sits below the last section stop. Give the document bottom its
+  // own stop so the last wheel steps walk through the section and land on the
   // footer instead of the snap pulling the page back up.
   const bottom = Math.max(0, document.documentElement.scrollHeight - vh)
   if (bottom > px[px.length - 1] + 2) px.push(bottom)

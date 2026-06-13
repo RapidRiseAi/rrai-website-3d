@@ -7,6 +7,7 @@ import {
   useTransform,
 } from 'framer-motion'
 import { useEffect, useRef, useState, useCallback, Fragment } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const EXPO = [0.16, 1, 0.30, 1]
 
@@ -56,6 +57,7 @@ function MagneticButton({ children, className, onClick }) {
 export default function HeroSection({ loaded }) {
   const controls   = useAnimation()
   const sectionRef = useRef()
+  const navigate   = useNavigate()
   const [counts, setCounts] = useState([0, 0, 0])
 
   /* Scroll-driven exit */
@@ -146,16 +148,24 @@ export default function HeroSection({ loaded }) {
           <p className="hero-sub">
             We build intelligent software, automation, and connected business systems that turn manual processes into scalable digital infrastructure.
           </p>
-          <MagneticButton
-            className="btn-primary"
-            onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
-          >
-            View Our Work
-            <svg className="btn-arrow" width="14" height="14" viewBox="0 0 15 15" fill="none">
-              <path d="M2 7.5h11M8 3l4.5 4.5L8 12" stroke="currentColor"
-                strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </MagneticButton>
+          <div className="hero-cta-row">
+            <MagneticButton
+              className="btn-primary"
+              onClick={() => navigate('/contact')}
+            >
+              Start Your Project
+              <svg className="btn-arrow" width="14" height="14" viewBox="0 0 15 15" fill="none">
+                <path d="M2 7.5h11M8 3l4.5 4.5L8 12" stroke="currentColor"
+                  strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </MagneticButton>
+            <MagneticButton
+              className="btn-ghost-hero"
+              onClick={() => navigate('/proof')}
+            >
+              View Our Work
+            </MagneticButton>
+          </div>
         </motion.div>
 
       </motion.div>

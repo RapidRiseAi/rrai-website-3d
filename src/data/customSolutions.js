@@ -6,12 +6,13 @@
 // `icon` is a string key resolved to a line icon inside
 // CustomPossibilitiesSection.jsx (see SOLUTION_ICONS there). Available keys:
 //   code, user, bars, chat, bolt, calc, calendar, route, file, checklist,
-//   menu, flow, wrench, spark, chip, bell, globe, funnel, shield, layers
+//   menu, flow, wrench, spark, chip, bell, globe, funnel, shield, layers,
+//   search, book
 
 export const CUSTOM_SECTION_COPY = {
   eyebrow: 'Custom Solutions',
   title: 'What could we build around your business?',
-  sub: 'From internal tools and client portals to AI agents, automations, dashboards, and connected workflows, we build custom systems around the way your business actually operates.',
+  sub: 'We design and build custom systems that fit the way your business runs, not the other way around.',
 }
 
 /* ── Featured solution groups (the 6 cards) ──────────────────────────────────
@@ -105,34 +106,37 @@ export const customSolutionGroups = [
 
 /* ── Possibility chip library ────────────────────────────────────────────────
    The horizon shows the first HORIZON_CHIP_COUNT chips (set in the component);
-   reorder this list to change what is featured. The rest of the library is
-   covered by the grouped cards above and stays here ready to surface. */
+   reorder this list to change what is featured. */
 export const possibilityChips = [
-  // Featured on the horizon (first 14)
-  { label: 'Client Portals',          icon: 'user',      category: 'Client & Customer Systems' },
-  { label: 'AI Chat Agents',          icon: 'spark',     category: 'AI Assistants & Agents' },
-  { label: 'Smart Dashboards',        icon: 'bars',      category: 'Data, Reporting & Dashboards' },
-  { label: 'WhatsApp Automations',    icon: 'chat',      category: 'Time-Saving Automations' },
-  { label: 'Quote Calculators',       icon: 'calc',      category: 'Client & Customer Systems' },
+  // Featured on the horizon (first 12: lane A is the first 6, lane B the rest)
   { label: 'Booking Systems',         icon: 'calendar',  category: 'Industry-Specific Systems' },
   { label: 'Document Collection',     icon: 'file',      category: 'Client & Customer Systems' },
-  { label: 'Inspection Systems',      icon: 'checklist', category: 'Industry-Specific Systems' },
+  { label: 'Custom Internal Tools',   icon: 'code',      category: 'Internal Business Tools' },
+  { label: 'Client Portals',          icon: 'user',      category: 'Client & Customer Systems' },
+  { label: 'Smart Dashboards',        icon: 'bars',      category: 'Data, Reporting & Dashboards' },
+  { label: 'AI Chat Agents',          icon: 'spark',     category: 'AI Assistants & Agents' },
+  { label: 'Project Trackers',        icon: 'checklist', category: 'Internal Business Tools' },
+  { label: 'Inspection Systems',      icon: 'search',    category: 'Industry-Specific Systems' },
+  { label: 'CRM Workflows',           icon: 'flow',      category: 'Time-Saving Automations' },
+  { label: 'Reporting Systems',       icon: 'bars',      category: 'Data, Reporting & Dashboards' },
+  { label: 'IoT Integrations',        icon: 'chip',      category: 'Industry-Specific Systems' },
+  { label: 'Staff Dashboards',        icon: 'user',      category: 'Internal Business Tools' },
+  // Library — promote any of these up to feature them on the horizon
+  { label: 'WhatsApp Automations',    icon: 'chat',      category: 'Time-Saving Automations' },
+  { label: 'Quote Calculators',       icon: 'calc',      category: 'Client & Customer Systems' },
+  { label: 'Lead Routing',            icon: 'route',     category: 'Time-Saving Automations' },
+  { label: 'Knowledge Bases',         icon: 'book',      category: 'AI Assistants & Agents' },
   { label: 'Lead Management',         icon: 'funnel',    category: 'Time-Saving Automations' },
   { label: 'Approval Workflows',      icon: 'flow',      category: 'Internal Business Tools' },
   { label: 'Custom Websites',         icon: 'code',      category: 'Client & Customer Systems' },
-  { label: 'Knowledge Bases',         icon: 'file',      category: 'AI Assistants & Agents' },
   { label: 'Reminder Systems',        icon: 'bell',      category: 'Time-Saving Automations' },
-  { label: 'IoT Integrations',        icon: 'chip',      category: 'Industry-Specific Systems' },
-  // Library — surfaced through the grouped cards; promote any of these up
   { label: 'Landing Pages',           icon: 'globe',     category: 'Client & Customer Systems' },
   { label: 'Supplier Portals',        icon: 'user',      category: 'Client & Customer Systems' },
   { label: 'Staff Portals',           icon: 'user',      category: 'Internal Business Tools' },
   { label: 'Customer Onboarding',     icon: 'route',     category: 'Client & Customer Systems' },
   { label: 'Job Tracking',            icon: 'checklist', category: 'Internal Business Tools' },
   { label: 'Task Dashboards',         icon: 'bars',      category: 'Internal Business Tools' },
-  { label: 'Lead Routing',            icon: 'route',     category: 'Time-Saving Automations' },
   { label: 'Follow-Up Automation',    icon: 'bolt',      category: 'Time-Saving Automations' },
-  { label: 'CRM Workflows',           icon: 'flow',      category: 'Time-Saving Automations' },
   { label: 'Email Automations',       icon: 'bolt',      category: 'Time-Saving Automations' },
   { label: 'Google Workspace Automation', icon: 'bolt',  category: 'Time-Saving Automations' },
   { label: 'Internal Admin Panels',   icon: 'wrench',    category: 'Internal Business Tools' },

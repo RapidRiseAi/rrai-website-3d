@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { WORK_ITEMS, WORK_SECTION_COPY } from '../../data/workItems'
+import ConceptPreview from './ConceptPreview'
 
 /* ── Icons (line style matches the rest of the site: thin, round caps) ─────── */
 const ArrowUpRight = () => (
@@ -143,7 +144,7 @@ function MediaFallback({ item, num }) {
 
 function WorkPreview({ item, num }) {
   const [mediaFailed, setMediaFailed] = useState(false)
-  const showMedia = item.mediaSrc && !mediaFailed
+  const showMedia = item.mediaType !== 'mock' && item.mediaSrc && !mediaFailed
   return (
     <motion.article
       className="ow-preview"
@@ -165,6 +166,8 @@ function WorkPreview({ item, num }) {
           />
         ) : showMedia ? (
           <img src={item.mediaSrc} alt={item.mediaAlt} onError={() => setMediaFailed(true)} />
+        ) : item.mediaType === 'mock' ? (
+          <ConceptPreview kind={item.mockKind} label={item.mediaAlt} />
         ) : (
           <MediaFallback item={item} num={num} />
         )}
@@ -211,7 +214,7 @@ export default function OurWorkSection() {
   if (!active) return null
 
   return (
-    <section className="ow-section" aria-label="Our work — selected builds and demos">
+    <section className="ow-section" aria-label="Our work: selected builds and demos">
       <div className="ow-container">
         <motion.header
           className="ow-head"
@@ -226,7 +229,13 @@ export default function OurWorkSection() {
               {WORK_SECTION_COPY.title}<span className="ow-dot">.</span>
             </h2>
           </div>
-          <p className="ow-sub">{WORK_SECTION_COPY.sub}</p>
+          <div className="ow-head-right">
+            <p className="ow-sub">{WORK_SECTION_COPY.sub}</p>
+            <Link className="ow-all-link" to="/proof">
+              View all work
+              <ArrowRight />
+            </Link>
+          </div>
         </motion.header>
 
         <div className="ow-body">

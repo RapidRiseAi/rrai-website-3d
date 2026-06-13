@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Fragment } from 'react'
 import PageLayout from '../components/ui/PageLayout'
+import usePageMeta from '../hooks/usePageMeta'
 import { LEGAL_DOCS, LEGAL_EMAIL, LEGAL_LAST_UPDATED } from '../data/legalContent'
 
 /* Render a content string, turning occurrences of the contact email into
@@ -20,6 +21,10 @@ function LegalText({ text }) {
    the content lives in src/data/legalContent.js. */
 export default function LegalPage({ slug }) {
   const doc = LEGAL_DOCS[slug]
+  usePageMeta(
+    doc ? `${doc.title} | Rapid Rise AI` : 'Legal | Rapid Rise AI',
+    doc?.intro,
+  )
   if (!doc) return null
 
   return (

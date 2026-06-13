@@ -6,9 +6,9 @@ const easeInOutCubic = (t) =>
 
 const STEP_COOLDOWN = 110   // min ms between discrete wheel/key steps
 const IDLE_MS       = 150   // quiet period after a native scroll before snapping
-const PER_VH_MS     = 1000  // animation duration scales with distance
-const MIN_DUR       = 480
-const MAX_DUR       = 1500
+const PER_VH_MS     = 650   // animation duration scales with distance
+const MIN_DUR       = 300
+const MAX_DUR       = 1100
 
 // Snap-scroll controller. Scroll position is the single source of truth (the
 // scene + carousel read window.scrollY), so all this does is keep the page
@@ -22,6 +22,7 @@ export default function useScrollSnap() {
   const animating  = useRef(false)
   const idleTimer  = useRef(null)
   const lastStepAt = useRef(0)
+  const targetIdx  = useRef(null)   // stop index the current animation is heading to
 
   useEffect(() => {
     let stops = getStopsPx()
@@ -33,8 +34,9 @@ export default function useScrollSnap() {
       animating.current = false
     }
 
-    const animateTo = (target) => {
+    const animateTo = (target, idx = null) => {
       cancelAnim()
+      targetIdx.current = idx
       const start = window.scrollY
       const dist  = target - start
       if (Math.abs(dist) < 2) return
@@ -69,14 +71,27 @@ export default function useScrollSnap() {
       const now = performance.now()
       if (now - lastStepAt.current < STEP_COOLDOWN) return
       lastStepAt.current = now
+      const wasAnimating = animating.current
+      const inFlight = targetIdx.current
       cancelAnim()
-      const y = window.scrollY
-      const i = nearestIndex(y)
+      // Stops anchor to real section tops, which can shift as images/fonts
+      // load after mount — refresh so a step never targets a stale position.
+      stops = getStopsPx()
       let ti
-      if (dir > 0) ti = stops[i] > y + 4 ? i : i + 1
-      else         ti = stops[i] < y - 4 ? i : i - 1
+      if (wasAnimating && inFlight != null) {
+        // Step RELATIVE to the in-flight target: successive wheel ticks keep
+        // advancing through the stops instead of re-targeting the stop the
+        // animation was already heading to (which read as "scrolling does
+        // nothing" while a snap was in progress).
+        ti = inFlight + dir
+      } else {
+        const y = window.scrollY
+        const i = nearestIndex(y)
+        if (dir > 0) ti = stops[i] > y + 4 ? i : i + 1
+        else         ti = stops[i] < y - 4 ? i : i - 1
+      }
       ti = Math.max(0, Math.min(stops.length - 1, ti))
-      animateTo(stops[ti])
+      animateTo(stops[ti], ti)
     }
 
     const scheduleIdleSnap = () => {
@@ -84,8 +99,9 @@ export default function useScrollSnap() {
       idleTimer.current = setTimeout(() => {
         idleTimer.current = null
         if (animating.current) return
+        stops = getStopsPx()
         const i = nearestIndex(window.scrollY)
-        if (Math.abs(stops[i] - window.scrollY) > 2) animateTo(stops[i])
+        if (Math.abs(stops[i] - window.scrollY) > 2) animateTo(stops[i], i)
       }, IDLE_MS)
     }
 
@@ -97,9 +113,9 @@ export default function useScrollSnap() {
       } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault(); stepBy(-1)
       } else if (e.key === 'Home') {
-        e.preventDefault(); cancelAnim(); animateTo(stops[0])
+        e.preventDefault(); cancelAnim(); animateTo(stops[0], 0)
       } else if (e.key === 'End') {
-        e.preventDefault(); cancelAnim(); animateTo(stops[stops.length - 1])
+        e.preventDefault(); cancelAnim(); animateTo(stops[stops.length - 1], stops.length - 1)
       }
     }
 

@@ -101,12 +101,12 @@ export default function Navbar({ loaded }) {
           <Link to="/about"  className="navbar-link">About</Link>
         </div>
 
-        <button className="navbar-cta-btn">
-          Request a Quote
-          <svg className="navbar-cta-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <Link className="navbar-cta-btn" to="/contact">
+          Start Your Project
+          <svg className="navbar-cta-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-        </button>
+        </Link>
 
       </div>
     </nav>

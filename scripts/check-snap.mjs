@@ -9,7 +9,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 async function waitForServer(u, n = 80) { for (let i = 0; i < n; i++) { try { if ((await fetch(u)).ok) return } catch {} await wait(250) } throw new Error('down') }
 function run(c, a) { return new Promise((res, rej) => spawn(c, a, { stdio: 'inherit' }).on('exit', (x) => x === 0 ? res() : rej(new Error(x)))) }
 
-const CARD_VH = 0.7
+const CARD_VH = 0.55
 const stopsVH = [0, 1, 1+CARD_VH, 1+2*CARD_VH, 1+3*CARD_VH, 1+4*CARD_VH, 1+5*CARD_VH, 1+6*CARD_VH, 2+6*CARD_VH, 3+6*CARD_VH, 4+6*CARD_VH]
 
 if (!process.env.SKIP_BUILD) await run('npx', ['vite', 'build'])
@@ -28,11 +28,11 @@ try {
 
   // Off-stop targets (fractions of a viewport) → expected nearest stop.
   const cases = [
-    ['halfway card2/3', 2.45, 1 + 2 * CARD_VH],   // between card2 and card3
-    ['just past card4', 3.9,  1 + 4 * CARD_VH],   // nearest is card4 stop (3.8)
-    ['1% off card1',    1.71, 1 + 1 * CARD_VH],   // a hair off card1 (1.7)
+    ['halfway card2/3', 2.35, 1 + 2 * CARD_VH],   // between card2 (2.1) and card3 (2.65)
+    ['just past card4', 3.3,  1 + 4 * CARD_VH],   // nearest is card4 stop (3.2)
+    ['1% off card1',    1.56, 1 + 1 * CARD_VH],   // a hair off card1 (1.55)
     ['mid hero/card0',  0.40, 0],                 // drifting in the hero
-    ['near wave',       6.05, 2 + 6 * CARD_VH],   // approaching fixed-pricing
+    ['near wave',       5.15, 2 + 6 * CARD_VH],   // approaching fixed-pricing (5.3)
   ]
 
   for (const [label, fromVH, expectVH] of cases) {

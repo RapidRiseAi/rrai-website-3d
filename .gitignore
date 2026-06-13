@@ -4,6 +4,9 @@ dist/
 .env.local
 .DS_Store
 
+# Regenerable orbit-verification captures (scripts/verify-orbit.mjs)
+scripts/orbit-shots/
+
 # Regenerable screenshot-harness verification captures (scripts/shoot-*.mjs)
 shots/wave.png
 shots/wave_only.png
@@ -31,3 +34,11 @@ shots/scroll_card3.png
 shots/scroll_card6.png
 shots/scroll_wave.png
 shots/scroll_wave_only.png
+
+# Regenerable Section-2 card before/after verification captures
+shots/*_before.png
+shots/*_after.png
+
+# Local agent / editor directories
+.claude/
+.vscode/

@@ -12,7 +12,7 @@ export const FIXED_PRICE = [
     name: 'Client Portal Development',
     tagline: 'Secure, branded portals your clients actually want to use.',
     description:
-      'Custom client portals that centralise communication, document sharing, project tracking, and invoicing — all under your brand.',
+      'Custom client portals that centralise communication, document sharing, project tracking, and invoicing, all under your brand.',
     badge: 'Fixed Price',
   },
   {
@@ -39,7 +39,7 @@ export const CUSTOM_SERVICES = [
     name: 'Software Development',
     tagline: 'Purpose-built software for complex business problems.',
     description:
-      'Custom software engineered for your exact requirements — from internal tools to client-facing platforms.',
+      'Custom software engineered for your exact requirements, from internal tools to client-facing platforms.',
     badge: 'Custom',
   },
   {
@@ -71,7 +71,7 @@ export const CUSTOM_SERVICES = [
     name: 'AI Implementation',
     tagline: 'Embed intelligence into the heart of your business.',
     description:
-      'Strategic AI integration — from custom model fine-tuning to production deployment — woven into your existing systems and workflows.',
+      'Strategic AI integration, from custom model fine-tuning to production deployment, woven into your existing systems and workflows.',
     badge: 'Custom',
   },
   {
@@ -79,7 +79,7 @@ export const CUSTOM_SERVICES = [
     name: 'IoT System Development & Installation',
     tagline: 'Physical and digital systems working as one.',
     description:
-      'Connected hardware and software solutions — sensors, controllers, and dashboards — designed, built, and installed on-site.',
+      'Connected hardware and software solutions with sensors, controllers, and dashboards, designed, built, and installed on-site.',
     badge: 'Custom',
   },
   {

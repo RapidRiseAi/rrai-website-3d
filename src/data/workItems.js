@@ -20,10 +20,12 @@
 //   href               internal route. If a real product page exists use it
 //                      (see src/data/services.js slugs); otherwise point at the
 //                      closest /services/:slug page until a project page exists.
-//   mediaType          'image' | 'video'
-//   mediaSrc           path/URL of the preview media. null → a premium styled
-//                      fallback panel renders instead (the build never breaks
-//                      on missing media).
+//   mediaType          'image' | 'video' | 'mock'
+//   mediaSrc           path/URL of the preview media (image/video types)
+//   mockKind           for mediaType 'mock': which ConceptPreview mockup to
+//                      render ('website' | 'portal' | 'inspection' | 'menu' |
+//                      'chat' | 'dashboard'). Swap to a real image once a
+//                      capture exists.
 //   mediaAlt           accessible description of the media
 
 export const WORK_SECTION_COPY = {
@@ -51,9 +53,9 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Project',
     href: '/services/website-development',
-    mediaType: 'image',
-    mediaSrc: null,
-    mediaAlt: 'Rapid Rise AI website — interactive 3D homepage',
+    mediaType: 'mock',
+    mockKind: 'website',
+    mediaAlt: 'Rapid Rise AI website with interactive 3D homepage',
   },
   {
     id: 'client-portal-system',
@@ -73,8 +75,8 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Product',
     href: '/services/client-portal',
-    mediaType: 'image',
-    mediaSrc: null,
+    mediaType: 'mock',
+    mockKind: 'portal',
     mediaAlt: 'Client portal dashboard with document collection and status tracking',
   },
   {
@@ -95,8 +97,8 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Prototype',
     href: '/services/software-development',
-    mediaType: 'image',
-    mediaSrc: null,
+    mediaType: 'mock',
+    mockKind: 'inspection',
     mediaAlt: 'Building inspection mobile checklist and reporting dashboard',
   },
   {
@@ -117,8 +119,8 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Demo',
     href: '/services/web-app-development',
-    mediaType: 'image',
-    mediaSrc: null,
+    mediaType: 'mock',
+    mockKind: 'menu',
     mediaAlt: 'Restaurant digital menu on a phone with management portal',
   },
   {
@@ -139,8 +141,8 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Product',
     href: '/services/ai-communication-agent',
-    mediaType: 'image',
-    mediaSrc: null,
+    mediaType: 'mock',
+    mockKind: 'chat',
     mediaAlt: 'AI support chat interface answering customer questions',
   },
   {
@@ -161,8 +163,8 @@ export const WORK_ITEMS = [
     ],
     ctaLabel: 'View Product',
     href: '/services/smart-dashboards',
-    mediaType: 'image',
-    mediaSrc: null,
+    mediaType: 'mock',
+    mockKind: 'dashboard',
     mediaAlt: 'Business analytics dashboard with KPIs and reporting',
   },
 ]

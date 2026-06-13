@@ -8,7 +8,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 async function waitForServer(u, n = 80) { for (let i = 0; i < n; i++) { try { if ((await fetch(u)).ok) return } catch {} await wait(250) } throw new Error('down') }
 function run(c, a) { return new Promise((res, rej) => spawn(c, a, { stdio: 'inherit' }).on('exit', (x) => x === 0 ? res() : rej(new Error(x)))) }
 
-const CARD_VH = 0.7
+const CARD_VH = 0.55
 const stopsVH = [0, 1, 1+CARD_VH, 1+2*CARD_VH, 1+3*CARD_VH, 1+4*CARD_VH, 1+5*CARD_VH, 1+6*CARD_VH, 2+6*CARD_VH, 3+6*CARD_VH, 4+6*CARD_VH]
 
 if (!process.env.SKIP_BUILD) await run('npx', ['vite', 'build'])
