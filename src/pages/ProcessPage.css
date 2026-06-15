@@ -1,0 +1,248 @@
+/* Process page — storytelling redesign. Page-scoped styles (proc-*); shared
+   glass/tilt/kicker/story utilities live in index.css. */
+
+.proc-wrap { position: relative; }
+
+/* Parallax depth orbs behind the hero */
+.proc-orb {
+  position: absolute;
+  z-index: -1;
+}
+.proc-orb-1 { top: 40px; left: -4%; width: 360px; height: 360px; }
+.proc-orb-2 { top: 320px; right: -6%; width: 420px; height: 420px; }
+
+/* Section + heading rhythm */
+.proc-section { position: relative; padding: clamp(48px, 8vh, 96px) 0; }
+.proc-head { text-align: center; margin-bottom: clamp(34px, 5vh, 56px); }
+.proc-h2 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  font-weight: 790;
+  letter-spacing: -0.038em;
+  line-height: 1.08;
+  color: #eef5fd;
+  margin: 0 auto;
+  max-width: 20ch;
+}
+.proc-lead {
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: rgba(198, 216, 242, 0.66);
+  max-width: 600px;
+  margin: 14px auto 0;
+}
+
+/* ── The journey — alternating timeline on a glowing rail ─────────────────── */
+.proc-journey { position: relative; max-width: 980px; margin: 0 auto; }
+.proc-rail {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(63, 155, 245, 0.06) 0%, rgba(63, 155, 245, 0.5) 12%, rgba(63, 155, 245, 0.5) 88%, rgba(63, 155, 245, 0.06) 100%);
+  overflow: hidden;
+}
+.proc-rail-glow {
+  position: absolute;
+  left: 0; right: 0;
+  height: 120px;
+  background: linear-gradient(180deg, transparent, rgba(150, 210, 255, 0.9), transparent);
+  animation: proc-rail-run 4.5s linear infinite;
+}
+@keyframes proc-rail-run {
+  0% { transform: translateY(-140px); }
+  100% { transform: translateY(720px); }
+}
+
+.proc-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 3vh, 38px);
+}
+.proc-step { position: relative; display: grid; grid-template-columns: 1fr 1fr; }
+.proc-step--left .proc-step-rev { grid-column: 1; padding-right: 46px; }
+.proc-step--right .proc-step-rev { grid-column: 2; padding-left: 46px; }
+
+.proc-node {
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 40% 35%, #aed6ff 0%, #1a77f2 70%);
+  box-shadow: 0 0 16px rgba(46, 130, 250, 0.85), 0 0 0 5px rgba(10, 20, 40, 0.85);
+  z-index: 2;
+}
+
+.proc-card {
+  position: relative;
+  padding: 22px 24px 20px;
+  overflow: hidden;
+}
+.proc-num {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  font-size: 2.6rem;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.proc-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22) 0%, rgba(26, 70, 168, 0.1) 100%);
+  border: 1px solid rgba(96, 166, 252, 0.3);
+  box-shadow: 0 0 18px -4px rgba(46, 130, 250, 0.5);
+  margin-bottom: 14px;
+}
+.proc-ic svg { width: 22px; height: 22px; }
+.proc-title {
+  font-size: 1.08rem;
+  font-weight: 740;
+  letter-spacing: -0.02em;
+  color: #f1f6fd;
+  margin: 0 0 7px;
+}
+.proc-desc {
+  font-size: 0.9rem;
+  line-height: 1.62;
+  color: rgba(186, 206, 234, 0.66);
+  margin: 0;
+}
+
+/* ── What we need from you ────────────────────────────────────────────────── */
+.proc-need-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.proc-need {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 18px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: rgba(206, 224, 248, 0.84);
+}
+.proc-need svg { color: #2e9ff0; flex-shrink: 0; margin-top: 2px; }
+
+/* ── Scope & pricing panel ────────────────────────────────────────────────── */
+.proc-panel {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vh, 48px) clamp(24px, 4vw, 52px);
+}
+.proc-panel-head { text-align: center; margin-bottom: 28px; }
+.proc-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px 40px;
+}
+.proc-feature-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #dbe9fb;
+  margin: 0 0 8px;
+}
+.proc-feature-label svg { width: 18px; height: 18px; color: #58b6ff; flex-shrink: 0; }
+.proc-feature-text {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: rgba(190, 210, 238, 0.66);
+  margin: 0;
+}
+
+/* ── After launch — 3 tilt cards ──────────────────────────────────────────── */
+.proc-after-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+.proc-after {
+  padding: 26px 24px 24px;
+  height: 100%;
+}
+.proc-after-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22) 0%, rgba(26, 70, 168, 0.1) 100%);
+  border: 1px solid rgba(96, 166, 252, 0.3);
+  margin-bottom: 16px;
+}
+.proc-after-ic svg { width: 23px; height: 23px; }
+.proc-after h3 {
+  font-size: 1.1rem;
+  font-weight: 740;
+  letter-spacing: -0.02em;
+  color: #f1f6fd;
+  margin: 0 0 9px;
+}
+.proc-after p {
+  font-size: 0.92rem;
+  line-height: 1.66;
+  color: rgba(186, 206, 234, 0.66);
+  margin: 0;
+}
+
+/* ── CTA ──────────────────────────────────────────────────────────────────── */
+.proc-cta {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: clamp(34px, 5vh, 56px) clamp(26px, 4vw, 60px);
+  text-align: center;
+}
+.proc-cta h2 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  font-weight: 780;
+  letter-spacing: -0.03em;
+  color: #f4f9fe;
+  margin: 0 0 12px;
+}
+.proc-cta p {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(196, 216, 242, 0.72);
+  max-width: 520px;
+  margin: 0 auto 26px;
+}
+.proc-cta-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .proc-rail { left: 19px; }
+  .proc-step { grid-template-columns: 1fr; }
+  .proc-step--left .proc-step-rev,
+  .proc-step--right .proc-step-rev { grid-column: 1; padding-left: 48px; padding-right: 0; }
+  .proc-node { left: 19px; top: 24px; }
+  .proc-panel-grid { grid-template-columns: 1fr; gap: 22px; }
+  .proc-after-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .proc-rail-glow { animation: none; }
+}

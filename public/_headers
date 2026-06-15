@@ -1,0 +1,24 @@
+# Security & privacy response headers.
+#
+# This file is applied automatically by Netlify and Cloudflare Pages. On other
+# hosts, set the equivalent headers in their config:
+#   • Vercel   → "headers" array in vercel.json
+#   • Apache   → Header set ... in .htaccess
+#   • Nginx    → add_header ... in the server block
+#
+# The Content-Security-Policy itself is also set as a <meta> tag in index.html
+# so it still applies on hosts that ignore this file. frame-ancestors and HSTS
+# below cannot be set via <meta>, so they live here.
+
+/*
+  # Stop the site being framed by other origins (clickjacking).
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  # Don't let browsers MIME-sniff responses into a different type.
+  X-Content-Type-Options: nosniff
+  # Trim the referrer sent to third parties (matches the meta tag).
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Deny powerful APIs this site never uses.
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  # Force HTTPS for two years, including subdomains (safe once you serve over TLS).
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

@@ -1,4 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import CursorTrail from './components/ui/CursorTrail'
+import EdgeSpotlight from './components/ui/EdgeSpotlight'
+import ScrollToTop from './components/ScrollToTop'
+import CookieConsent from './components/ui/CookieConsent'
 import HomePage from './pages/HomePage'
 import ServicesPage from './pages/ServicesPage'
 import ServiceDetailPage from './pages/ServiceDetailPage'
@@ -13,7 +17,11 @@ import { LEGAL_NAV } from './data/legalContent'
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <CursorTrail />
+      <EdgeSpotlight />
+      <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/services/:slug" element={<ServiceDetailPage />} />
@@ -29,6 +37,8 @@ export default function App() {
       ))}
       {/* Catch-all: mistyped URLs render a real 404 page, never a blank screen */}
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+      <CookieConsent />
+    </>
   )
 }

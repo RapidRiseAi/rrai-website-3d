@@ -1,0 +1,133 @@
+/* Services page — page-scoped (svc-*). */
+
+.svc-wrap { position: relative; }
+.svc-orb { position: absolute; z-index: -1; }
+.svc-orb-1 { top: 30px; right: -5%; width: 380px; height: 380px; }
+.svc-orb-2 { top: 520px; left: -7%; width: 420px; height: 420px; }
+
+.svc-section { position: relative; max-width: 1180px; margin: 0 auto; padding: clamp(40px, 6vh, 76px) 6vw; }
+.svc-head { text-align: center; margin-bottom: clamp(26px, 4vh, 44px); }
+.svc-h2 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.55rem, 2.7vw, 2.3rem);
+  font-weight: 790;
+  letter-spacing: -0.036em;
+  line-height: 1.1;
+  color: #eef5fd;
+  margin: 0 auto;
+  max-width: 22ch;
+}
+.svc-lead { font-size: 1rem; line-height: 1.68; color: rgba(198, 216, 242, 0.64); max-width: 600px; margin: 13px auto 0; }
+.svc-note { font-size: 0.84rem; line-height: 1.7; color: rgba(150, 175, 215, 0.58); max-width: 860px; margin: 24px auto 0; text-align: center; }
+
+/* ── Pricing cards ────────────────────────────────────────────────────────── */
+.svc-price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1000px) { .svc-price-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .svc-price-grid { grid-template-columns: 1fr; } }
+.svc-price-card { display: flex; flex-direction: column; gap: 10px; padding: 26px 22px 24px; height: 100%; }
+.svc-price-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22), rgba(26, 70, 168, 0.1));
+  border: 1px solid rgba(96, 166, 252, 0.3);
+  margin-bottom: 2px;
+}
+.svc-price-ic svg { width: 20px; height: 20px; }
+.svc-price-name { font-size: 1rem; font-weight: 720; letter-spacing: -0.018em; color: #eef5fd; }
+.svc-price-value { display: flex; align-items: baseline; gap: 6px; }
+.svc-price-amount {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+.svc-price-monthly { font-size: 0.82rem; font-weight: 620; color: #5fb0f8; }
+.svc-price-features { list-style: none; margin: 6px 0 0; padding: 12px 0 0; border-top: 1px solid rgba(120, 180, 255, 0.1); display: flex; flex-direction: column; gap: 7px; flex-grow: 1; }
+.svc-price-features li { font-size: 0.84rem; line-height: 1.45; color: rgba(186, 206, 234, 0.7); padding-left: 15px; position: relative; }
+.svc-price-features li::before { content: '–'; position: absolute; left: 0; color: rgba(88, 182, 255, 0.5); }
+.svc-price-cta, .svc-price-link { font-size: 0.82rem; font-weight: 600; color: rgba(88, 182, 255, 0.7); margin-top: 6px; text-decoration: none; }
+.svc-price-card:hover .svc-price-cta, .svc-price-card:hover .svc-price-link { color: #7cc6ff; }
+
+/* ── Service cards ────────────────────────────────────────────────────────── */
+.svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 1000px) { .svc-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr; } }
+.svc-service-card { display: block; padding: 24px 22px 22px; height: 100%; text-decoration: none; }
+.svc-service-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.svc-service-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.2), rgba(26, 70, 168, 0.08));
+  border: 1px solid rgba(96, 166, 252, 0.26);
+  flex-shrink: 0;
+}
+.svc-service-ic svg { width: 19px; height: 19px; }
+.svc-service-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(88, 182, 255, 0.78);
+  background: rgba(47, 148, 255, 0.1);
+  border: 1px solid rgba(47, 148, 255, 0.2);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+.svc-service-name { font-size: 1.02rem; font-weight: 720; letter-spacing: -0.018em; color: #eef5fd; margin: 0 0 7px; }
+.svc-service-tagline { font-size: 0.86rem; line-height: 1.55; color: rgba(180, 202, 232, 0.62); margin: 0 0 12px; }
+.svc-service-cta, .svc-service-link { font-size: 0.82rem; font-weight: 600; color: rgba(88, 182, 255, 0.7); text-decoration: none; }
+.svc-service-card:hover .svc-service-cta, .svc-service-card:hover .svc-service-link { color: #7cc6ff; }
+
+/* ── Guidance cards ───────────────────────────────────────────────────────── */
+.svc-guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.svc-guide-card { padding: 24px 22px 22px; height: 100%; }
+.svc-guide-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.2), rgba(26, 70, 168, 0.08));
+  border: 1px solid rgba(96, 166, 252, 0.26);
+  margin-bottom: 14px;
+}
+.svc-guide-ic svg { width: 19px; height: 19px; }
+.svc-guide-title { font-size: 1.02rem; font-weight: 720; color: #f1f6fd; margin: 0 0 8px; }
+.svc-guide-text { font-size: 0.9rem; line-height: 1.62; color: rgba(186, 206, 234, 0.66); margin: 0 0 12px; }
+.svc-guide-link { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 640; color: #4ab0ff; text-decoration: none; }
+.svc-guide-link:hover { color: #7cc6ff; }
+
+/* ── CTA ──────────────────────────────────────────────────────────────────── */
+.svc-cta {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vh, 44px) clamp(26px, 4vw, 52px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.svc-cta span { font-size: 1rem; color: rgba(206, 222, 246, 0.82); max-width: 540px; }
+.svc-cta-actions { display: flex; gap: 12px; flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .svc-cta { flex-direction: column; text-align: center; }
+}

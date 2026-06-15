@@ -42,3 +42,8 @@ shots/*_after.png
 # Local agent / editor directories
 .claude/
 .vscode/
+
+# Local screenshot artifacts + tooling config (not part of the site)
+shots/polish/
+scripts/*.png
+.mcp.json

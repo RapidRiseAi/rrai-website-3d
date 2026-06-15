@@ -1,0 +1,230 @@
+/* Legal document pages — premium reskin. Readability first: calm, high-contrast
+   legal text inside one subtle glass column under a centered glowing masthead.
+   Page-scoped (lgl-*); shared glass/kicker/tilt utilities live in index.css. */
+
+.lgl-wrap {
+  position: relative;
+  max-width: 920px;
+}
+
+/* ── Masthead (rides the shared .pg-hero system) ──────────────────────────── */
+.lgl-hero {
+  max-width: 760px;
+  padding-bottom: clamp(30px, 5vh, 56px);
+}
+.lgl-orb {
+  position: absolute;
+  z-index: -1;
+}
+.lgl-orb-1 { top: 32px; left: -10%; width: 320px; height: 320px; }
+.lgl-orb-2 { top: 150px; right: -12%; width: 360px; height: 360px; }
+
+.lgl-title {
+  max-width: 22ch;
+}
+.lgl-updated {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(150, 182, 220, 0.62);
+  margin: 0 0 18px;
+}
+.lgl-intro {
+  max-width: 64ch;
+}
+.lgl-note {
+  max-width: 60ch;
+  margin: 20px auto 0;
+  padding: 13px 18px;
+  text-align: left;
+  border-left: 2px solid #2e9ff0;
+  border-radius: 0 12px 12px 0;
+  background: rgba(20, 50, 100, 0.2);
+  font-size: 0.88rem;
+  line-height: 1.62;
+  color: rgba(196, 218, 244, 0.82);
+}
+.lgl-note a { color: #4ab0ff; text-decoration: none; }
+.lgl-note a:hover { text-decoration: underline; }
+
+/* ── Document body — one readable glass column ────────────────────────────── */
+.lgl-doc {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 52px) clamp(24px, 4vw, 56px);
+}
+
+.lgl-sections {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(26px, 3.6vh, 38px);
+}
+
+/* Subtle divider rail between sections (not on the first) */
+.lgl-section + .lgl-section {
+  padding-top: clamp(26px, 3.6vh, 38px);
+  border-top: 1px solid rgba(96, 150, 220, 0.14);
+}
+
+.lgl-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.lgl-section-num {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #3aa0ff;
+  flex-shrink: 0;
+  min-width: 1.8em;
+}
+.lgl-section-heading {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.08rem, 1.6vw, 1.28rem);
+  font-weight: 740;
+  letter-spacing: -0.018em;
+  line-height: 1.25;
+  color: #eef5fd;
+}
+
+/* Indent the body to align under the heading text, past the numeral */
+.lgl-section-body { padding-left: calc(1.8em + 12px); }
+
+.lgl-section-body p {
+  font-size: 0.96rem;
+  line-height: 1.78;
+  color: rgba(206, 224, 248, 0.82);
+  margin: 0 0 12px;
+  max-width: 68ch;
+}
+.lgl-section-body p:last-child { margin-bottom: 0; }
+
+.lgl-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-width: 68ch;
+}
+.lgl-list:last-child { margin-bottom: 0; }
+.lgl-list li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 0.94rem;
+  line-height: 1.62;
+  color: rgba(202, 222, 246, 0.82);
+}
+.lgl-list li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2e7fe8;
+  box-shadow: 0 0 7px rgba(46, 127, 232, 0.75);
+}
+
+/* Inline links throughout the body */
+.lgl-section a {
+  color: #5cb6ff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(92, 182, 255, 0.32);
+  transition: border-color 0.18s, color 0.18s;
+}
+.lgl-section a:hover {
+  color: #8fcaff;
+  border-bottom-color: rgba(143, 202, 255, 0.7);
+}
+
+/* ── Contact aside — glass card ───────────────────────────────────────────── */
+.lgl-cta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 780px;
+  margin: clamp(26px, 4vh, 40px) auto 0;
+  padding: clamp(20px, 3vw, 28px) clamp(22px, 3.4vw, 34px);
+}
+.lgl-cta-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22) 0%, rgba(26, 70, 168, 0.1) 100%);
+  border: 1px solid rgba(96, 166, 252, 0.3);
+  box-shadow: 0 0 18px -4px rgba(46, 130, 250, 0.5);
+}
+.lgl-cta-ic svg { width: 24px; height: 24px; }
+.lgl-cta-text h2 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 1.06rem;
+  font-weight: 740;
+  letter-spacing: -0.018em;
+  color: #f1f6fd;
+  margin: 0 0 5px;
+}
+.lgl-cta-text p {
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: rgba(200, 220, 244, 0.78);
+  margin: 0;
+}
+.lgl-cta a {
+  color: #5cb6ff;
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(92, 182, 255, 0.32);
+  transition: border-color 0.18s, color 0.18s;
+}
+.lgl-cta a:hover {
+  color: #8fcaff;
+  border-bottom-color: rgba(143, 202, 255, 0.7);
+}
+
+/* ── Back link — pill ─────────────────────────────────────────────────────── */
+.lgl-back-row {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(24px, 4vh, 38px);
+}
+.lgl-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 20px 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 170, 245, 0.26);
+  background: linear-gradient(180deg, rgba(28, 60, 120, 0.28) 0%, rgba(14, 30, 66, 0.2) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(196, 220, 250, 0.86);
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.lgl-back svg { transition: transform 0.2s; }
+.lgl-back:hover {
+  color: #eef5fd;
+  border-color: rgba(120, 170, 245, 0.5);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 22px -6px rgba(46, 130, 250, 0.6);
+}
+.lgl-back:hover svg { transform: translateX(-2px); }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .lgl-doc { padding: 24px 20px; }
+  .lgl-section-body { padding-left: 0; }
+  .lgl-cta { flex-direction: column; align-items: flex-start; gap: 14px; }
+}

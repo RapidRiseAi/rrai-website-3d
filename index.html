@@ -10,9 +10,19 @@
     <meta property="og:description" content="Custom websites, client portals, smart dashboards, AI agents, automations and connected business ecosystems built in South Africa." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.rapidriseai.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Privacy: don't leak full referrer URLs to third parties on outbound nav -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <!-- Fonts are self-hosted (bundled via Fontsource in src/main.jsx) so no
+         visitor data is sent to the Google Fonts CDN. -->
+    <!-- Content Security Policy. Everything loads from our own origin; the only
+         exceptions are inline styles (React/framer-motion) and data/blob URIs
+         used by the 3D canvas. Set as a meta tag so it applies on any static
+         host. NOTE: if you later add analytics or a form webhook, extend
+         script-src / connect-src accordingly (and gate it behind consent). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' mailto:"
+    />
   </head>
   <body>
     <div id="root"></div>

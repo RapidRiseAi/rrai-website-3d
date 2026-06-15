@@ -134,7 +134,7 @@ const CARD_COLLAPSE_DUR = 0.60  // 2× slower card-change collapse
 const CARD_EXPAND_DUR   = 1.20  // 2× slower card-change bloom
 const MAX_CARD_OP       = 0.92
 
-const CARD_COLORS = [
+export const CARD_COLORS = [
   '#68ccff', '#4ab8ff', '#78d4ff', '#5ab8ff',
   '#8ae0ff', '#54bbff', '#4caaff',
 ]
@@ -818,7 +818,8 @@ function _genFunnel() {
   return out
 }
 
-const CARD_GENERATORS = [
+/* Exported so service detail pages reuse the EXACT live home objects. */
+export const CARD_GENERATORS = [
   _genBrowserFrame, _genCommandCube, _genCodeBlock, _genWorkflowPath,
   _genIntelligenceOrbit, _genConnectedCubes, _genFunnel,
 ]
@@ -829,7 +830,7 @@ const CARD_GENERATORS = [
    ignores sparse outliers (funnel stream dots, sparkle satellites) so the
    normalisation tracks the shape's visual mass, not its extremes. Keeps all
    seven objects the same on-screen size, centred on the rotation axis. */
-function normalizeCardShapes(bufs) {
+export function normalizeCardShapes(bufs) {
   const robustBox = (pos) => {
     const n = pos.length / 3
     const xs = new Float32Array(n), ys = new Float32Array(n), zs = new Float32Array(n)
@@ -1154,7 +1155,7 @@ function InteractiveMiniOrbs({ groupRef }) {
     const collapseT = rawT * 0.5
 
     // Phase 2 — card morph, smoothstep over twice the old range (2× slower)
-    // Starts at p=0.38 (slight overlap with collapse for seamless hand-off)
+    // Starts at p=0.38 (slight overlap with collapse for seamless hand off)
     const cardScrollT = smoothstep(Math.max(0, Math.min(1, (p - 0.38) / 0.62)))
 
     // Card change transition state machine
@@ -1254,7 +1255,7 @@ function InteractiveMiniOrbs({ groupRef }) {
       if (targetAttrRef.current) targetAttrRef.current.needsUpdate = true
       waveBufDirty = false
     }
-    // The funnel's ACTUAL orbs stay as the wave in Section 3 (no hand-off). The
+    // The funnel's ACTUAL orbs stay as the wave in Section 3 (no hand off). The
     // scene canvas drops behind the content (see the scroll handler) so these
     // real orbs render behind the cards.
     _waveCol.setStyle(CARD_COLORS[activeRef.current]).lerp(WAVE_COLOR, wave)

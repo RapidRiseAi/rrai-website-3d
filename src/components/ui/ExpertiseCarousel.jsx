@@ -60,10 +60,10 @@ const CARDS = [
     whatWeBuild: [
       'Premium business websites',
       'Landing pages and conversion flows',
-      'Technical SEO and on-page structure',
+      'Technical SEO and on page structure',
       'Quote, booking, and enquiry systems',
     ],
-    businessValue: 'Turn your website into a sales asset that supports trust, search visibility, paid ads, and long-term growth.',
+    businessValue: 'Turn your website into a sales asset that supports trust, search visibility, paid ads, and long term growth.',
     route: '/services/website-development',
   },
   {
@@ -97,7 +97,7 @@ const CARDS = [
     title: 'Workflow Automation',
     intro: 'Move information between people, tools, and customers without constant manual effort.',
     whatWeBuild: [
-      'Lead routing and follow-up automation',
+      'Lead routing and follow up automation',
       'Email, WhatsApp, and form workflows',
       'Google Workspace automation',
       'Notifications, reminders, and task triggers',
@@ -139,9 +139,9 @@ const CARDS = [
       'Campaign landing pages',
       'SEO content systems',
       'Social content and creative support',
-      'Lead capture and follow-up flows',
+      'Lead capture and follow up flows',
     ],
-    businessValue: 'Get the marketing support your business needs without building a full in-house team, while keeping delivery connected to your website, leads, and systems.',
+    businessValue: 'Get the marketing support your business needs without building a full in house team, while keeping delivery connected to your website, leads, and systems.',
     route: '/services/marketing-seo',
   },
 ]

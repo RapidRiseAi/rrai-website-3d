@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LEGAL_NAV } from '../../data/legalContent'
+import { useConsent } from '../../context/ConsentContext'
 
 /* ── Footer link data ─────────────────────────────────────────────────────────
    Routes use real pages only (see App.jsx). Legal pages come from
@@ -88,6 +89,7 @@ function LinkColumn({ heading, links }) {
 }
 
 export default function SiteFooter() {
+  const { openPreferences } = useConsent()
   return (
     <footer className="ftr" aria-label="Site footer">
       <div className="ftr-container">
@@ -99,7 +101,7 @@ export default function SiteFooter() {
               <p className="ftr-brand">Rapid Rise AI</p>
             </div>
             <p className="ftr-brand-desc">
-              We build custom AI-powered systems that automate, connect, and
+              We build custom AI powered systems that automate, connect, and
               elevate how modern businesses operate.
             </p>
             <div className="ftr-socials">
@@ -156,7 +158,12 @@ export default function SiteFooter() {
         {/* Bottom legal bar */}
         <div className="ftr-bar">
           <p className="ftr-bar-line">© 2026 Rapid Rise AI. All rights reserved.</p>
-          <p className="ftr-bar-note">Remote projects across South Africa.</p>
+          <div className="ftr-bar-meta">
+            <button type="button" className="ftr-bar-btn" onClick={openPreferences}>
+              Cookie preferences
+            </button>
+            <span className="ftr-bar-note">Remote projects across South Africa.</span>
+          </div>
         </div>
       </div>
     </footer>

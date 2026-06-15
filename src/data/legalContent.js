@@ -87,7 +87,7 @@ export const LEGAL_DOCS = {
         ],
       },
       {
-        heading: 'Cross-border processing',
+        heading: 'Cross border processing',
         body: [
           'Some service providers may store or process data outside South Africa. Where this happens, we aim to use reputable providers and appropriate safeguards.',
         ],
@@ -176,9 +176,9 @@ export const LEGAL_DOCS = {
         ],
       },
       {
-        heading: 'Hosting and third-party tools',
+        heading: 'Hosting and third party tools',
         body: [
-          'Some services may depend on third-party platforms, hosting providers, APIs, AI tools, automation platforms, or integrations. We are not responsible for outages, pricing changes, or limitations caused by third-party providers.',
+          'Some services may depend on third party platforms, hosting providers, APIs, AI tools, automation platforms, or integrations. We are not responsible for outages, pricing changes, or limitations caused by third party providers.',
         ],
       },
       {
@@ -190,7 +190,7 @@ export const LEGAL_DOCS = {
       {
         heading: 'Intellectual property',
         body: [
-          'Unless otherwise agreed in writing, Rapid Rise AI retains ownership of reusable frameworks, code libraries, internal tools, templates, and know-how. Client-specific deliverables and usage rights will be defined in the relevant agreement.',
+          'Unless otherwise agreed in writing, Rapid Rise AI retains ownership of reusable frameworks, code libraries, internal tools, templates, and know how. Client specific deliverables and usage rights will be defined in the relevant agreement.',
         ],
       },
       {
@@ -202,7 +202,7 @@ export const LEGAL_DOCS = {
       {
         heading: 'Limitation of liability',
         body: [
-          'To the maximum extent allowed by law, Rapid Rise AI is not liable for indirect losses, loss of profits, loss of data, business interruption, or damages caused by third-party services or client misuse.',
+          'To the maximum extent allowed by law, Rapid Rise AI is not liable for indirect losses, loss of profits, loss of data, business interruption, or damages caused by third party services or client misuse.',
         ],
       },
       {
@@ -232,7 +232,7 @@ export const LEGAL_DOCS = {
       {
         heading: 'Types of personal information processed',
         body: [
-          'We may process contact details, business details, project information, communication records, billing information, website usage data, technical data, and service-related information.',
+          'We may process contact details, business details, project information, communication records, billing information, website usage data, technical data, and service related information.',
         ],
       },
       {
@@ -268,7 +268,7 @@ export const LEGAL_DOCS = {
         ],
       },
       {
-        heading: 'Cross-border transfers',
+        heading: 'Cross border transfers',
         body: [
           'Some tools or service providers may process information outside South Africa. We aim to work with reputable providers and appropriate safeguards.',
         ],
@@ -350,7 +350,7 @@ export const LEGAL_DOCS = {
       {
         heading: 'Grounds for refusal',
         body: [
-          'Access may be refused where permitted by law, including where records contain personal information, confidential information, commercial information, privileged information, or security-sensitive information.',
+          'Access may be refused where permitted by law, including where records contain personal information, confidential information, commercial information, privileged information, or security sensitive information.',
         ],
       },
       {
@@ -410,9 +410,9 @@ export const LEGAL_DOCS = {
         ],
       },
       {
-        heading: 'Third-party cookies',
+        heading: 'Third party cookies',
         body: [
-          'Some cookies may come from third-party tools such as analytics, hosting, embedded media, or advertising tools.',
+          'Some cookies may come from third party tools such as analytics, hosting, embedded media, or advertising tools.',
         ],
       },
       {
@@ -436,19 +436,19 @@ export const LEGAL_DOCS = {
       {
         heading: 'Custom service nature',
         body: [
-          'Many Rapid Rise AI services are custom-built or involve planning, design, development, configuration, or setup work. Because of this, refunds depend on the stage of work completed and the agreement in place.',
+          'Many Rapid Rise AI services are custom built or involve planning, design, development, configuration, or setup work. Because of this, refunds depend on the stage of work completed and the agreement in place.',
         ],
       },
       {
         heading: 'Deposits and upfront payments',
         body: [
-          'Deposits or upfront payments may be required to reserve work time, begin planning, or start development. Deposits may be non-refundable once work has started, unless otherwise agreed in writing.',
+          'Deposits or upfront payments may be required to reserve work time, begin planning, or start development. Deposits may be non refundable once work has started, unless otherwise agreed in writing.',
         ],
       },
       {
         heading: 'Project cancellations',
         body: [
-          'If a client cancels a project after work has started, Rapid Rise AI may charge for work completed, time spent, third-party costs, setup costs, and committed resources.',
+          'If a client cancels a project after work has started, Rapid Rise AI may charge for work completed, time spent, third party costs, setup costs, and committed resources.',
         ],
       },
       {
@@ -458,9 +458,9 @@ export const LEGAL_DOCS = {
         ],
       },
       {
-        heading: 'Third-party costs',
+        heading: 'Third party costs',
         body: [
-          'Third-party costs such as hosting, domains, plugins, APIs, automation platforms, AI tools, payment providers, and software licences may not be refundable by Rapid Rise AI.',
+          'Third party costs such as hosting, domains, plugins, APIs, automation platforms, AI tools, payment providers, and software licences may not be refundable by Rapid Rise AI.',
         ],
       },
       {

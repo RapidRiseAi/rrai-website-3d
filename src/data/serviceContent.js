@@ -4,19 +4,19 @@
 // src/pages/ServiceDetailPage.jsx. Edit content here, no JSX changes needed.
 //
 // Shape per slug:
-//   positioning   one-line hero positioning statement
+//   positioning   one line hero positioning statement
 //   problem       paragraphs describing what the client struggles with
 //   solution      list of what Rapid Rise AI builds (rendered as cards)
-//   packages      fixed-price packages (name, price, monthly, badge, features, limits)
+//   packages      fixed price packages (name, price, monthly, badge, features, limits)
 //   packageGroups extra named package groups (e.g. eCommerce)
 //   customPricing custom-rate pricing block (custom services only)
-//   addons        priced add-ons (label + price)
+//   addons        priced add ons (label + price)
 //   deliverables  what the client receives
 //   faqs          frequently asked questions
 //   notes         usage / exclusion notes shown near pricing
 
 export const PRICING_DISCLAIMER =
-  'All prices are starting points in ZAR. Final pricing depends on customization, integrations, content, data complexity, usage, third-party tools, support needs, and the approved project scope. Custom development and consulting are quoted at R500/hour unless a fixed project price is agreed.'
+  'All prices are starting points in ZAR. Final pricing depends on customization, integrations, content, data complexity, usage, third party tools, support needs, and the approved project scope. Custom development and consulting are quoted at R500/hour unless a fixed project price is agreed.'
 
 export const CUSTOM_RATE = 'R500/hour'
 
@@ -30,7 +30,7 @@ export const SERVICE_PROCESS = [
 ]
 
 const THIRD_PARTY_NOTE =
-  'Third-party software fees, AI usage, WhatsApp and API usage, SMS, payment provider fees, paid ads spend, hardware, hosting upgrades, and premium plugin costs are separate unless included in a written proposal.'
+  'Third party software fees, AI usage, WhatsApp and API usage, SMS, payment provider fees, paid ads spend, hardware, hosting upgrades, and premium plugin costs are separate unless included in a written proposal.'
 
 export const SERVICE_CONTENT = {
   /* ── 1. Website Development ──────────────────────────────────────────────── */
@@ -44,7 +44,7 @@ export const SERVICE_CONTENT = {
     solution: [
       'Premium business websites',
       'Landing pages and conversion flows',
-      'Technical SEO and on-page structure',
+      'Technical SEO and on page structure',
       'Quote, booking, and enquiry systems',
       'Lead capture connected to email or sheets',
       'Upgrade paths into portals, dashboards, and AI agents',
@@ -64,8 +64,8 @@ export const SERVICE_CONTENT = {
           'Social links',
           'SSL setup and domain connection',
           'Basic speed optimisation',
-          'Basic on-page SEO',
-          'Go-live support',
+          'Basic on page SEO',
+          'Go live support',
           '1 revision round',
         ],
       },
@@ -96,10 +96,10 @@ export const SERVICE_CONTENT = {
           'Everything in Business',
           'Up to 8 pages',
           'Landing page structure',
-          'Service-specific pages',
+          'Service specific pages',
           'FAQ section',
           'Blog or news setup',
-          'Basic AI-search optimisation structure',
+          'Basic AI search optimisation structure',
           'Basic automation such as enquiry to email or Google Sheets',
           '3 revision rounds',
         ],
@@ -116,7 +116,7 @@ export const SERVICE_CONTENT = {
           'Stronger brand positioning',
           'Advanced sales copy structure',
           'Multiple landing pages',
-          'Advanced animations or micro-interactions',
+          'Advanced animations or micro interactions',
           'Case study section',
           'Lead funnel structure',
           'Conversion tracking',
@@ -223,16 +223,16 @@ export const SERVICE_CONTENT = {
       { label: 'AI chatbot starter', price: 'R1,000 setup + R200/month' },
     ],
     deliverables: [
-      'A live, mobile-responsive website on your domain',
+      'A live, mobile responsive website on your domain',
       'SSL, hosting, and maintenance under your monthly plan',
       'Lead capture wired to your inbox or sheets',
       'Analytics and tracking where included',
-      'Go-live support and a clear upgrade path',
+      'Go live support and a clear upgrade path',
     ],
     faqs: [
       {
         q: 'How long does a website take?',
-        a: 'A Basic site can go live within days once content is ready. Business and Growth sites typically take 2 to 4 weeks. Premium and Bespoke timelines are confirmed in the proposal.',
+        a: 'Most websites go live within 1 to 2 weeks, depending on the required customization and package. Starter packages are usually done in under a week. Larger or more bespoke builds are confirmed in your proposal.',
       },
       {
         q: 'What does the monthly fee cover?',
@@ -252,7 +252,7 @@ export const SERVICE_CONTENT = {
   /* ── 2. Client Portals ───────────────────────────────────────────────────── */
   'client-portal': {
     positioning:
-      'Client portals that reduce back-and-forth communication, organize documents, show updates, send reminders, and give you better admin visibility.',
+      'Client portals that reduce back and forth communication, organize documents, show updates, send reminders, and give you better admin visibility.',
     problem: [
       'Client admin lives in email threads, WhatsApp chats, and shared folders. Documents go missing, statuses are unclear, and your team answers the same questions every day.',
       'A portal gives every client one private place to upload, track, and communicate, and gives your team one organized view of everything.',
@@ -328,7 +328,7 @@ export const SERVICE_CONTENT = {
           'Activity tracking',
           'Internal business dashboard',
           'Two automation or reminder flows',
-          'Light role-based access',
+          'Light role based access',
           'Advanced reports',
           'Priority support queue',
           'Monthly improvement allowance',
@@ -381,11 +381,11 @@ export const SERVICE_CONTENT = {
       },
       {
         q: 'Can the portal connect to my existing tools?',
-        a: 'Yes. Integrations with email, Google Sheets, CRMs, and other tools are available from the Essential plan upward or as add-ons.',
+        a: 'Yes. Integrations with email, Google Sheets, CRMs, and other tools are available from the Essential plan upward or as add ons.',
       },
       {
         q: 'What happens when I outgrow my plan limits?',
-        a: 'You can add capacity through add-ons or move up a plan. Nothing needs to be rebuilt.',
+        a: 'You can add capacity through add ons or move up a plan. Nothing needs to be rebuilt.',
       },
       {
         q: 'Why do prices say "from"?',
@@ -468,7 +468,7 @@ export const SERVICE_CONTENT = {
         name: 'Dashboard Business',
         price: 'From R22,500 setup',
         monthly: 'R2,200/month',
-        summary: 'Advanced analytics and role-based views for management and teams.',
+        summary: 'Advanced analytics and role based views for management and teams.',
         features: [
           'Everything in Growth',
           'Up to 8 pages',
@@ -479,7 +479,7 @@ export const SERVICE_CONTENT = {
           'Management dashboard',
           'Internal team dashboard',
           'Exportable reports',
-          'Basic role-based access',
+          'Basic role based access',
           'Up to 10 users',
           '4 hours support/month',
           'Priority support',
@@ -529,11 +529,11 @@ export const SERVICE_CONTENT = {
       },
       {
         q: 'How current is the data?',
-        a: 'Starter plans can use manual or sheet-based updates. From Essential upward, automated syncs keep the dashboard refreshed on a schedule.',
+        a: 'Starter plans can use manual or sheet based updates. From Essential upward, automated syncs keep the dashboard refreshed on a schedule.',
       },
       {
         q: 'Can different staff see different views?',
-        a: 'Yes. Role-based access is included in the Business plan and available in custom builds.',
+        a: 'Yes. Role based access is included in the Business plan and available in custom builds.',
       },
       {
         q: 'Why do prices say "from"?',
@@ -617,7 +617,7 @@ export const SERVICE_CONTENT = {
         name: 'AI Agent Business',
         price: 'From R15,000 setup',
         monthly: 'R2,500/month',
-        summary: 'Advanced booking logic, escalations, follow-ups, and a dashboard.',
+        summary: 'Advanced booking logic, escalations, follow ups, and a dashboard.',
         features: [
           'Everything in Growth',
           'Up to 3 channels',
@@ -625,7 +625,7 @@ export const SERVICE_CONTENT = {
           'Advanced booking and availability logic',
           'Customer status checks',
           'Internal staff alerts',
-          'Follow-up messages',
+          'Follow up messages',
           'Escalation rules',
           'Human handover workflow',
           'Basic internal dashboard',
@@ -648,7 +648,7 @@ export const SERVICE_CONTENT = {
           'Quote request automation',
           'Appointment confirmations',
           'Reminder flows',
-          'Multi-language setup',
+          'Multi language setup',
           'Advanced AI knowledge base',
           'Deeper analytics',
           'Priority support',
@@ -660,9 +660,9 @@ export const SERVICE_CONTENT = {
         name: 'Custom AI Communication System',
         price: 'From R60,000 setup',
         monthly: 'From R10,000/month',
-        summary: 'High-volume, multi-branch AI communication built to spec.',
+        summary: 'High volume, multi branch AI communication built to spec.',
         features: [
-          'High-volume WhatsApp support',
+          'High volume WhatsApp support',
           'Multiple branches and departments',
           'Advanced CRM integrations',
           'Booking engines and payment systems',
@@ -677,7 +677,7 @@ export const SERVICE_CONTENT = {
     ],
     notes: [
       'Extra usage can be billed separately once included reply limits are exceeded.',
-      'AI, WhatsApp and API, SMS, social inbox tools, and third-party platform fees are excluded unless included in writing.',
+      'AI, WhatsApp and API, SMS, social inbox tools, and third party platform fees are excluded unless included in writing.',
       'AI agents include human handover for sensitive or complex situations.',
       'AI agents do not provide legal, medical, or financial advice.',
     ],
@@ -695,7 +695,7 @@ export const SERVICE_CONTENT = {
       },
       {
         q: 'What counts as an AI reply?',
-        a: 'Each AI-generated response in a conversation counts toward your monthly allowance. Extra usage can be billed separately once limits are exceeded.',
+        a: 'Each AI generated response in a conversation counts toward your monthly allowance. Extra usage can be billed separately once limits are exceeded.',
       },
       {
         q: 'Which channels are supported?',
@@ -712,7 +712,7 @@ export const SERVICE_CONTENT = {
   'software-development': {
     positioning: 'Custom software built around real business processes, not generic templates.',
     problem: [
-      'Off-the-shelf tools force your business to work their way. The result is workarounds, spreadsheets on the side, and processes nobody can see end to end.',
+      'Off the shelf tools force your business to work their way. The result is workarounds, spreadsheets on the side, and processes nobody can see end to end.',
       'Custom software fits the way your business actually runs, and connects to everything else you use.',
     ],
     solution: [
@@ -734,7 +734,7 @@ export const SERVICE_CONTENT = {
         'Fixed project pricing can be agreed once scope is clear.',
       ],
       exclusions:
-        'Third-party tools, hosting, databases, AI usage, API fees, licensing, and support retainers are separate unless included in the written proposal.',
+        'Third party tools, hosting, databases, AI usage, API fees, licensing, and support retainers are separate unless included in the written proposal.',
     },
     deliverables: [
       'Software built to your approved scope',
@@ -749,7 +749,7 @@ export const SERVICE_CONTENT = {
       },
       {
         q: 'Do I own the software?',
-        a: 'Client-specific deliverables and usage rights are defined in the agreement. Reusable frameworks and internal tooling remain with Rapid Rise AI unless agreed otherwise.',
+        a: 'Client specific deliverables and usage rights are defined in the agreement. Reusable frameworks and internal tooling remain with Rapid Rise AI unless agreed otherwise.',
       },
       {
         q: 'Can it start small?',
@@ -767,12 +767,12 @@ export const SERVICE_CONTENT = {
       'A web app gives users full functionality in the browser on any device, and can grow into mobile apps later.',
     ],
     solution: [
-      'SaaS-style platforms',
+      'SaaS style platforms',
       'Booking platforms',
       'Member and client dashboards',
-      'Form-driven apps',
+      'Form driven apps',
       'Admin portals',
-      'Customer-facing tools',
+      'Customer facing tools',
       'Internal workflow apps',
       'Progressive upgrade paths into mobile apps, portals, dashboards, AI, and integrations',
     ],
@@ -789,7 +789,7 @@ export const SERVICE_CONTENT = {
     faqs: [
       {
         q: 'Web app or mobile app?',
-        a: 'Web apps work on every device immediately and cost less to build and maintain. If you need app-store presence later, the web app becomes the foundation.',
+        a: 'Web apps work on every device immediately and cost less to build and maintain. If you need app store presence later, the web app becomes the foundation.',
       },
       {
         q: 'How long does a web app take?',
@@ -807,7 +807,7 @@ export const SERVICE_CONTENT = {
     positioning:
       'Automated workflows that remove repeated manual tasks, connect tools, route information, send reminders, and keep business processes moving.',
     problem: [
-      'Someone copies form entries into a sheet. Someone chases documents. Someone forgets the follow-up. Manual handoffs slow everything down and leak leads.',
+      'Someone copies form entries into a sheet. Someone chases documents. Someone forgets the follow up. Manual handoffs slow everything down and leak leads.',
       'Automation connects your tools so information moves itself, reliably, every time.',
     ],
     solution: [
@@ -815,12 +815,12 @@ export const SERVICE_CONTENT = {
       'Lead routing',
       'Client onboarding',
       'Reminder flows',
-      'Document follow-ups',
+      'Document follow ups',
       'Staff notifications',
       'CRM updates',
       'Dashboard updates',
       'Payment and booking triggers',
-      'AI-assisted summaries and routing',
+      'AI assisted summaries and routing',
       'Make.com, Zapier, n8n, Google Workspace, CRM, calendar, email, and API automations',
     ],
     customPricing: {
@@ -844,7 +844,7 @@ export const SERVICE_CONTENT = {
       },
       {
         q: 'What does a small automation cost?',
-        a: 'Simple flows like form-to-email or lead routing are often quoted as small fixed projects. Larger workflows are scoped at R500/hour.',
+        a: 'Simple flows like form to email or lead routing are often quoted as small fixed projects. Larger workflows are scoped at R500/hour.',
       },
       {
         q: 'What about platform subscription fees?',
@@ -863,7 +863,7 @@ export const SERVICE_CONTENT = {
     ],
     solution: [
       'Start with one service and expand over time',
-      'Connect customer-facing and internal systems',
+      'Connect customer facing and internal systems',
       'Reduce duplicated admin',
       'Build one source of truth',
       'Upgrade paths from website to portal to dashboard to AI to automation',
@@ -881,7 +881,7 @@ export const SERVICE_CONTENT = {
       'A system map of your connected ecosystem',
       'Phased delivery plan with clear priorities',
       'Integrated systems that share data correctly',
-      'Documentation and a long-term growth roadmap',
+      'Documentation and a long term growth roadmap',
     ],
     faqs: [
       {
@@ -918,7 +918,7 @@ export const SERVICE_CONTENT = {
       'AI support agents',
       'AI document handling',
       'AI summaries',
-      'AI-integrated automations',
+      'AI integrated automations',
       'Human review and safety rules',
     ],
     customPricing: {
@@ -936,7 +936,7 @@ export const SERVICE_CONTENT = {
     faqs: [
       {
         q: 'Where does AI actually help first?',
-        a: 'Usually in answering repeat questions, summarising documents and conversations, qualifying leads, and routing work. The audit identifies your highest-value starting points.',
+        a: 'Usually in answering repeat questions, summarising documents and conversations, qualifying leads, and routing work. The audit identifies your highest value starting points.',
       },
       {
         q: 'Is my data safe?',
@@ -974,7 +974,7 @@ export const SERVICE_CONTENT = {
         `Standard custom rate: ${CUSTOM_RATE} for planning, software, dashboards, integrations, and configuration.`,
       ],
       exclusions:
-        'Hardware, sensors, devices, installation, connectivity, cloud services, and third-party platforms are separate unless included in the written quote.',
+        'Hardware, sensors, devices, installation, connectivity, cloud services, and third party platforms are separate unless included in the written quote.',
     },
     deliverables: [
       'A working connected system for your devices or environment',
@@ -1001,7 +1001,7 @@ export const SERVICE_CONTENT = {
   /* ── 11. Marketing & SEO ─────────────────────────────────────────────────── */
   'marketing-seo': {
     positioning:
-      'Marketing and SEO support that improves visibility, trust, lead capture, and AI-search readiness.',
+      'Marketing and SEO support that improves visibility, trust, lead capture, and AI search readiness.',
     problem: [
       'A good website that nobody finds is a brochure in a drawer. Rankings, local visibility, tracking, and content all need consistent attention.',
       'We build the marketing foundation and keep it improving month after month.',
@@ -1009,7 +1009,7 @@ export const SERVICE_CONTENT = {
     solution: [
       'SEO foundation',
       'Local visibility',
-      'AI-search optimisation structure',
+      'AI search optimisation structure',
       'Google Business Profile',
       'Website content and copywriting',
       'Tracking and analytics',
@@ -1051,7 +1051,7 @@ export const SERVICE_CONTENT = {
         a: 'Local visibility improvements often show within weeks. Broader ranking growth typically builds over 3 to 6 months of consistent work.',
       },
       {
-        q: 'What is AI-search optimisation?',
+        q: 'What is AI search optimisation?',
         a: 'Structuring your content so AI assistants and answer engines can find, understand, and cite your business, alongside traditional search.',
       },
       {

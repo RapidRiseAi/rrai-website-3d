@@ -1,0 +1,175 @@
+/* Contact page — page-scoped (ct2-*). Form fields keep their original ct-*
+   styles from index.css; this only styles the new layout + glass wrapper. */
+
+.ct2-wrap { position: relative; }
+.ct2-orb { position: absolute; z-index: -1; }
+.ct2-orb-1 { top: 30px; left: -5%; width: 360px; height: 360px; }
+.ct2-orb-2 { top: 360px; right: -7%; width: 420px; height: 420px; }
+
+.ct2-section { position: relative; padding: clamp(44px, 7vh, 88px) 0; }
+.ct2-head { text-align: center; margin-bottom: clamp(28px, 4.5vh, 48px); }
+.ct2-h2 {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+  font-weight: 790;
+  letter-spacing: -0.036em;
+  line-height: 1.1;
+  color: #eef5fd;
+  margin: 0 auto;
+  max-width: 22ch;
+}
+.ct2-lead { font-size: 1.02rem; line-height: 1.7; color: rgba(198, 216, 242, 0.66); max-width: 600px; margin: 14px auto 0; }
+
+/* ── Method cards ─────────────────────────────────────────────────────────── */
+.ct2-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.ct2-card { padding: 26px 24px 24px; height: 100%; }
+.ct2-card-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22), rgba(26, 70, 168, 0.1));
+  border: 1px solid rgba(96, 166, 252, 0.3);
+  box-shadow: 0 0 18px -4px rgba(46, 130, 250, 0.5);
+  margin-bottom: 15px;
+}
+.ct2-card-ic svg { width: 21px; height: 21px; }
+.ct2-card-title { font-size: 1.08rem; font-weight: 740; letter-spacing: -0.02em; color: #f1f6fd; margin: 0 0 8px; }
+.ct2-card-text { font-size: 0.9rem; line-height: 1.62; color: rgba(186, 206, 234, 0.66); margin: 0 0 14px; }
+.ct2-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 640;
+  color: #4ab0ff;
+  text-decoration: none;
+}
+.ct2-card-link:hover { color: #7cc6ff; }
+
+/* ── Form panel (glass) ───────────────────────────────────────────────────── */
+.ct2-form-panel {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: clamp(26px, 4vh, 46px) clamp(22px, 4vw, 48px);
+  position: relative;
+  background: linear-gradient(165deg, rgba(34, 52, 92, 0.40) 0%, rgba(10, 18, 38, 0.52) 100%);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(150, 196, 255, 0.18);
+  border-radius: 24px;
+  box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.66), 0 0 44px -22px rgba(40, 120, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.ct2-form { display: flex; flex-direction: column; gap: 18px; }
+.ct2-fieldset { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ct2-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(124, 172, 236, 0.7);
+  margin: 0 0 2px;
+}
+
+/* ── What happens next — steps with a connecting rail ─────────────────────── */
+.ct2-next { position: relative; max-width: 1000px; margin: 0 auto; }
+.ct2-next-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  z-index: 1;
+}
+.ct2-next-rail {
+  position: absolute;
+  top: 34px;
+  left: 16%;
+  right: 16%;
+  height: 2px;
+  overflow: hidden;
+  background: linear-gradient(90deg, transparent, rgba(63, 155, 245, 0.45) 12%, rgba(63, 155, 245, 0.45) 88%, transparent);
+  z-index: 0;
+}
+.ct2-next-rail-glow {
+  position: absolute;
+  top: 0;
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(150, 210, 255, 0.95), transparent);
+  animation: ct2-rail-run 4.5s linear infinite;
+}
+@keyframes ct2-rail-run { 0% { transform: translateX(-160px); } 100% { transform: translateX(900px); } }
+.ct2-step { position: relative; padding: 26px 22px 22px; height: 100%; text-align: center; }
+.ct2-step-num { position: absolute; top: 10px; right: 16px; font-size: 2rem; opacity: 0.6; }
+.ct2-step-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  margin: 0 auto 12px;
+  color: #8fcaff;
+  background: linear-gradient(150deg, rgba(58, 134, 252, 0.22), rgba(26, 70, 168, 0.1));
+  border: 1px solid rgba(96, 166, 252, 0.3);
+}
+.ct2-step-ic svg { width: 20px; height: 20px; }
+.ct2-step-title { font-size: 1rem; font-weight: 720; color: #f1f6fd; margin: 0 0 7px; }
+.ct2-step-text { font-size: 0.88rem; line-height: 1.6; color: rgba(186, 206, 234, 0.64); margin: 0; }
+.ct2-next-node {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #aed6ff, #1a77f2 70%);
+  box-shadow: 0 0 14px rgba(46, 130, 250, 0.8), 0 0 0 5px rgba(10, 20, 40, 0.85);
+  z-index: 2;
+}
+
+/* ── FAQs ─────────────────────────────────────────────────────────────────── */
+.ct2-faqs { display: flex; flex-direction: column; gap: 12px; max-width: 820px; margin: 0 auto; }
+.ct2-faq {
+  border-radius: 16px;
+  border: 1px solid rgba(140, 185, 255, 0.16);
+  background: linear-gradient(165deg, rgba(30, 46, 82, 0.36), rgba(10, 18, 38, 0.48));
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  padding: 0 20px;
+  transition: border-color 0.25s;
+}
+.ct2-faq[open] { border-color: rgba(116, 176, 252, 0.34); }
+.ct2-faq summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  font-size: 0.98rem;
+  font-weight: 660;
+  color: rgba(222, 236, 252, 0.92);
+}
+.ct2-faq summary::-webkit-details-marker { display: none; }
+.ct2-faq summary::after { content: '+'; font-size: 1.3rem; color: #4ab0ff; transition: transform 0.25s; flex-shrink: 0; }
+.ct2-faq[open] summary::after { transform: rotate(45deg); }
+.ct2-faq p { font-size: 0.92rem; line-height: 1.7; color: rgba(184, 204, 232, 0.7); margin: 0; padding: 0 0 18px; }
+
+@media (max-width: 820px) {
+  .ct2-methods { grid-template-columns: 1fr; }
+  .ct2-next-grid { grid-template-columns: 1fr; }
+  .ct2-next-rail { display: none; }
+  .ct2-next-node { display: none; }
+}
