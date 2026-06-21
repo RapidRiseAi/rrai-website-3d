@@ -339,16 +339,19 @@ function _personIcon(add, cx, cy, z, rr, tag, step) {
 // form (NOT a flat extruded outline) — the jitter reads as a fine dotted fill head-on
 // and the ±z surface reads as a rounded shell when it sways/turns. Returns `zb(x,y)`
 // so the caller can sit details (dots, tail) on the FRONT of the puff.
-function _inflatedBubble(add, bx, by, bhw, bhh, bcr, DEPTH, frontTag = 0.32, step = R * 0.026) {
+function _inflatedBubble(add, bx, by, bhw, bhh, bcr, DEPTH, frontTag = 0.36, step = R * 0.018) {
   const sdf = (x, y) => { const qx = Math.abs(x - bx) - (bhw - bcr), qy = Math.abs(y - by) - (bhh - bcr), ox = Math.max(qx, 0), oy = Math.max(qy, 0); return Math.hypot(ox, oy) + Math.min(Math.max(qx, qy), 0) - bcr }
   const zb = (x, y) => { const d = -sdf(x, y); if (d <= 0) return 0; const t = Math.min(1, d / bhh); return DEPTH * Math.sqrt(t * (2 - t)) }
-  { const P = _resample(_rrContour(bx, by, bhw, bhh, bcr), R * 0.012); for (const [x, y] of P) { add(x, y, 0, 0.002, 0.0); add(x, y, 0, 0.006, 0.06) } }   // bright silhouette rim
+  { const P = _resample(_rrContour(bx, by, bhw, bhh, bcr), R * 0.011); for (const [x, y] of P) { add(x, y, 0, 0.002, 0.0); add(x, y, 0, 0.005, 0.05) } }   // bright silhouette rim
+  // Dense surface authored CLOSE to the orb budget so padding barely duplicates →
+  // an EVEN fine fill (not the clumpy 3-4× duplicated look). Modest jitter breaks the
+  // lattice without clumping.
   for (let gy = by - bhh; gy <= by + bhh + 1e-6; gy += step) for (let gx = bx - bhw; gx <= bx + bhw + 1e-6; gx += step) {
-    const x = gx + (Math.random() - 0.5) * step * 0.9, y = gy + (Math.random() - 0.5) * step * 0.9, s = sdf(x, y)
+    const x = gx + (Math.random() - 0.5) * step * 0.62, y = gy + (Math.random() - 0.5) * step * 0.62, s = sdf(x, y)
     if (s > -R * 0.004) continue
-    const z = zb(x, y), edge = -s < R * 0.05
-    add(x, y, z, 0.004, edge ? 0.08 : frontTag)                                                          // front face — even bright, hot near rim
-    if ((Math.round((gx - bx) / step) + Math.round((gy - by) / step)) % 2 === 0) add(x, y, -z, 0.004, 0.74)   // back face — half-density, dim
+    const z = zb(x, y), edge = -s < R * 0.045
+    add(x, y, z, 0.003, edge ? 0.06 : frontTag)                                                          // front face — even, hot near rim
+    if ((Math.round((gx - bx) / step) + Math.round((gy - by) / step)) % 2 === 0) add(x, y, -z, 0.003, 0.8)   // back face — half-density, dim
   }
   return zb
 }
@@ -1279,15 +1282,15 @@ function _genProcess() {
     for (let i = 0; i <= steps; i++) { if (i % 2) continue; addRing(a0 + (a1 - a0) * (i / steps), CR, 0.003, 0.05, 0.4) }
     const [ex, ey, ez] = onRing(a1)
     let tx = Math.sin(a1), ty = -Math.cos(a1) * cT; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl   // clockwise-flow tangent
-    const back = [-tx, -ty], hsz = R * 0.12, b1 = rot2(back, 0.5), b2 = rot2(back, -0.5)
-    for (let i = 0; i <= 7; i++) { const t = i / 7; add(ex + b1[0] * hsz * t, ey + b1[1] * hsz * t, ez, 0.004, 0.08); add(ex + b2[0] * hsz * t, ey + b2[1] * hsz * t, ez, 0.004, 0.08) }
+    const back = [-tx, -ty], hsz = R * 0.14, b1 = rot2(back, 0.55), b2 = rot2(back, -0.55)
+    for (let pass = 0; pass < 2; pass++) for (let i = 0; i <= 8; i++) { const t = i / 8; add(ex + b1[0] * hsz * t, ey + b1[1] * hsz * t, ez, 0.005, 0.05); add(ex + b2[0] * hsz * t, ey + b2[1] * hsz * t, ez, 0.005, 0.05) }   // crisp arrowhead
   }
   // ── 4 STARBURST nodes on the ring at DIFFERENT depths (3-D arrangement). ──
   const starburst = (phi, hot) => {
     const [cx, cy, cz] = onRing(phi)
-    _diskFill(add, cx, cy, cz + R * 0.01, R * 0.06, 0.0, R * 0.013)                                                                                          // clean hot core
-    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; for (let j = 1; j <= 8; j++) add(cx + Math.cos(a) * R * 0.16 * (j / 8), cy + Math.sin(a) * R * 0.16 * (j / 8), cz, 0.004, 0.05 + (j / 8) * 0.3) }   // spikes
-    for (let p = 0; p < 2; p++) for (let i = 0; i < 56; i++) { const a = i / 56 * 6.28; add(cx + Math.cos(a) * R * 0.185, cy + Math.sin(a) * R * 0.185, cz, 0.004, hot ? 0.35 : 0.48) }   // halo ring
+    _diskFill(add, cx, cy, cz + R * 0.01, R * 0.07, 0.0, R * 0.012)                                                                                          // clean hot core
+    for (let k = 0; k < 14; k++) { const a = k / 14 * 6.28; for (let j = 1; j <= 9; j++) add(cx + Math.cos(a) * R * 0.185 * (j / 9), cy + Math.sin(a) * R * 0.185 * (j / 9), cz, 0.004, 0.04 + (j / 9) * 0.32) }   // spikes (inner bright → fade out)
+    for (let p = 0; p < 3; p++) for (let i = 0; i < 60; i++) { const a = i / 60 * 6.28; add(cx + Math.cos(a) * R * 0.205, cy + Math.sin(a) * R * 0.205, cz, 0.003, hot ? 0.28 : 0.4) }   // bright halo ring
   }
   nodeAng.forEach((ang, i) => starburst(ang, i % 2 === 0))
   const out = _padToBigTagged(pts, tags, N_ORB, 0.01)
@@ -1301,7 +1304,7 @@ function _genContact() {
   const pts = [], tags = []
   const B = _faceBuilder(pts, tags, Math.PI * 0.035, Math.PI * 0.012)   // near front-on; sway/transition reveal the puff
   const { add, arc } = B
-  const bx = 0, by = R * 0.16, bhw = R * 0.62, bhh = R * 0.44, bcr = R * 0.38
+  const bx = 0, by = R * 0.16, bhw = R * 0.60, bhh = R * 0.42, bcr = R * 0.40
   // ── MAIN BEACON BUBBLE — a genuinely inflated 3-D pillow (SDF puff + even jittered
   //    surface), matching the AI-agent bubble's quality. ──
   const zb = _inflatedBubble(add, bx, by, bhw, bhh, bcr, R * 0.22)
@@ -1311,14 +1314,14 @@ function _genContact() {
   { const baseY = by - bhh + R * 0.04, tipY = by - bhh - R * 0.22, baseZ = zb(bx - R * 0.04, baseY) * 0.7
     for (let ri = 0; ri <= 8; ri++) { const t = ri / 8, y = baseY + (tipY - baseY) * t, rad = R * 0.08 * (1 - t), zc = baseZ * (1 - t * t), n = Math.max(1, Math.round(rad / (R * 0.02)) * 5)
       for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; add(bx - R * 0.07 * t + Math.cos(a) * rad, y, zc + Math.sin(a) * rad * 0.55, 0.004, 0.05 + t * 0.22) } } }
-  // ── Falling-signal trail — a few clean fading dots dropping from the tail. ──
-  for (let k = 0; k < 4; k++) { const y = by - bhh - R * 0.30 - k * R * 0.13; _diskFill(add, bx - R * 0.10, y, 0, R * (0.045 - k * 0.006), 0.24 + k * 0.16, R * 0.012) }
-  // ── Signal "waves" — the beacon broadcast: 3 nested arcs bowing OUT each side,
-  //    seated clearly outside the bubble edge. ──
+  // ── Falling-signal trail — 3 clean fading dots dropping straight under the tail. ──
+  for (let k = 0; k < 3; k++) { const y = by - bhh - R * 0.34 - k * R * 0.12; _diskFill(add, bx - R * 0.05, y, 0, R * (0.038 - k * 0.008), 0.32 + k * 0.18, R * 0.011) }
+  // ── Signal "waves" — the beacon broadcast: 3 larger nested arcs sweeping OUT each
+  //    side, clearly outside the bubble (2 passes → crisp). ──
   for (let w = 0; w < 3; w++) {
-    const wr = R * (0.12 + w * 0.15), tag = 0.1 + w * 0.16
-    arc(bx + bhw + R * 0.05, by, R * 0.05, wr, -Math.PI * 0.44, Math.PI * 0.44, tag, 2)
-    arc(bx - bhw - R * 0.05, by, R * 0.05, wr, Math.PI - Math.PI * 0.44, Math.PI + Math.PI * 0.44, tag, 2)
+    const wr = R * (0.15 + w * 0.17), tag = 0.1 + w * 0.15
+    arc(bx + bhw + R * 0.04, by, R * 0.05, wr, -Math.PI * 0.46, Math.PI * 0.46, tag, 3)
+    arc(bx - bhw - R * 0.04, by, R * 0.05, wr, Math.PI - Math.PI * 0.46, Math.PI + Math.PI * 0.46, tag, 3)
   }
   // ── Ground glow — soft faint filled puddle below. ──
   for (let yy = -R * 0.04; yy <= R * 0.04 + 1e-6; yy += R * 0.022) for (let xx = -R * 0.34; xx <= R * 0.34 + 1e-6; xx += R * 0.030) { const e = (xx / (R * 0.34)) ** 2 + (yy / (R * 0.04)) ** 2; if (e <= 1) add(bx + xx, by - bhh - R * 0.66 + yy, -R * 0.04, 0.012, 0.66 + e * 0.12) }
