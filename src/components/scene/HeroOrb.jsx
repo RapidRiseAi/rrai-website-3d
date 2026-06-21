@@ -334,6 +334,25 @@ function _personIcon(add, cx, cy, z, rr, tag, step) {
   }
 }
 
+// Inflated 3-D "pillow" bubble: a rounded-rect SIGNED-DISTANCE puff with an even
+// jittered surface (front bright, back dim, rim hot). A genuinely rounded volumetric
+// form (NOT a flat extruded outline) — the jitter reads as a fine dotted fill head-on
+// and the ±z surface reads as a rounded shell when it sways/turns. Returns `zb(x,y)`
+// so the caller can sit details (dots, tail) on the FRONT of the puff.
+function _inflatedBubble(add, bx, by, bhw, bhh, bcr, DEPTH, frontTag = 0.32, step = R * 0.026) {
+  const sdf = (x, y) => { const qx = Math.abs(x - bx) - (bhw - bcr), qy = Math.abs(y - by) - (bhh - bcr), ox = Math.max(qx, 0), oy = Math.max(qy, 0); return Math.hypot(ox, oy) + Math.min(Math.max(qx, qy), 0) - bcr }
+  const zb = (x, y) => { const d = -sdf(x, y); if (d <= 0) return 0; const t = Math.min(1, d / bhh); return DEPTH * Math.sqrt(t * (2 - t)) }
+  { const P = _resample(_rrContour(bx, by, bhw, bhh, bcr), R * 0.012); for (const [x, y] of P) { add(x, y, 0, 0.002, 0.0); add(x, y, 0, 0.006, 0.06) } }   // bright silhouette rim
+  for (let gy = by - bhh; gy <= by + bhh + 1e-6; gy += step) for (let gx = bx - bhw; gx <= bx + bhw + 1e-6; gx += step) {
+    const x = gx + (Math.random() - 0.5) * step * 0.9, y = gy + (Math.random() - 0.5) * step * 0.9, s = sdf(x, y)
+    if (s > -R * 0.004) continue
+    const z = zb(x, y), edge = -s < R * 0.05
+    add(x, y, z, 0.004, edge ? 0.08 : frontTag)                                                          // front face — even bright, hot near rim
+    if ((Math.round((gx - bx) / step) + Math.round((gy - by) / step)) % 2 === 0) add(x, y, -z, 0.004, 0.74)   // back face — half-density, dim
+  }
+  return zb
+}
+
 // Object 01 — GLOBE (Services Overview). A clean lat/long wireframe sphere with
 // two tilted ORBITAL RINGS arcing around it, a sparse dim surface fill, and a
 // small base glow. Bright/large orbs on the grid + rings (tag 0); small dim orbs
@@ -1236,36 +1255,42 @@ function _genAbout() {
 // clockwise cycle, a node at each quarter, and a small centre hub.
 function _genProcess() {
   const pts = [], tags = []
-  const B = _faceBuilder(pts, tags, Math.PI * 0.05, Math.PI * 0.03)
-  const { add, arc, line, ring } = B
-  const FZ = R * 0.05
-  const cr = R * 0.80, gap = 0.34
-  const rot = (v, th) => [v[0] * Math.cos(th) - v[1] * Math.sin(th), v[0] * Math.sin(th) + v[1] * Math.cos(th)]
-  const nodeAng = [Math.PI / 2, 0, -Math.PI / 2, Math.PI]   // 12, 3, 6, 9 o'clock
-  // ── Faint orbit ring + concentric central core. ──
-  for (let i = 0; i < 130; i++) { const a = (i / 130) * Math.PI * 2; if (i % 2 === 0) add(Math.cos(a) * cr, Math.sin(a) * cr, FZ, 0.004, 0.62) }
-  for (const rr of [R * 0.12, R * 0.20, R * 0.28]) ring(0, 0, FZ, rr, 0.66, 1)
-  add(0, 0, FZ, 0.004, 0.5)
-  // ── 4 clockwise curved arrows between adjacent nodes. ──
+  const B = _faceBuilder(pts, tags, Math.PI * 0.04, Math.PI * 0.02)
+  const { add } = B
+  const CR = R * 0.82, TILT = 0.72                       // ring plane tipped toward the viewer → a real 3-D orbital track
+  const cT = Math.cos(TILT), sT = Math.sin(TILT)
+  // A point on the orbital ring at angle phi (phi=PI/2 → far/top, -PI/2 → near/bottom).
+  const onRing = (phi, rad = CR) => { const x = rad * Math.cos(phi), yl = rad * Math.sin(phi); return [x, yl * cT, -yl * sT] }
+  const dtag = (z, lo, hi) => { const fz = (z / (CR * sT)) * 0.5 + 0.5; return hi - Math.max(0, Math.min(1, fz)) * (hi - lo) }   // near (z>0) bright → far dim
+  const addRing = (phi, rad, jit, lo, hi) => { const [x, y, z] = onRing(phi, rad); add(x, y, z, jit, dtag(z, lo, hi)) }
+  const rot2 = (v, th) => [v[0] * Math.cos(th) - v[1] * Math.sin(th), v[0] * Math.sin(th) + v[1] * Math.cos(th)]
+  const nodeAng = [Math.PI / 2, 0, -Math.PI / 2, Math.PI], gap = 0.40   // top, right, bottom, left
+  // ── ORBITAL RING — dotted tilted ellipse, near-bright / far-dim → reads 3-D. ──
+  const N = 220
+  for (let i = 0; i < N; i++) { if (i % 2) continue; addRing((i / N) * Math.PI * 2, CR, 0.004, 0.12, 0.56) }
+  // ── Faint concentric core rings (same tilted plane → nested ellipses) + a hub. ──
+  for (const rr of [R * 0.17, R * 0.28, R * 0.39]) { const n = Math.max(50, Math.round(rr * 220)); for (let i = 0; i < n; i++) { if (i % 2) continue; addRing((i / n) * Math.PI * 2, rr, 0.004, 0.5, 0.74) } }
+  _diskFill(add, 0, 0, 0, R * 0.05, 0.34, R * 0.016)
+  // ── 4 clockwise flow arcs between adjacent nodes (following the ring) + arrowheads. ──
   for (let s = 0; s < 4; s++) {
     const from = nodeAng[s]; let to = nodeAng[(s + 1) % 4]
     let a0 = from - gap, a1 = to + gap; if (a1 > a0) a1 -= Math.PI * 2
-    for (let pass = 0; pass < 2; pass++) arc(0, 0, FZ, cr, a0, a1, 0.12, 2)
-    const ex = Math.cos(a1) * cr, ey = Math.sin(a1) * cr
-    const tang = [Math.sin(a1), -Math.cos(a1)], back = [-tang[0], -tang[1]], hsz = R * 0.13
-    const b1 = rot(back, 0.5), b2 = rot(back, -0.5)
-    line(t => [ex + b1[0] * hsz * t, ey + b1[1] * hsz * t, FZ], 7, 0.08, 3)
-    line(t => [ex + b2[0] * hsz * t, ey + b2[1] * hsz * t, FZ], 7, 0.08, 3)
+    const steps = 48
+    for (let i = 0; i <= steps; i++) { if (i % 2) continue; addRing(a0 + (a1 - a0) * (i / steps), CR, 0.003, 0.05, 0.4) }
+    const [ex, ey, ez] = onRing(a1)
+    let tx = Math.sin(a1), ty = -Math.cos(a1) * cT; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl   // clockwise-flow tangent
+    const back = [-tx, -ty], hsz = R * 0.12, b1 = rot2(back, 0.5), b2 = rot2(back, -0.5)
+    for (let i = 0; i <= 7; i++) { const t = i / 7; add(ex + b1[0] * hsz * t, ey + b1[1] * hsz * t, ez, 0.004, 0.08); add(ex + b2[0] * hsz * t, ey + b2[1] * hsz * t, ez, 0.004, 0.08) }
   }
-  // ── STARBURST nodes at 12/3/6/9: hot dense core + radiating spikes + halo ring. ──
-  const starburst = (cx, cy, hot) => {
-    for (let i = 0; i < 130; i++) { const a = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * R * 0.07; add(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, FZ + R * 0.005, 0.004, 0.0) }   // hot core
-    const NS = 12
-    for (let k = 0; k < NS; k++) { const a = k / NS * 6.28; for (let j = 1; j <= 7; j++) add(cx + Math.cos(a) * R * 0.15 * (j / 7), cy + Math.sin(a) * R * 0.15 * (j / 7), FZ, 0.004, 0.06 + (j / 7) * 0.3) }   // spikes (taper out)
-    ring(cx, cy, FZ, R * 0.17, hot ? 0.4 : 0.5, 1)   // halo ring
+  // ── 4 STARBURST nodes on the ring at DIFFERENT depths (3-D arrangement). ──
+  const starburst = (phi, hot) => {
+    const [cx, cy, cz] = onRing(phi)
+    _diskFill(add, cx, cy, cz + R * 0.01, R * 0.06, 0.0, R * 0.013)                                                                                          // clean hot core
+    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; for (let j = 1; j <= 8; j++) add(cx + Math.cos(a) * R * 0.16 * (j / 8), cy + Math.sin(a) * R * 0.16 * (j / 8), cz, 0.004, 0.05 + (j / 8) * 0.3) }   // spikes
+    for (let p = 0; p < 2; p++) for (let i = 0; i < 56; i++) { const a = i / 56 * 6.28; add(cx + Math.cos(a) * R * 0.185, cy + Math.sin(a) * R * 0.185, cz, 0.004, hot ? 0.35 : 0.48) }   // halo ring
   }
-  nodeAng.forEach((ang, i) => starburst(Math.cos(ang) * cr, Math.sin(ang) * cr, i % 2 === 0))
-  const out = _padToBigTagged(pts, tags, N_ORB, 0.012)
+  nodeAng.forEach((ang, i) => starburst(ang, i % 2 === 0))
+  const out = _padToBigTagged(pts, tags, N_ORB, 0.01)
   out.normal = [0, 0, 1]
   return out
 }
@@ -1274,29 +1299,30 @@ function _genProcess() {
 // concentric signal waves left and right.
 function _genContact() {
   const pts = [], tags = []
-  const B = _faceBuilder(pts, tags, Math.PI * 0.05, Math.PI * 0.02)
-  const { add, arc, line, roundRect } = B
-  const FZ = R * 0.06
-  const bhw = R * 0.54, bhh = R * 0.42, bcr = R * 0.20, by = R * 0.06
-  // ── Bubble — dense bright HOLLOW outline (2 concentric rows). ──
-  roundRect(0, by, FZ, bhw, bhh, bcr, 0.04, 3)
-  roundRect(0, by, FZ, bhw - R * 0.03, bhh - R * 0.03, bcr - R * 0.03, 0.11, 2)
-  // tail down-left
-  line(t => [-R * 0.10 - t * R * 0.05, by - bhh - t * R * 0.22, FZ], 14, 0.04, 4)
-  line(t => [-R * 0.20 + t * R * 0.10, by - bhh - R * 0.22 + t * R * 0.22, FZ], 14, 0.04, 4)
-  // ── Three HOT dots. ──
-  for (const dx of [-R * 0.26, 0, R * 0.26]) { for (let i = 0; i < 58; i++) { const a = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * R * 0.075; add(dx + Math.cos(a) * rr, by + Math.sin(a) * rr, FZ + R * 0.01, 0.004, 0.0) } }
-  // ── Falling-orb trail from the tail. ──
-  for (let k = 0; k < 5; k++) { const y = by - bhh - R * 0.30 - k * R * 0.12; for (let i = 0; i < 5; i++) add(-R * 0.16 + (Math.random() * 2 - 1) * R * 0.02, y + (Math.random() * 2 - 1) * R * 0.02, FZ, 0.004, 0.1 + k * 0.14) }
-  // ── Signal waves — 3 concentric arcs each side (inner bright → outer dim). ──
+  const B = _faceBuilder(pts, tags, Math.PI * 0.035, Math.PI * 0.012)   // near front-on; sway/transition reveal the puff
+  const { add, arc } = B
+  const bx = 0, by = R * 0.16, bhw = R * 0.62, bhh = R * 0.44, bcr = R * 0.38
+  // ── MAIN BEACON BUBBLE — a genuinely inflated 3-D pillow (SDF puff + even jittered
+  //    surface), matching the AI-agent bubble's quality. ──
+  const zb = _inflatedBubble(add, bx, by, bhw, bhh, bcr, R * 0.22)
+  // ── Three HOT ellipsis dots riding the FRONT of the puff. ──
+  for (const dx of [-R * 0.24, 0, R * 0.24]) _diskFill(add, bx + dx, by, zb(bx + dx, by) + R * 0.02, R * 0.078, 0.0, R * 0.014)
+  // ── Tail — a small 3-D cone hanging off the bottom-front (points down-left). ──
+  { const baseY = by - bhh + R * 0.04, tipY = by - bhh - R * 0.22, baseZ = zb(bx - R * 0.04, baseY) * 0.7
+    for (let ri = 0; ri <= 8; ri++) { const t = ri / 8, y = baseY + (tipY - baseY) * t, rad = R * 0.08 * (1 - t), zc = baseZ * (1 - t * t), n = Math.max(1, Math.round(rad / (R * 0.02)) * 5)
+      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; add(bx - R * 0.07 * t + Math.cos(a) * rad, y, zc + Math.sin(a) * rad * 0.55, 0.004, 0.05 + t * 0.22) } } }
+  // ── Falling-signal trail — a few clean fading dots dropping from the tail. ──
+  for (let k = 0; k < 4; k++) { const y = by - bhh - R * 0.30 - k * R * 0.13; _diskFill(add, bx - R * 0.10, y, 0, R * (0.045 - k * 0.006), 0.24 + k * 0.16, R * 0.012) }
+  // ── Signal "waves" — the beacon broadcast: 3 nested arcs bowing OUT each side,
+  //    seated clearly outside the bubble edge. ──
   for (let w = 0; w < 3; w++) {
-    const wr = R * (0.34 + w * 0.22), tag = 0.18 + w * 0.18
-    arc(bhw + R * 0.04, by, FZ, wr, -Math.PI * 0.40, Math.PI * 0.40, tag, 2)
-    arc(-bhw - R * 0.04, by, FZ, wr, Math.PI - Math.PI * 0.40, Math.PI + Math.PI * 0.40, tag, 2)
+    const wr = R * (0.12 + w * 0.15), tag = 0.1 + w * 0.16
+    arc(bx + bhw + R * 0.05, by, R * 0.05, wr, -Math.PI * 0.44, Math.PI * 0.44, tag, 2)
+    arc(bx - bhw - R * 0.05, by, R * 0.05, wr, Math.PI - Math.PI * 0.44, Math.PI + Math.PI * 0.44, tag, 2)
   }
-  // ground glow
-  for (let i = 0; i < 70; i++) { const a = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * R * 0.4; add(Math.cos(a) * rr, by - bhh - R * 0.7 + Math.sin(a) * rr * 0.3, FZ, 0.02, 0.6) }
-  const out = _padToBigTagged(pts, tags, N_ORB, 0.012)
+  // ── Ground glow — soft faint filled puddle below. ──
+  for (let yy = -R * 0.04; yy <= R * 0.04 + 1e-6; yy += R * 0.022) for (let xx = -R * 0.34; xx <= R * 0.34 + 1e-6; xx += R * 0.030) { const e = (xx / (R * 0.34)) ** 2 + (yy / (R * 0.04)) ** 2; if (e <= 1) add(bx + xx, by - bhh - R * 0.66 + yy, -R * 0.04, 0.012, 0.66 + e * 0.12) }
+  const out = _padToBigTagged(pts, tags, N_ORB, 0.006)
   out.normal = [0, 0, 1]
   return out
 }
