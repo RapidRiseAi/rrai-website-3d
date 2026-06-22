@@ -41,6 +41,7 @@ shots/*_after.png
 
 # Local agent / editor directories
 .claude/
+.codex/
 .vscode/
 
 # Local screenshot artifacts + tooling config (not part of the site)
