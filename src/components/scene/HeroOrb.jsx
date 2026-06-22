@@ -1273,7 +1273,11 @@ function _genProcess() {
   for (let i = 0; i < N; i++) { if (i % 2) continue; addRing((i / N) * Math.PI * 2, CR, 0.004, 0.12, 0.56) }
   // ── Faint concentric core rings (same tilted plane → nested ellipses) + a hub. ──
   for (const rr of [R * 0.17, R * 0.28, R * 0.39]) { const n = Math.max(50, Math.round(rr * 220)); for (let i = 0; i < n; i++) { if (i % 2) continue; addRing((i / n) * Math.PI * 2, rr, 0.004, 0.5, 0.74) } }
-  _diskFill(add, 0, 0, 0, R * 0.05, 0.34, R * 0.016)
+  // ── Central CORE — a small glowing 3-D orb (fibonacci sphere) anchoring the cycle:
+  //    a hot dense core + a faint lat/long shell, front-bright / back-dim. ──
+  { const ccr = R * 0.085, golden = Math.PI * (3 - Math.sqrt(5))
+    _diskFill(add, 0, 0, R * 0.02, R * 0.035, 0.0, R * 0.012)                                                                 // hot inner core (front)
+    for (let i = 0; i < 150; i++) { const fy = 1 - (i / 149) * 2, fr = Math.sqrt(Math.max(0, 1 - fy * fy)), fa = golden * i, z = Math.sin(fa) * fr * ccr; add(Math.cos(fa) * fr * ccr, fy * ccr, z, 0.004, z > 0 ? 0.12 : 0.6) } }   // sphere shell
   // ── 4 clockwise flow arcs between adjacent nodes (following the ring) + arrowheads. ──
   for (let s = 0; s < 4; s++) {
     const from = nodeAng[s]; let to = nodeAng[(s + 1) % 4]
