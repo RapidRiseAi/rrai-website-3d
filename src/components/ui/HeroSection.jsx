@@ -11,17 +11,17 @@ import { useNavigate } from 'react-router-dom'
 
 const EXPO = [0.16, 1, 0.30, 1]
 
-// Honest, verifiable trust badges (no count-up — these aren't tally numbers).
+// Outcome-led trust badges — a punchy lead word + a short descriptor.
 const STATS = [
-  { value: '5.0★', label: 'Rated',       sub: 'on Google' },
-  { value: '1 hr', label: 'Response',    sub: 'or faster' },
-  { value: '100%', label: 'Transparent', sub: 'ZAR pricing' },
+  { value: '24/7',  label: 'engagement' },
+  { value: 'More',  label: 'work delivered' },
+  { value: 'Built', label: 'to scale' },
 ]
 
 const H1_LINES = [
-  { parts: [{ text: 'Intelligent Software.', cls: 'h1-line-1' }] },
-  { parts: [{ text: 'Connected Systems.',    cls: 'h1-line-2' }] },
-  { parts: [{ text: 'Built for Growth.',     cls: 'h1-line-3' }] },
+  { parts: [{ text: 'More leads.',         cls: 'h1-line-1' }] },
+  { parts: [{ text: 'Faster delivery.',    cls: 'h1-line-2' }] },
+  { parts: [{ text: 'Smarter operations.', cls: 'h1-line-3' }] },
 ]
 
 function MagneticButton({ children, className, onClick }) {
@@ -93,7 +93,7 @@ export default function HeroSection({ loaded }) {
                   transition: { duration: 0.60, delay: 0.16, ease: EXPO } },
               }}
             >
-              Custom Software&nbsp;&bull;&nbsp;AI Systems&nbsp;&bull;&nbsp;Business Automation
+              Digital infrastructure for modern businesses
             </motion.p>
             <h1 className="hero-h1">
             {H1_LINES.map((line, i) => (
@@ -129,7 +129,10 @@ export default function HeroSection({ loaded }) {
           }}
         >
           <p className="hero-sub">
-            We build intelligent software, automation, and connected business systems that turn manual processes into scalable digital infrastructure.
+            Connected software and AI systems built to help businesses capture opportunities, automate workflows, and scale with control.
+          </p>
+          <p className="hero-tagline">
+            Custom software&nbsp;&bull;&nbsp;AI systems&nbsp;&bull;&nbsp;Business automation
           </p>
           <div className="hero-cta-row">
             <MagneticButton
@@ -171,7 +174,7 @@ export default function HeroSection({ loaded }) {
                 {i > 0 && <div className="stat-sep" aria-hidden="true" />}
                 <div className="stat">
                   <span className="stat-num">{s.value}</span>
-                  <span className="stat-label">{s.label}<br />{s.sub}</span>
+                  <span className="stat-label">{s.label}</span>
                 </div>
               </Fragment>
             ))}
