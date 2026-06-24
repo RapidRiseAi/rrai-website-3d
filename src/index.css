@@ -1959,14 +1959,15 @@ h2 {
   .ec-accordion { display: flex; flex-direction: column; gap: 9px; padding: 0 6vw; }
   .ec-acc {
     border-radius: 15px;
-    border: 1px solid rgba(108, 158, 235, 0.18);
-    background: linear-gradient(165deg, #121f37 0%, #0a1322 100%);
+    border: 1px solid rgba(120, 170, 230, 0.16);
+    /* same dark-navy card surface as the desktop UI */
+    background: linear-gradient(180deg, #05080f 0%, #03050b 100%);
     overflow: hidden;
     transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
   }
   .ec-acc--open {
-    border-color: rgba(92, 162, 255, 0.42);
-    background: linear-gradient(165deg, #16294c 0%, #0b1428 100%);
+    border-color: rgba(92, 162, 255, 0.4);
+    background: linear-gradient(180deg, #070b15 0%, #04060d 100%);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
   .ec-acc-head {
@@ -2488,6 +2489,7 @@ h2 {
   .fp-grid {
     display: flex;
     grid-template-columns: none;
+    align-items: flex-start;   /* cards size to their own content — no tall card stretches the rest */
     gap: 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -2502,13 +2504,13 @@ h2 {
     scroll-snap-align: start;
     flex: 0 0 50%;
     max-width: 188px;
+    height: auto;
+    min-height: 0;           /* desktop forces a tall 450px+ card for the pinned wave — not on mobile */
     padding: 14px 13px;
     border-radius: 15px;
-    /* SOLID — the wave shows in the open zone around the row, not through cards */
-    background: linear-gradient(165deg, #131f39 0%, #0a1426 100%);
+    /* inherits the desktop dark-navy + lit-edge card background (solid) */
   }
-  .fp-card::after { opacity: 0.4; }
-  /* tighten the card vertically: smaller gaps, fewer dividers shown */
+  /* tighten the card vertically: smaller gaps */
   .fp-card-icon { width: 38px; height: 38px; margin-bottom: 10px; }
   .fp-card-icon svg { width: 21px; height: 21px; }
   .fp-card-title { font-size: 0.9rem; margin-bottom: 8px; }
@@ -2527,7 +2529,6 @@ h2 {
     gap: 13px;
     padding: 17px;
     margin: auto 6vw 0;   /* pushed to the bottom — the gap above is the wave zone */
-    background: linear-gradient(165deg, #131f39 0%, #0a1426 100%);
   }
   .fp-custom-text { text-align: center; }
   .fp-custom-btn { width: 100%; justify-content: center; }
@@ -3018,6 +3019,7 @@ h2 {
   .ow-section--mobile .ow-title { font-size: clamp(1.7rem, 7vw, 2.3rem); }
   .ow-scroller {
     display: flex; gap: 14px;
+    align-items: flex-start;   /* each card sizes to its own content — no empty tails */
     overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scroll-padding-left: 6vw;
@@ -3028,12 +3030,19 @@ h2 {
   }
   .ow-scroller::-webkit-scrollbar { display: none; }
   .ow-mcard { scroll-snap-align: start; flex: 0 0 76%; max-width: 300px; display: flex; }
-  .ow-mcard .ow-preview { height: 100%; width: 100%; margin: 0; }
+  .ow-mcard .ow-preview { height: auto; width: 100%; margin: 0; }
   .ow-mcard .ow-preview-body { padding: 14px; }
   .ow-mcard .ow-preview-title { font-size: 0.98rem; margin-bottom: 6px; }
   .ow-mcard .ow-preview-desc { font-size: 0.79rem; line-height: 1.5; margin-bottom: 10px; }
-  .ow-mcard .ow-preview-tags { margin-bottom: 10px; }
-  .ow-mcard .ow-tag { font-size: 0.64rem; padding: 3px 7px; }
+  /* force the descriptive pills into a tidy 2-up grid (the card's too narrow for
+     full-width pills to wrap 2 per row on their own) */
+  .ow-mcard .ow-preview-tags { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 11px; }
+  .ow-mcard .ow-tag {
+    font-size: 0.6rem; padding: 3px 7px; gap: 5px;
+    justify-self: stretch; min-width: 0; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .ow-mcard .ow-tag svg { width: 11px; height: 11px; flex-shrink: 0; }
   .ow-mcard .ow-highlights { grid-template-columns: 1fr 1fr; gap: 5px 10px; margin-bottom: 12px; }
   .ow-mcard .ow-highlights li { font-size: 0.72rem; }
   /* drop the bulky "Starter tier" disclaimer on mobile so the cards stay short */

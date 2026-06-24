@@ -269,6 +269,7 @@
   .prf-grid, .prf-cat-grid {
     display: flex;
     grid-template-columns: none;
+    align-items: flex-start;   /* cards size to their content — no empty bottoms */
     gap: 12px;
     max-width: none;
     overflow-x: auto;
@@ -279,8 +280,22 @@
     overscroll-behavior-x: contain;
   }
   .prf-grid::-webkit-scrollbar, .prf-cat-grid::-webkit-scrollbar { display: none; }
+  .prf-grid > *, .prf-cat-grid > * { height: auto; }
   .prf-grid > * { flex: 0 0 80%; max-width: 300px; scroll-snap-align: start; }
   .prf-cat-grid > * { flex: 0 0 68%; max-width: 250px; scroll-snap-align: start; }
+  .prf-card { height: auto; }
+
+  /* slightly smaller card text so the descriptive pills sit 2 to a row */
+  .prf-body { padding: 16px 16px 16px; }
+  .prf-title { font-size: 0.98rem; margin-bottom: 6px; }
+  .prf-desc { font-size: 0.8rem; line-height: 1.55; margin-bottom: 11px; }
+  /* descriptive pills in a tidy 2-up grid */
+  .prf-tags { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 13px; }
+  .prf-tag {
+    font-size: 0.62rem; padding: 3px 9px; text-align: center;
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
   /* drop the bulky "Starter tier" disclaimer so the work cards stay short */
   .prf-note { display: none; }
 }

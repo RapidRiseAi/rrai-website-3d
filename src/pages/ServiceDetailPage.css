@@ -162,6 +162,7 @@
   .sd2-pkg-grid {
     display: flex;
     grid-template-columns: none;
+    align-items: flex-start;   /* tiers size to their content — no empty bottoms */
     gap: 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -171,8 +172,8 @@
     overscroll-behavior-x: contain;
   }
   .sd2-pkg-grid::-webkit-scrollbar { display: none; }
-  .sd2-pkg-grid > * { flex: 0 0 80%; max-width: 300px; scroll-snap-align: start; }
-  .sd2-pkg { padding: 20px 17px 18px; }
+  .sd2-pkg-grid > * { flex: 0 0 80%; max-width: 300px; scroll-snap-align: start; height: auto; }
+  .sd2-pkg { padding: 20px 17px 18px; height: auto; }
 }
 
 /* ── 3D object — fills the hero's right column, vertically centered ────────── */

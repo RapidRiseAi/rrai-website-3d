@@ -256,6 +256,7 @@
   .svc-price-grid, .svc-grid, .svc-guide-grid {
     display: flex;
     grid-template-columns: none;
+    align-items: flex-start;   /* cards size to their content — no empty bottoms */
     gap: 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -271,6 +272,10 @@
   .svc-guide-grid::-webkit-scrollbar { display: none; }
   .svc-price-grid > *, .svc-guide-grid > * { flex: 0 0 74%; max-width: 290px; scroll-snap-align: start; }
   .svc-grid > * { flex: 0 0 56%; max-width: 215px; scroll-snap-align: start; }
+  /* natural height: padding under the last line, nothing more */
+  .svc-price-link, .svc-service-link,
+  .svc-price-card, .svc-service-card, .svc-guide-card { height: auto; }
+  .svc-price-features { flex-grow: 0; }
 
   .svc-price-card { padding: 18px 16px; }
   .svc-price-ic { margin-bottom: 12px; }
