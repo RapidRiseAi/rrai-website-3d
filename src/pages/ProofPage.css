@@ -263,6 +263,9 @@
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 760px) {
   .prf-checklist { grid-template-columns: 1fr; }
+  /* tighter section rhythm so the next section sits close under the cards */
+  .prf-section { padding: 36px 0; }
+  .prf-head { margin-bottom: 22px; }
 
   /* Phones: featured work + categories become compact side-swipe rows (same
      strategy as the home page) instead of a tall full-width stack. */
