@@ -2608,10 +2608,15 @@ export default function HeroOrb({ mode = 'home' }) {
         behind = true
       } else if (!behind && s3 > 0.52) behind = true
       else if (behind && s3 < 0.48) behind = false
-      if (behind !== behindRef.current) {
-        behindRef.current = behind
+      behindRef.current = behind
+      // Write the z-index whenever it doesn't already match what we want — NOT only
+      // on a behind-change. A page transition lifts the canvas to z-index 92 and
+      // clears it on cleanup, so comparing against the live style (rather than a
+      // cached flag) is what reliably restores it when returning to home.
+      {
         const cc = document.getElementById('canvas-container')
-        if (cc) cc.style.zIndex = behind ? '1' : '3'
+        const wantZ = behind ? '1' : '3'
+        if (cc && cc.style.zIndex !== wantZ) cc.style.zIndex = wantZ
       }
       // Atmospheric glow: opacity is a pure function of scroll position — no
       // hysteresis, no CSS transition — so both directions render the identical
@@ -2665,25 +2670,50 @@ export default function HeroOrb({ mode = 'home' }) {
 
   useEffect(() => {
     const canvas = gl.domElement
-    const onDown = (e) => {
-      // Draggable on home and on service pages (where it's the docked object).
-      if (worldState.mode !== 'home' && worldState.mode !== 'service') return
+    // Touch needs a HOLD before grabbing so a normal swipe still scrolls the page;
+    // mouse (desktop) grabs immediately as before.
+    const lp = { timer: null, pending: false, x: 0, y: 0 }
+    const clearPending = () => { if (lp.timer) clearTimeout(lp.timer); lp.timer = null; lp.pending = false }
+
+    const overObject = (e) => {
+      if (worldState.mode !== 'home' && worldState.mode !== 'service') return false
       const rect = canvas.getBoundingClientRect()
       tmpNdc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1
       tmpNdc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1
       dragRaycaster.setFromCamera(tmpNdc, camera)
-      if (!groupRef.current) return
+      if (!groupRef.current) return false
       dragInvMat.copy(groupRef.current.matrixWorld).invert()
       dragLocalRay.copy(dragRaycaster.ray).applyMatrix4(dragInvMat)
-      if (!dragLocalRay.intersectsSphere(dragLocalSphere)) return
-      e.preventDefault()
+      return dragLocalRay.intersectsSphere(dragLocalSphere)
+    }
+    const beginDrag = (x, y) => {
       isDragging.current = true
       snappingBack.current = false
-      lastPointer.current = { x: e.clientX, y: e.clientY }
+      lastPointer.current = { x, y }
       document.body.style.userSelect = 'none'
       canvas.style.cursor = 'grabbing'
     }
+
+    const onDown = (e) => {
+      if (!overObject(e)) return
+      if (e.pointerType === 'touch') {
+        // Arm a long-press; the grab only starts if the finger stays put ~320ms.
+        lp.pending = true; lp.x = e.clientX; lp.y = e.clientY
+        lp.timer = setTimeout(() => {
+          lp.timer = null
+          if (lp.pending) { lp.pending = false; beginDrag(lp.x, lp.y) }
+        }, 320)
+      } else {
+        e.preventDefault()
+        beginDrag(e.clientX, e.clientY)
+      }
+    }
     const onMove = (e) => {
+      if (lp.pending) {
+        // moved before the hold completed → treat as a scroll, not a grab
+        if (Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 12) clearPending()
+        return
+      }
       if (!isDragging.current || !groupRef.current) return
       const dx = e.clientX - lastPointer.current.x
       const dy = e.clientY - lastPointer.current.y
@@ -2692,6 +2722,7 @@ export default function HeroOrb({ mode = 'home' }) {
       groupRef.current.rotation.x += dy * 0.008
     }
     const onUp = () => {
+      clearPending()
       if (isDragging.current) {
         isDragging.current = false
         snappingBack.current = true
@@ -2699,18 +2730,37 @@ export default function HeroOrb({ mode = 'home' }) {
         canvas.style.cursor = ''
       }
     }
+    // Keep the page from scrolling WHILE the object is held + dragged on touch.
+    const onTouchMove = (e) => { if (isDragging.current) e.preventDefault() }
+
     window.addEventListener('pointerdown', onDown)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
     return () => {
+      clearPending()
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('touchmove', onTouchMove)
     }
   }, [gl, camera, dragRaycaster, dragLocalSphere, dragLocalRay, dragInvMat, tmpNdc])
 
   useFrame((state, delta) => {
     if (!groupRef.current) return
+
+    // ── SELF-HEAL: a page transition lifts the canvas to z-index 92; if it gets
+    // interrupted or overlapped the cleanup can be skipped, leaving the object
+    // stuck IN FRONT of the home content (so the cards look transparent until a
+    // reload). On the narrow home layout the object always belongs BEHIND the
+    // content, so once we're not mid-transition, force it back. Mobile only —
+    // desktop's z-index is scroll-driven and untouched.
+    if (narrowRef.current && worldState.mode === 'home' && !transitionState.active) {
+      const cc = document.getElementById('canvas-container')
+      if (cc && cc.style.zIndex !== '1') cc.style.zIndex = '1'
+    }
 
     // ── PAGE-TRANSITION: move the group source → screen-centre → destination ────
     const tsx = transitionState
@@ -2848,7 +2898,7 @@ export default function HeroOrb({ mode = 'home' }) {
       //     (driven by p: 0 at hero top → 1 one viewport down ≈ expertise.)
       //  3. PRICING+ — as the pricing section scrolls in (mwave 0→1) the globe
       //     morphs into the wave and drops to the bottom band, behind the cards.
-      const MHERO_Y = 1.05, MHERO_S = 0.56   // hero: globe upper, behind headline
+      const MHERO_Y = 2.05, MHERO_S = 0.35   // hero: small globe in the TOP band, clear of the headline
       const MEXP_Y  = 0.35, MEXP_S  = 0.66   // expertise: big centred backdrop
       // Wave end-state: the same wave geometry as desktop but RAISED into the
       // tall portrait viewport (desktop's -2.6 sits off the bottom here) so it

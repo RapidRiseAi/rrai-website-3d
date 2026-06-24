@@ -143,6 +143,10 @@ export default function TransitionProvider({ children }) {
     const cc = document.getElementById('canvas-container')
     if (cc) { cc.style.opacity = ''; cc.style.transition = ''; cc.style.zIndex = '' }
     setActive(false)
+    // transitionState.active is now false, so nudge HeroOrb's scroll handler to
+    // re-assert the correct canvas z-index / hero state for the page we landed on
+    // (otherwise the object can stay lifted in front of the content until reload).
+    requestAnimationFrame(() => window.dispatchEvent(new Event('scroll')))
   }, [clearStage, setScrim])
 
   /* ── The full black-hole morph ────────────────────────────────────────────── */
