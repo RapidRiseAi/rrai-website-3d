@@ -383,7 +383,7 @@ body {
 .hero-h1 {
   display: flex;
   flex-direction: column;
-  font-size: clamp(2.6rem, 4.0vw, 5.2rem);
+  font-size: clamp(2.2rem, 3.5vw, 3.6rem);
   /* >= ~1.05 so the gradient-clipped lines never slice glyph descenders (the
      "g" in Intelligent, the "y" in Systems); gap trimmed to keep the stacked
      headline tight despite the slightly looser leading. */
@@ -428,6 +428,18 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: #58B6FF;
+}
+
+/* Supporting subheading under the headline (the former big text, demoted) */
+.hero-subhead {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: clamp(1.18rem, 1.7vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  color: #9CB4D4;
+  margin: 1.1rem 0 0;
+  max-width: 22ch;
 }
 
 /* ── Sub copy + CTA ─────────────────────────────────────────────────────────── */
@@ -620,16 +632,16 @@ h2 {
     align-items: center;
   }
   .hero-tagline { font-size: 0.66rem; letter-spacing: 0.08em; }
-  .hero-eyebrow { margin-bottom: 0.6rem; text-align: center; }
-  .hero-h1 { font-size: clamp(1.85rem, 8.2vw, 2.7rem); align-items: center; }
+  .hero-h1 { font-size: clamp(1.7rem, 7vw, 2.4rem); align-items: center; }
+  .hero-subhead { font-size: clamp(1rem, 4.4vw, 1.3rem); margin: 0.7rem auto 0; text-align: center; max-width: 26ch; }
   .hero-bottom-left { align-items: center; gap: 1.3rem; }
   .hero-sub { max-width: 38ch; }
   .hero-cta-row { justify-content: center; }
   .hero-right {
     flex: 0 0 auto;
-    /* tight side gutters so the stats reach the edges; bottom pad clears the
-       Google review pill so the trust row hugs just above it */
-    padding: 0 5vw clamp(74px, 10vh, 96px);
+    /* tight side gutters so the stats reach the edges; bottom pad sits the trust
+       row just on top of the Google review pill (small gap, not a void) */
+    padding: 0 5vw clamp(52px, 7vh, 64px);
     justify-content: center;
     align-items: center;
   }
@@ -650,7 +662,7 @@ h2 {
   .hero-eyebrow { font-size: 0.58rem; letter-spacing: 0.16em; }
   .hero-sub { font-size: 0.86rem; line-height: 1.55; }
   .btn-primary, .btn-ghost-hero { padding: 0.62rem 1.3rem; font-size: 0.82rem; }
-  .hero-right { padding: 0 6vw clamp(74px, 10vh, 96px); }   /* clears the review pill */
+  .hero-right { padding: 0 6vw clamp(52px, 7vh, 64px); }   /* trust row hugs the review pill */
   .hero-stats { gap: 1.4rem; }
   .stat-sep { height: 34px; }
   .stat-num { font-size: clamp(1.5rem, 6vw, 2rem); }
@@ -659,7 +671,7 @@ h2 {
 
 @media (max-width: 480px) {
   .hero-left-content { padding: 36vh 6vw 0; gap: 0.85rem; }
-  .hero-h1 { font-size: clamp(1.7rem, 8.6vw, 2.35rem); }
+  .hero-h1 { font-size: clamp(1.5rem, 7vw, 1.95rem); }
   .hero-sub { font-size: 0.82rem; max-width: 34ch; }
   .hero-cta-row { gap: 10px; }
   .hero-stats { gap: 1.1rem; }

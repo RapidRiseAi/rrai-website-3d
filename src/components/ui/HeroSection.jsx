@@ -18,10 +18,10 @@ const STATS = [
   { value: 'Built', label: 'to scale' },
 ]
 
+// Headline is now the (formerly eyebrow) positioning line, split across 2 lines.
 const H1_LINES = [
-  { parts: [{ text: 'More leads.',         cls: 'h1-line-1' }] },
-  { parts: [{ text: 'Faster delivery.',    cls: 'h1-line-2' }] },
-  { parts: [{ text: 'Smarter operations.', cls: 'h1-line-3' }] },
+  { parts: [{ text: 'Digital infrastructure', cls: 'h1-line-1' }] },
+  { parts: [{ text: 'for modern businesses',  cls: 'h1-line-3' }] },
 ]
 
 function MagneticButton({ children, className, onClick }) {
@@ -80,21 +80,9 @@ export default function HeroSection({ loaded }) {
       {/* ── Left content block — exits LEFT on scroll ───────────── */}
       <motion.div className="hero-left-content" style={{ x: mainExitX }}>
 
-        {/* Headline */}
+        {/* Headline + supporting subheading */}
         <div className="hero-h1-area">
           <div>
-            <motion.p
-              className="hero-eyebrow"
-              initial={{ opacity: 0, y: 14 }}
-              animate={controls}
-              variants={{
-                hidden:  { opacity: 0, y: 14 },
-                visible: { opacity: 1, y: 0,
-                  transition: { duration: 0.60, delay: 0.16, ease: EXPO } },
-              }}
-            >
-              Digital infrastructure for modern businesses
-            </motion.p>
             <h1 className="hero-h1">
             {H1_LINES.map((line, i) => (
               <motion.span
@@ -105,7 +93,7 @@ export default function HeroSection({ loaded }) {
                 variants={{
                   hidden:  { opacity: 0, y: 55 },
                   visible: { opacity: 1, y: 0,
-                    transition: { duration: 0.88, delay: 0.30 + i * 0.14, ease: EXPO } },
+                    transition: { duration: 0.88, delay: 0.20 + i * 0.14, ease: EXPO } },
                 }}
               >
                 {line.parts.map((p, j) => (
@@ -114,6 +102,18 @@ export default function HeroSection({ loaded }) {
               </motion.span>
             ))}
             </h1>
+            <motion.p
+              className="hero-subhead"
+              initial={{ opacity: 0, y: 18 }}
+              animate={controls}
+              variants={{
+                hidden:  { opacity: 0, y: 18 },
+                visible: { opacity: 1, y: 0,
+                  transition: { duration: 0.70, delay: 0.58, ease: EXPO } },
+              }}
+            >
+              More leads. Faster delivery. Smarter operations.
+            </motion.p>
           </div>
         </div>
 
