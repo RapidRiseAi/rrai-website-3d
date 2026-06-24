@@ -298,7 +298,7 @@ body {
 }
 .nav-mobile-svc-ic svg { width: 17px; height: 17px; }
 .nav-mobile-svc-name {
-  font-size: 0.84rem; font-weight: 560; line-height: 1.2;
+  font-size: 0.63rem; font-weight: 560; line-height: 1.25;
   color: rgba(224, 236, 252, 0.92);
 }
 
@@ -2514,6 +2514,7 @@ h2 {
     min-height: 0;           /* desktop forces a tall 450px+ card for the pinned wave — not on mobile */
     padding: 14px 13px;
     border-radius: 15px;
+    will-change: auto;       /* no composite layer — avoids momentum-scroll glitches */
     /* inherits the desktop dark-navy + lit-edge card background (solid) */
   }
   /* tighten the card vertically: smaller gaps */

@@ -2681,6 +2681,10 @@ export default function HeroOrb({ mode = 'home' }) {
 
     const overObject = (e) => {
       if (worldState.mode !== 'home' && worldState.mode !== 'service') return false
+      // Mobile home: only the hero globe is grabbable. Once it's morphing into the
+      // wave (behind the pricing cards) ignore touches there, so a swipe over the
+      // cards can never accidentally grab the object and block the page scroll.
+      if (narrowRef.current && worldState.mode === 'home' && (scrollState.mwave || 0) > 0.3) return false
       const rect = canvas.getBoundingClientRect()
       tmpNdc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1
       tmpNdc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1

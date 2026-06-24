@@ -96,18 +96,16 @@ const PRODUCTS = [
 
 const EASE = [0.16, 1, 0.3, 1]
 const inView = { once: true, amount: 0.25, margin: '-60px' }
+// Touch: render the cards STATIC (no framer transform). The motion layer +
+// whileInView in a momentum scroll-snap row was both glitching the card during a
+// vertical drag and leaving off-screen-right cards hidden until swiped.
+const IS_TOUCH = typeof window !== 'undefined'
+  && ('ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0)
 
 function ProductCard({ product, index }) {
   const Icon = product.icon
-  return (
-    <motion.article
-      className="fp-card"
-      initial={{ opacity: 0, y: 26 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={inView}
-      transition={{ duration: 0.55, delay: 0.06 + index * 0.08, ease: EASE }}
-      whileHover={{ y: -6 }}
-    >
+  const inner = (
+    <>
       <span className="fp-card-shine" aria-hidden="true" />
 
       <div className="fp-card-icon" aria-hidden="true"><Icon /></div>
@@ -137,6 +135,19 @@ function ProductCard({ product, index }) {
         View Product
         <ArrowIcon />
       </Link>
+    </>
+  )
+  if (IS_TOUCH) return <article className="fp-card">{inner}</article>
+  return (
+    <motion.article
+      className="fp-card"
+      initial={{ opacity: 0, y: 26 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={inView}
+      transition={{ duration: 0.55, delay: 0.06 + index * 0.08, ease: EASE }}
+      whileHover={{ y: -6 }}
+    >
+      {inner}
     </motion.article>
   )
 }
