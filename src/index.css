@@ -1075,7 +1075,7 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.052em;
   line-height: 1.08;
-  padding-bottom: 0.08em;   /* descender headroom for gradient-clipped text */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text */
   background: linear-gradient(176deg, #FFFFFF 0%, #E6EEFA 46%, #BCD0EE 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1207,13 +1207,21 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.05em;
   line-height: 1.1;
-  padding-bottom: 0.08em;   /* descender headroom for gradient-clipped text */
+  text-wrap: balance;       /* even, intentional line breaks instead of a lone orphan word */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text */
   background: linear-gradient(176deg, #FFFFFF 0%, #E6EEFA 46%, #BCD0EE 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: #F5F8FC;
   margin: 0 auto 1.4rem;
+}
+
+/* Long titles (e.g. "AI Communication & Support Agent") won't fit two lines at
+   full size — they spill to three. Trim the size just enough that balance can
+   resolve them to a clean two-line headline. */
+.service-detail-h1--compact {
+  font-size: clamp(2rem, 3.3vw, 3.4rem);
 }
 
 .service-detail-tagline {
@@ -1254,7 +1262,7 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.055em;
   line-height: 1.06;
-  padding-bottom: 0.06em;   /* descender headroom for gradient-clipped text */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text */
   background: linear-gradient(175deg, #F5F8FC 0%, #E8EEF8 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -2199,7 +2207,7 @@ h2 {
   /* line-height 1.0 + background-clip:text clipped glyph descenders (the "g").
      Give the text box room and a hair of bottom padding so they render fully. */
   line-height: 1.16;
-  padding-bottom: 0.06em;
+  padding-bottom: 0.22em;
   margin-bottom: 0.7rem;
   background: linear-gradient(175deg, #FAFCFE 0%, #E9EFF8 100%);
   -webkit-background-clip: text;
@@ -2679,7 +2687,7 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.046em;
   line-height: 1.08;
-  padding-bottom: 0.06em;
+  padding-bottom: 0.22em;
   margin-bottom: 0;
   background: linear-gradient(175deg, #FAFCFE 0%, #E9EFF8 100%);
   -webkit-background-clip: text;
@@ -3236,7 +3244,7 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.042em;
   line-height: 1.06;
-  padding-bottom: 0.06em;
+  padding-bottom: 0.22em;
   margin-bottom: 0.65rem;
   max-width: 17ch;
   margin-left: auto;
@@ -4059,7 +4067,7 @@ img.ftr-logo {
   font-weight: 800;
   letter-spacing: -0.048em;
   line-height: 1.1;
-  padding-bottom: 0.06em;   /* descender headroom for gradient-clipped text */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text */
   background: linear-gradient(176deg, #FFFFFF 0%, #E6EEFA 46%, #BCD0EE 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -5652,7 +5660,7 @@ a.pricing-quote-btn { text-decoration: none; }
   font-size: clamp(2rem, 3.8vw, 3rem);
   letter-spacing: -0.045em;
   line-height: 1.12;
-  padding-bottom: 0.06em;   /* descender headroom for gradient-clipped text (e.g. "Privacy") */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text (e.g. "Privacy") */
   margin: 0 0 12px;
   background: linear-gradient(176deg, #FFFFFF 0%, #E6EEFA 50%, #BCD0EE 100%);
   -webkit-background-clip: text;
@@ -5708,6 +5716,54 @@ a.pricing-quote-btn { text-decoration: none; }
     0 0 30px -18px rgba(40, 120, 255, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
+
+/* ── InfoTip: compact tier chip + (i) popover (work / proof cards) ─────────────
+   Replaces the bulky inline disclaimer block. The popover is position:fixed
+   (placed from the button's rect in JS) so a card's overflow:hidden never clips
+   it. */
+.infotip { display: inline-flex; margin: 6px 0 14px; }
+.infotip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #f0c576;
+  background: rgba(240, 184, 90, 0.10);
+  border: 1px solid rgba(240, 184, 90, 0.34);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.infotip-btn:hover,
+.infotip-btn.is-open {
+  background: rgba(240, 184, 90, 0.18);
+  border-color: rgba(240, 184, 90, 0.55);
+}
+.infotip-btn svg { width: 12px; height: 12px; opacity: 0.85; flex-shrink: 0; }
+.infotip-tag { line-height: 1; }
+.infotip-pop {
+  position: fixed;
+  z-index: 6000;
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 450;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(214, 228, 248, 0.92);
+  background: linear-gradient(180deg, rgba(16, 26, 48, 0.98) 0%, rgba(9, 15, 32, 0.98) 100%);
+  border: 1px solid rgba(120, 170, 245, 0.30);
+  box-shadow: 0 18px 44px -16px rgba(0, 0, 0, 0.85);
+  animation: infotip-in 0.16s ease-out;
+}
+@keyframes infotip-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .infotip-pop { animation: none; } }
 .glass-card--bright {
   background: linear-gradient(180deg, #05080f 0%, #03050b 100%);
   border-color: rgba(150, 196, 255, 0.24);

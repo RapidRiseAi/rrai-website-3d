@@ -5,6 +5,7 @@ import ConceptPreview from '../components/ui/ConceptPreview'
 import Lightbox from '../components/ui/Lightbox'
 import TiltCard from '../components/ui/TiltCard'
 import Reveal from '../components/ui/Reveal'
+import InfoTip from '../components/ui/InfoTip'
 import Parallax from '../components/ui/Parallax'
 import usePageMeta from '../hooks/usePageMeta'
 import ObjectSlot from '../components/scene/ObjectSlot'
@@ -85,11 +86,6 @@ export default function ProofPage() {
             websites, portals, dashboards, AI assistants, automations, and
             connected ecosystems that show how Rapid Rise AI works in practice.
           </p>
-          <p className="prf-disclaimer">
-            Some of these are live client websites you can visit. The rest are
-            fully functional showcase products built with sample data, never real
-            client information. Every build is labelled honestly.
-          </p>
           <div className="pg-hero-actions">
             <Link className="pg-btn-primary" to="/contact">Start Your Project</Link>
             <Link className="pg-btn-ghost" to="/services">See Services and Pricing</Link>
@@ -140,12 +136,7 @@ export default function ProofPage() {
                           <span className="prf-tag" key={t}>{t}</span>
                         ))}
                       </div>
-                      {item.note && (
-                        <p className="prf-note">
-                          <span className="prf-note-tag">Starter tier</span>
-                          {item.note}
-                        </p>
-                      )}
+                      {item.note && <InfoTip>{item.note}</InfoTip>}
                       {item.external ? (
                         <a className="prf-link" href={item.href} target="_blank" rel="noreferrer">
                           {item.ctaLabel ?? 'Visit live site'} <ArrowIcon />

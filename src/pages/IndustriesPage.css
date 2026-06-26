@@ -27,7 +27,7 @@
   font-weight: 790;
   letter-spacing: -0.038em;
   line-height: 1.1;
-  padding-bottom: 0.06em;   /* descender headroom for gradient-clipped text */
+  padding-bottom: 0.22em;   /* descender headroom for gradient-clipped text */
   margin: 0 auto;
   max-width: 20ch;
   background: linear-gradient(180deg, #ffffff 0%, #e6eefa 52%, #bcd0ee 100%);

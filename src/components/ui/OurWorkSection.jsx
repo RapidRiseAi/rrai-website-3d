@@ -5,6 +5,7 @@ import { WORK_ITEMS, WORK_SECTION_COPY } from '../../data/workItems'
 import { isDesktopLayout } from '../../utils/scrollLayout'
 import SwipeHint from './SwipeHint'
 import ConceptPreview from './ConceptPreview'
+import InfoTip from './InfoTip'
 import Lightbox from './Lightbox'
 
 /* ── Icons (line style matches the rest of the site: thin, round caps) ─────── */
@@ -210,12 +211,7 @@ function WorkPreview({ item, num, onOpenGallery }) {
           ))}
         </ul>
 
-        {item.note && (
-          <p className="ow-note">
-            <span className="ow-note-tag">Starter tier</span>
-            {item.note}
-          </p>
-        )}
+        {item.note && <InfoTip>{item.note}</InfoTip>}
 
         {item.external ? (
           <a className="ow-preview-btn" href={item.href} target="_blank" rel="noreferrer" aria-label={`${item.ctaLabel}: ${item.title}`}>

@@ -29,7 +29,7 @@
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.14;
-  padding-bottom: 0.08em;            /* room for gradient-clipped descenders */
+  padding-bottom: 0.22em;            /* room for gradient-clipped descenders */
   background: linear-gradient(175deg, #FAFCFE 0%, #E9EFF8 100%);
   -webkit-background-clip: text;
   background-clip: text;

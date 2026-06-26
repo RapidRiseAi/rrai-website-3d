@@ -36,7 +36,7 @@ export const SERVICE_CONTENT = {
   /* ── 1. Website Development ──────────────────────────────────────────────── */
   'website-development': {
     positioning:
-      'Websites built to earn trust, capture leads, rank better, and connect into the rest of your business ecosystem.',
+      'Your digital first impression, built to convert visitors into leads.',
     problem: [
       'Most business websites look fine but do very little. They load slowly, say too little about the business, capture no leads, and never connect to the systems the business actually runs on.',
       'A website should be the front door of your business: easy to find, easy to trust, and built to turn attention into enquiries.',
@@ -252,7 +252,7 @@ export const SERVICE_CONTENT = {
   /* ── 2. Client Portals ───────────────────────────────────────────────────── */
   'client-portal': {
     positioning:
-      'Client portals that reduce back and forth communication, organize documents, show updates, send reminders, and give you better admin visibility.',
+      'One branded hub that replaces email chains and status check calls.',
     problem: [
       'Client admin lives in email threads, WhatsApp chats, and shared folders. Documents go missing, statuses are unclear, and your team answers the same questions every day.',
       'A portal gives every client one private place to upload, track, and communicate, and gives your team one organized view of everything.',
@@ -397,7 +397,7 @@ export const SERVICE_CONTENT = {
   /* ── 3. Smart Dashboards ─────────────────────────────────────────────────── */
   'smart-dashboards': {
     positioning:
-      'Custom dashboards that bring sales, client, operations, finance, staff, and performance data into one clear view.',
+      'Every number that matters, in one screen, instead of ten tabs.',
     problem: [
       'Business data is scattered across spreadsheets, tools, and people. Getting a simple answer means chasing reports, and decisions get made on feel instead of fact.',
       'A dashboard turns scattered activity into one live view your team can actually use.',
@@ -545,7 +545,7 @@ export const SERVICE_CONTENT = {
   /* ── 4. AI Communication Agents ──────────────────────────────────────────── */
   'ai-communication-agent': {
     positioning:
-      'AI communication agents for website chat, WhatsApp, social inboxes, support requests, bookings, availability checks, customer routing, staff alerts, and connected business actions.',
+      'A 24/7 front line that answers, qualifies, and routes before a human has to.',
     problem: [
       'Customers ask the same questions all day, after hours, and on every channel. Slow replies lose leads, and your team loses hours answering things an agent could handle.',
       'An AI agent answers instantly, captures the lead, routes the conversation, and hands over to a human when it matters.',
@@ -561,28 +561,30 @@ export const SERVICE_CONTENT = {
     packages: [
       {
         name: 'AI Agent Starter',
-        price: 'R1,000 setup',
-        monthly: 'R200/month',
+        price: 'From R1,000 setup',
+        monthly: 'R650/month',
         summary: 'A website support agent that answers your most common questions.',
         features: [
           '1 website AI support agent',
           'Website chat widget only',
-          'Up to 25 FAQs and business answers',
           'Basic business info setup',
           'Basic lead capture',
           'Basic human handover message',
           'Basic testing and maintenance',
         ],
-        limits: ['Up to 250 AI replies/month', '15 minutes support/month'],
+        limits: [
+          'Knowledge base: 100 MB included',
+          'AI spend: R50/mo included',
+          'Support: 15 min/mo',
+        ],
       },
       {
         name: 'AI Agent Essential',
         price: 'From R3,500 setup',
-        monthly: 'R500/month',
+        monthly: 'R1,200/month',
         summary: 'Better conversations, lead routing, and your first integration.',
         features: [
           'Everything in Starter',
-          'Up to 75 FAQs and business answers',
           'Better conversation structure',
           'Lead capture to email or Google Sheets',
           'Service and product guidance',
@@ -590,54 +592,64 @@ export const SERVICE_CONTENT = {
           'Appointment request flow',
           '1 simple integration',
         ],
-        limits: ['Up to 500 AI replies/month', '30 minutes support/month'],
+        limits: [
+          'Knowledge base: 250 MB included',
+          'AI spend: R100/mo included',
+          'Support: 30 min/mo',
+        ],
       },
       {
         name: 'AI Agent Growth',
         price: 'From R7,500 setup',
-        monthly: 'R1,200/month',
+        monthly: 'R2,200/month',
         badge: 'Recommended',
         summary: 'Two channels, bookings, intake forms, and staff notifications.',
         features: [
           'Everything in Essential',
           'Up to 2 channels',
-          'Up to 150 FAQs and business answers',
           'Basic availability checking',
           'Booking request workflow',
           'Customer intake forms',
           'Automated staff notifications',
-          'Up to 3 integrations',
           'CRM or Google Sheets logging',
           'Conversation tags and categories',
           'Basic analytics',
+          'Up to 3 integrations',
         ],
-        limits: ['Up to 1,000 AI replies/month', '1 hour support/month'],
+        limits: [
+          'Knowledge base: 500 MB included',
+          'AI spend: R250/mo included',
+          'Support: 1 hr/mo',
+        ],
       },
       {
         name: 'AI Agent Business',
         price: 'From R15,000 setup',
-        monthly: 'R2,500/month',
-        summary: 'Advanced booking logic, escalations, follow ups, and a dashboard.',
+        monthly: 'R3,500/month',
+        summary: 'Advanced booking logic, escalations, follow-ups, and a dashboard.',
         features: [
           'Everything in Growth',
           'Up to 3 channels',
-          'Up to 300 FAQs and business answers',
           'Advanced booking and availability logic',
           'Customer status checks',
           'Internal staff alerts',
-          'Follow up messages',
+          'Follow-up messages',
           'Escalation rules',
           'Human handover workflow',
           'Basic internal dashboard',
-          'Up to 5 integrations',
           'Advanced lead qualification',
+          'Up to 5 integrations',
         ],
-        limits: ['Up to 2,500 AI replies/month', '2 hours support/month'],
+        limits: [
+          'Knowledge base: 1 GB included',
+          'AI spend: R600/mo included',
+          'Support: 2 hrs/mo',
+        ],
       },
       {
         name: 'AI Agent Pro',
         price: 'From R30,000 setup',
-        monthly: 'From R5,500/month',
+        monthly: 'R6,500/month',
         summary: 'Omnichannel support with CRM updates, payments, and reminders.',
         features: [
           'Everything in Business',
@@ -646,56 +658,70 @@ export const SERVICE_CONTENT = {
           'CRM updates',
           'Payment link generation',
           'Quote request automation',
-          'Appointment confirmations',
-          'Reminder flows',
-          'Multi language setup',
+          'Appointment confirmations and reminder flows',
+          'Multi-language setup',
           'Advanced AI knowledge base',
           'Deeper analytics',
           'Priority support',
           'Up to 7 integrations',
         ],
-        limits: ['Up to 5,000 AI replies/month', '4 hours support/month'],
+        limits: [
+          'Knowledge base: 1 GB+ (scoped per client)',
+          'AI spend: custom allowance (scoped per client)',
+          'Support: 4 hrs/mo',
+        ],
       },
       {
         name: 'Custom AI Communication System',
-        price: 'From R60,000 setup',
-        monthly: 'From R10,000/month',
-        summary: 'High volume, multi branch AI communication built to spec.',
+        price: 'Any budget',
+        monthly: 'Scoped to you',
+        summary: "For businesses that need more than our standard plans, or a leaner setup without the features they won't use. Built to your exact requirements at any price range.",
         features: [
-          'High volume WhatsApp support',
+          'Everything in our standard plans, tailored to you',
+          'Pick only the features you need, or go beyond every plan',
+          'High volume WhatsApp and omnichannel support',
           'Multiple branches and departments',
-          'Advanced CRM integrations',
-          'Booking engines and payment systems',
-          'Portals and dashboards',
-          'Internal staff workflows',
-          'Custom APIs',
-          'Voice AI options',
-          'Advanced reporting',
-          'SLA support',
+          'Advanced CRM, booking engines, and payment systems',
+          'Portals, dashboards, and internal staff workflows',
+          'Custom APIs and voice AI options',
+          'Advanced reporting and SLA support',
         ],
       },
     ],
     notes: [
-      'Extra usage can be billed separately once included reply limits are exceeded.',
-      'AI, WhatsApp and API, SMS, social inbox tools, and third party platform fees are excluded unless included in writing.',
-      'AI agents include human handover for sensitive or complex situations.',
-      'AI agents do not provide legal, medical, or financial advice.',
+      'Most of the logic runs on code and pre-built responses, with AI used only where it genuinely adds value, so your AI spend stays low and predictable instead of climbing with every message the way an AI-first system does.',
+      'Agents answer only with facts from your approved knowledge base. They will not guess or invent information about your business.',
+      'Included AI spend and knowledge base storage are per plan. Additional usage is billed via the add-ons below.',
+      'WhatsApp, API, SMS, social inbox, and other third party platform fees are excluded unless included in writing.',
+      'AI agents include human handover for sensitive or complex situations, and do not provide legal, medical, or financial advice.',
+    ],
+    addonsTitle: 'Add-ons and usage',
+    addons: [
+      { label: 'Additional knowledge base storage', price: 'R100/mo per 100 MB' },
+      { label: 'Additional AI spend', price: 'Billed at cost + service margin' },
+      { label: 'Extra support time', price: 'R350/hr' },
+      { label: 'Additional integration', price: 'From R1,000 once-off setup' },
+      { label: 'Extra channel (WhatsApp, Facebook, etc.)', price: 'From R1,200 once-off setup' },
     ],
     deliverables: [
       'A live AI agent on your chosen channels',
       'A knowledge base built from your business information',
       'Lead capture and logging wired to your tools',
       'Human handover and escalation rules',
-      'Monthly maintenance and reply allowance per plan',
+      'Monthly maintenance, with included AI spend and knowledge base per plan',
     ],
     faqs: [
       {
         q: 'What happens when the AI cannot answer?',
-        a: 'The agent hands the conversation to a human. Handover rules and staff alerts are part of every setup.',
+        a: 'The agent hands the conversation to a human, with handover rules and staff alerts set up from the start. The question it could not answer is also saved to an unanswered questions log, where you add the correct answer. The next time it comes up, the agent already knows it, so your agent keeps getting smarter over time.',
       },
       {
-        q: 'What counts as an AI reply?',
-        a: 'Each AI generated response in a conversation counts toward your monthly allowance. Extra usage can be billed separately once limits are exceeded.',
+        q: 'Will AI usage get expensive?',
+        a: 'No. We build agents to run mostly on code and pre-built responses, using AI only where it genuinely helps. That keeps your AI spend low and predictable, unlike systems that route every message through AI, where costs can climb fast. Each plan includes a set AI spend allowance, and anything beyond it is billed at cost plus our service margin.',
+      },
+      {
+        q: 'Can the agent make things up about my business?',
+        a: 'No. Every agent answers only from facts in your approved knowledge base. It will not guess or invent details, so customers never get false information about your business.',
       },
       {
         q: 'Which channels are supported?',
@@ -710,7 +736,7 @@ export const SERVICE_CONTENT = {
 
   /* ── 5. Software Development ─────────────────────────────────────────────── */
   'software-development': {
-    positioning: 'Custom software built around real business processes, not generic templates.',
+    positioning: 'Software shaped to how your business actually works.',
     problem: [
       'Off the shelf tools force your business to work their way. The result is workarounds, spreadsheets on the side, and processes nobody can see end to end.',
       'Custom software fits the way your business actually runs, and connects to everything else you use.',
@@ -761,39 +787,45 @@ export const SERVICE_CONTENT = {
   /* ── 6. Web App Development ──────────────────────────────────────────────── */
   'web-app-development': {
     positioning:
-      'Interactive web apps and online platforms that users access from the browser, with no app store required.',
+      "The right platform for your users, whether that's browser, app store, or both.",
     problem: [
-      'You need a real product: logins, dashboards, workflows, payments. A website is too little and a native mobile app is too much, too early.',
-      'A web app gives users full functionality in the browser on any device, and can grow into mobile apps later.',
+      'You need a real product: logins, dashboards, workflows, payments. The real question is whether your users need it in the browser, as an installable app on their phone, or both.',
+      'We build both, from the start. A web app reaches every device instantly through the browser; a publishable app lives on the App Store and Google Play with native features and offline access. We recommend the right mix for your requirements, not a one size fits all.',
     ],
     solution: [
       'SaaS style platforms',
-      'Booking platforms',
-      'Member and client dashboards',
-      'Form driven apps',
-      'Admin portals',
+      'Booking and member platforms',
+      'Client and team dashboards',
+      'Native iOS and Android apps published to the App Store and Google Play',
+      'Cross platform mobile apps',
+      'Progressive web apps (installable, offline ready)',
+      'Admin portals and internal workflow apps',
       'Customer facing tools',
-      'Internal workflow apps',
-      'Progressive upgrade paths into mobile apps, portals, dashboards, AI, and integrations',
+      'Web and app builds that share one connected backend, with upgrade paths into portals, dashboards, AI, and integrations',
     ],
     customPricing: {
       lines: ['Custom quoted after discovery.', `Standard custom rate: ${CUSTOM_RATE}.`],
       exclusions: THIRD_PARTY_NOTE,
     },
     deliverables: [
-      'A working web app on your domain',
+      'A working web app on your domain, and/or a published app on the App Store and Google Play',
       'User accounts and roles where scoped',
       'Admin tooling for your team',
+      'App store submission and setup handled for you where a published app is in scope',
       'Documentation, training, and a growth roadmap',
     ],
     faqs: [
       {
-        q: 'Web app or mobile app?',
-        a: 'Web apps work on every device immediately and cost less to build and maintain. If you need app store presence later, the web app becomes the foundation.',
+        q: 'Web app, mobile app, or both?',
+        a: 'Whatever your users actually need. Web apps work on every device through the browser and cost less to build and maintain. Publishable apps live on the Apple App Store and Google Play with native features like push notifications and offline use. We help you choose, and many clients ship both from one connected backend.',
       },
       {
-        q: 'How long does a web app take?',
-        a: 'A focused first version typically takes 4 to 10 weeks depending on scope. The timeline is confirmed in your proposal.',
+        q: 'Do you publish apps to the Apple App Store and Google Play?',
+        a: 'Yes. When a published app is the right fit, we build it and handle store submission and setup so it launches on the App Store and Google Play, not only in the browser.',
+      },
+      {
+        q: 'How long does it take?',
+        a: 'A focused first version typically takes 4 to 10 weeks depending on scope and whether it ships as a web app, a published app, or both. The timeline is confirmed in your proposal.',
       },
       {
         q: 'How is it priced?',
@@ -805,7 +837,7 @@ export const SERVICE_CONTENT = {
   /* ── 7. Automated Workflows ──────────────────────────────────────────────── */
   'automated-workflow': {
     positioning:
-      'Automated workflows that remove repeated manual tasks, connect tools, route information, send reminders, and keep business processes moving.',
+      'The manual steps between your tools, gone.',
     problem: [
       'Someone copies form entries into a sheet. Someone chases documents. Someone forgets the follow up. Manual handoffs slow everything down and leak leads.',
       'Automation connects your tools so information moves itself, reliably, every time.',
@@ -856,7 +888,7 @@ export const SERVICE_CONTENT = {
   /* ── 8. Ecosystems ───────────────────────────────────────────────────────── */
   'ecosystems': {
     positioning:
-      'Connected business ecosystems where your website, portal, dashboard, AI agent, automations, integrations, IoT systems, and marketing tools work together.',
+      'Every system you run, finally talking to each other.',
     problem: [
       'Most businesses run on disconnected tools. The website does not talk to the CRM, the CRM does not talk to the spreadsheet, and people fill the gaps by hand.',
       'An ecosystem connects everything into one system with one source of truth, so admin shrinks and visibility grows.',
@@ -902,7 +934,7 @@ export const SERVICE_CONTENT = {
   /* ── 9. AI Implementation ────────────────────────────────────────────────── */
   'ai-implementation': {
     positioning:
-      'Practical AI inside your workflows, not generic chatbot advice.',
+      'AI that does real work inside your business, not a chatbot demo.',
     problem: [
       'Everyone says "use AI" but nobody shows where it actually saves time in your business. Tools get tried, then abandoned.',
       'We find the workflows where AI genuinely helps, implement it properly, and put human review where it matters.',
@@ -952,7 +984,7 @@ export const SERVICE_CONTENT = {
   /* ── 10. IoT Development ─────────────────────────────────────────────────── */
   'iot-development': {
     positioning:
-      'Smart device and IoT solutions for homes, offices, work environments, operations, monitoring, alerts, and connected dashboards.',
+      'Physical spaces that report back, from sensors to dashboard.',
     problem: [
       'Devices, sensors, and environments generate useful information, but without the right software it never reaches the people who need it.',
       'We connect devices to dashboards, alerts, and automations so physical and digital systems work as one.',
@@ -1001,7 +1033,7 @@ export const SERVICE_CONTENT = {
   /* ── 11. Marketing & SEO ─────────────────────────────────────────────────── */
   'marketing-seo': {
     positioning:
-      'Marketing and SEO support that improves visibility, trust, lead capture, and AI search readiness.',
+      'Found, trusted, and ranked, including by AI search.',
     problem: [
       'A good website that nobody finds is a brochure in a drawer. Rankings, local visibility, tracking, and content all need consistent attention.',
       'We build the marketing foundation and keep it improving month after month.',

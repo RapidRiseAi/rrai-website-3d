@@ -235,13 +235,20 @@ export default function ServiceDetailPage() {
     )
   }
 
+  // The longest service title ("AI Communication & Support Agent") spills to three
+  // lines at hero size, so break it deterministically into two at the "&".
+  const splitTitle = slug === 'ai-communication-agent' && service.name.includes(' & ')
+  const [titleHead, titleTail] = splitTitle ? service.name.split(' & ') : []
+
   return (
     <PageLayout>
       <div className="sd2-wrap">
         {/* Hero — full-bleed two-column: copy anchored left, live 3D object right */}
         <div className="service-detail-hero sd-hero">
           <div className="sd-hero-copy">
-            <h1 className="service-detail-h1">{service.name}</h1>
+            <h1 className={`service-detail-h1${splitTitle ? ' service-detail-h1--compact' : ''}`}>
+              {splitTitle ? <>{titleHead}<br />&amp; {titleTail}</> : service.name}
+            </h1>
             <p className="service-detail-tagline">{content.positioning}</p>
             <p className="service-detail-desc">{service.description}</p>
 
