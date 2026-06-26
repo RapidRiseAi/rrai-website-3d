@@ -3,9 +3,10 @@
 // Flow:
 //   1. validate + sanitise the submission (mirrors the client-side rules);
 //   2. hand a single jsonb payload to the `submit_website_lead` RPC, which (with
-//      the service-role key) inserts the lead into the CRM, validates the
-//      affiliate code against the live `tracking_code`, writes attribution, and
-//      de-duplicates on submissionId — all inside one transaction in SQL;
+//      the service-role key) inserts the lead into the CRM `leads` table, links
+//      affiliate attribution via the referral session id (reusing the existing
+//      affiliate_portal_record_tracked_referral RPC), and de-duplicates on
+//      submissionId via the form_submissions ledger — all in one SQL transaction;
 //   3. best-effort team notification (never fails the request);
 //   4. return a clean { ok } result. No raw DB error ever reaches the client; on
 //      any failure the browser falls back to the existing mailto draft.
