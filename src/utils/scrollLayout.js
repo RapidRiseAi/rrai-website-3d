@@ -44,30 +44,51 @@ export function getStops() {
 
 export function getStopsPx() {
   const vh = window.innerHeight
-  const px = getStops().map((v) => Math.round(v * vh))
+  // Each stop is tagged `protect: true` when it's anchored to a real DOM
+  // position (section top/bottom, document bottom) rather than the
+  // theoretical vh math, so the de-dup pass below never discards it even if
+  // it lands close to a neighbor.
+  let stops = getStops().map((v) => ({ y: Math.round(v * vh), protect: false }))
   // The vh math above assumes each post-carousel section is exactly one
   // viewport tall. On shorter laptops their content can overflow and push the
   // LATER sections down, leaving the theoretical stop above the real section
   // top (the section then sits partly below the fold when the snap rests).
-  // Anchor those three stops to the real section tops instead.
+  // Anchor those three stops to the real section tops, and — when a section's
+  // real content is meaningfully taller than one viewport (common on shorter
+  // laptop screens) — insert an extra stop at that section's bottom so the
+  // snap can rest there too, instead of jumping straight from its top to the
+  // next section's top and skipping whatever doesn't fit in the first
+  // viewport.
   if (isDesktopLayout()) {
     const anchors = ['.fp-section', '.ow-section', '.cp-section']
+    const extra = []
     anchors.forEach((sel, k) => {
       const el = document.querySelector(sel)
       if (!el) return
-      px[px.length - anchors.length + k] =
-        Math.round(el.getBoundingClientRect().top + window.scrollY)
+      const rect = el.getBoundingClientRect()
+      const top = Math.round(rect.top + window.scrollY)
+      stops[stops.length - anchors.length + k] = { y: top, protect: true }
+      if (rect.height > vh + 24) {
+        extra.push({ y: Math.round(top + rect.height - vh), protect: true })
+      }
     })
+    if (extra.length) {
+      stops.push(...extra)
+      stops.sort((a, b) => a.y - b.y)
+    }
   }
   // The footer sits below the last section stop. Give the document bottom its
   // own stop so the last wheel steps walk through the section and land on the
   // footer instead of the snap pulling the page back up.
   const bottom = Math.max(0, document.documentElement.scrollHeight - vh)
-  if (bottom > px[px.length - 1] + 2) px.push(bottom)
-  // On tall viewports the section may fit in fewer viewports than the stop
-  // list assumes; drop any stop that lands within a third of a viewport of
-  // the next one so there are no dead near-duplicate steps.
-  return px.filter((v, i) => i === px.length - 1 || px[i + 1] - v > vh * 0.34)
+  if (bottom > stops[stops.length - 1].y + 2) stops.push({ y: bottom, protect: true })
+  // On tall viewports a section may fit in fewer viewports than the stop list
+  // assumes; drop any non-anchored stop that lands within a third of a
+  // viewport of the next one so there are no dead near-duplicate steps.
+  // Anchored stops are kept regardless — they mark real content boundaries.
+  return stops
+    .filter((s, i) => s.protect || i === stops.length - 1 || stops[i + 1].y - s.y > vh * 0.34)
+    .map((s) => s.y)
 }
 
 // Derive the scroll-driven state (active card + Section-3 wave progress) from a
