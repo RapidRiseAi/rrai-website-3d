@@ -3,6 +3,22 @@
 /* scroll-behavior disabled — custom RAF handles all scrolling */
 html { scroll-behavior: auto; }
 
+/* Desktop layout (paddings, type scale) is tuned against a ~1920px logical
+   viewport at 100% OS display scaling. Laptops commonly run Windows/macOS
+   display scaling above 100% (125%/150%), which shrinks the *logical* CSS
+   viewport width (e.g. a 1920px panel at 125% reports ~1536px) while keeping
+   physical size the same — so the same desktop CSS gets crammed into a
+   narrower canvas and reads oversized. `resolution` is a reliable CSS-only
+   signal for OS scale factor (1.25dppx == 125%), so we compensate by shrinking
+   the rem base in that range — unlike `zoom`/`transform: scale`, this only
+   affects rem-sized CSS and leaves clientX/Y, scrollY, and
+   getBoundingClientRect() untouched, so the cursor-tracked orb and
+   scroll-driven section logic (which read raw viewport coordinates) aren't
+   affected. Genuine 100%-scale monitors at 1920px+ are unaffected. */
+@media (min-resolution: 1.2dppx) and (max-width: 1700px) and (min-width: 1101px) {
+  html { font-size: 13px; }
+}
+
 body {
   background: #000000;
   color: #e6f0ff;
