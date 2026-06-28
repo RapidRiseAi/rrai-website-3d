@@ -2653,6 +2653,51 @@ h2 {
   .fp-btn-arrow { transition: none; }
 }
 
+/* ── Compact laptop heights ───────────────────────────────────────────────────
+   The snap controller rests the viewport on each section top, so the WHOLE
+   section (head + 4 cards + custom CTA) has to fit one viewport. Nothing here
+   scales with viewport HEIGHT by default, so on a shorter laptop screen (or
+   with the browser/OS zoomed in) the cards + CTA spilled below the fold. These
+   tiers compress the vertical rhythm — padding, gaps, card height and internal
+   spacing — keying the values off vh so they keep shrinking as the screen gets
+   shorter. The wide-monitor design above is untouched. */
+@media (min-width: 1101px) and (max-height: 940px) {
+  .fp-section { padding-top: clamp(38px, 4.6vh, 84px); padding-bottom: clamp(22px, 3vh, 46px); }
+  .fp-head { margin-bottom: clamp(14px, 2vh, 32px); }
+  .fp-eyebrow { margin-bottom: 0.7rem; }
+  .fp-title { margin-bottom: 0.5rem; }
+  .fp-sub { margin-bottom: 0.95rem; }
+  .fp-card { min-height: clamp(384px, 47vh, 470px); padding: clamp(20px, 2.8vh, 30px) 22px clamp(18px, 2.4vh, 26px); }
+  .fp-card-icon { width: 50px; height: 50px; margin-bottom: clamp(14px, 2vh, 24px); }
+  .fp-card-title { margin-bottom: clamp(12px, 1.8vh, 20px); }
+  .fp-card-divider { margin: 5px 0 clamp(11px, 1.6vh, 18px); }
+  .fp-card-price { margin-bottom: clamp(11px, 1.6vh, 18px); }
+  .fp-card-monthly-row { margin-bottom: clamp(8px, 1.2vh, 12px); }
+  .fp-card-badge { margin-bottom: clamp(11px, 1.6vh, 18px); }
+  .fp-custom { margin-top: clamp(16px, 2.2vh, 40px); padding: clamp(16px, 2.2vh, 22px) 30px; }
+}
+
+@media (min-width: 1101px) and (max-height: 800px) {
+  .fp-section { padding-top: clamp(20px, 3.4vh, 50px); padding-bottom: clamp(14px, 2vh, 30px); }
+  .fp-head { margin-bottom: clamp(8px, 1.5vh, 18px); }
+  .fp-eyebrow { margin-bottom: 0.45rem; }
+  .fp-title { font-size: clamp(1.6rem, min(3.2vw, 3.2vh), 2.5rem); margin-bottom: 0.35rem; line-height: 1.12; }
+  .fp-sub { font-size: clamp(0.9rem, 1.2vh, 1.02rem); margin-bottom: clamp(0.5rem, 1.2vh, 1rem); }
+  .fp-payment-pill { padding: 7px 15px; font-size: 0.78rem; }
+  .fp-card { min-height: clamp(300px, 43vh, 430px); padding: clamp(14px, 2vh, 24px) 20px clamp(12px, 1.6vh, 20px); }
+  .fp-card-icon { width: 44px; height: 44px; border-radius: 13px; margin-bottom: clamp(9px, 1.5vh, 18px); }
+  .fp-card-icon svg { width: 22px; height: 22px; }
+  .fp-card-title { font-size: clamp(1.08rem, min(1.35vw, 1.7vh), 1.3rem); margin-bottom: clamp(8px, 1.3vh, 16px); }
+  .fp-card-divider { margin: 4px 0 clamp(8px, 1.3vh, 14px); }
+  .fp-card-startlabel { margin-bottom: 3px; }
+  .fp-card-price { font-size: clamp(1.8rem, min(2.5vw, 3vh), 2.4rem); margin-bottom: clamp(8px, 1.3vh, 16px); }
+  .fp-card-monthly-row { margin-bottom: clamp(6px, 1vh, 10px); }
+  .fp-card-badge { padding: 6px 12px; margin-bottom: clamp(8px, 1.3vh, 16px); }
+  .fp-card-btn { padding: clamp(9px, 1.5vh, 13px) 16px; }
+  .fp-custom { margin-top: clamp(10px, 1.6vh, 24px); padding: clamp(12px, 1.8vh, 20px) 26px; gap: 22px; }
+  .fp-custom-icon { width: 46px; height: 46px; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION 4 — OUR WORK / PROOF & BUILDS  (ow-)
    Left: scroll-free list of work items. Right: preview panel that follows the
@@ -3119,6 +3164,33 @@ h2 {
 
 /* The accordion preview that appears under the active row on small screens */
 .ow-inline-preview { display: none; }
+
+/* ── Compact laptop heights ───────────────────────────────────────────────────
+   Same rationale as the pricing section: the snap rests on the section top, so
+   the head + the full 8-item list (and the preview panel beside it) must fit
+   one viewport. On shorter/zoomed screens the tail of the list dropped below
+   the fold, so compress the section padding, head and per-row padding (the list
+   is the tall column) keyed off vh. The wide-monitor layout above is untouched. */
+@media (min-width: 1101px) and (max-height: 940px) {
+  .ow-section { padding-top: clamp(34px, 4.4vh, 80px); padding-bottom: clamp(20px, 3vh, 52px); }
+  .ow-head { margin-bottom: clamp(14px, 2.2vh, 38px); }
+  .ow-row { padding: clamp(9px, 1.3vh, 19px) 14px; }
+  .ow-preview-body { padding: clamp(16px, 2.2vh, 22px); }
+}
+
+@media (min-width: 1101px) and (max-height: 800px) {
+  .ow-section { padding-top: clamp(18px, 3.2vh, 50px); padding-bottom: clamp(14px, 2vh, 30px); }
+  .ow-head { margin-bottom: clamp(8px, 1.6vh, 22px); }
+  .ow-title { font-size: clamp(1.8rem, min(4.0vw, 3.6vh), 3.2rem); }
+  .ow-row { padding: clamp(6px, 1vh, 13px) 12px; gap: clamp(12px, 1.4vw, 24px); }
+  .ow-row-title { line-height: 1.18; }
+  .ow-tags { gap: 5px; }
+  .ow-tag { padding: 3px 9px; }
+  .ow-preview-body { padding: clamp(13px, 1.9vh, 20px); }
+  .ow-preview-title { margin-bottom: clamp(5px, 0.9vh, 10px); }
+  .ow-preview-desc { margin-bottom: clamp(9px, 1.4vh, 16px); }
+  .ow-highlights { gap: clamp(5px, 0.9vh, 10px) 14px; margin-bottom: clamp(10px, 1.6vh, 18px); }
+}
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 /* Mobile/tablet Our Work — a side-swipe row of compact work cards (the JSX
