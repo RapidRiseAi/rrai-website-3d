@@ -1510,7 +1510,7 @@ h2 {
 /* ── Card carousel wrapper ────────────────────────────────────────────────── */
 .ec-carousel-wrap {
   position: relative;
-  height: clamp(450px, 58vh, 594px);
+  height: clamp(490px, 70vh, 594px);
   width: 100%;
 }
 
@@ -1538,7 +1538,7 @@ h2 {
   left: 0;
   /* Responsive: guarantees exactly 5% of card-3 visible (right col 57vw − shadow 5.5vw = 51.5vw) */
   width: calc((51.5vw - 28px) / 2.05);
-  height: clamp(450px, 58vh, 594px);
+  height: clamp(490px, 70vh, 594px);
   border-radius: 28px;
   background: #03060C;
   border: 1px solid rgba(75, 115, 175, 0.18);
@@ -2017,12 +2017,12 @@ h2 {
   /* No fade-edge pseudo on mobile — left column is hidden, no gap to mask */
   .expertise-pin::before { content: none; }
   .expertise-h2 { white-space: normal; }
-  .ec-carousel-wrap { height: clamp(430px, 56vh, 560px); }
+  .ec-carousel-wrap { height: clamp(460px, 66vh, 560px); }
   .expertise-card {
     /* At ≤1100px left col is hidden — use full width formula */
     width: calc((94vw - 28px) / 2.05);
     max-width: 420px;
-    height: clamp(430px, 56vh, 560px);
+    height: clamp(460px, 66vh, 560px);
     border-radius: 24px;
   }
 }
