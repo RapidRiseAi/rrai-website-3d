@@ -16,7 +16,7 @@ deploying code into Supabase itself.
 ```
 Browser (static SPA, anon only)                Vercel Functions (secrets)        Supabase CRM (RRAI-Internal-Tools)
 ─────────────────────────────                  ──────────────────────────        ─────────────────────────────────
-?ref=CODE ─► affiliate.js (capture, 30d, +session uuid)
+?ref=CODE ─► affiliate.js (capture, 90d, +session uuid)
             └► AffiliateTracker ─ POST /api/track ─► record_website_referral_click(jsonb) ─► affiliates / referral_sessions / click_events
 contact form ─ POST /api/contact ──────────────► submit_website_lead(jsonb) ─────────────► leads (+ form_submissions idempotency)
                                                  (+ optional Resend notification)              └► affiliate_portal_record_tracked_referral(lead, session)
@@ -41,19 +41,16 @@ website-facing functions above (no new tables).
 | [`api/contact.js`](../api/contact.js) | Validates + inserts the lead via `submit_website_lead`; optional email. |
 | [`api/track.js`](../api/track.js) | Records a referral click via `record_website_referral_click`. |
 | [`api/_lib/server.js`](../api/_lib/server.js) | Server-only helpers (env, RPC call, sanitising, Resend). |
-| [`db/proposals/website_affiliate_integration.sql`](../db/proposals/website_affiliate_integration.sql) | Migration: **two** SECURITY DEFINER RPCs reusing existing CRM tables. **NOT applied** — pending approval. |
+| [`db/proposals/website_affiliate_integration.sql`](../db/proposals/website_affiliate_integration.sql) | Historical reference for the website-facing SECURITY DEFINER RPCs. **Applied** (live). Canonical copy now lives in the owner repo's migrations — see [`db/README.md`](../db/README.md). |
 
-## Enabling it
+## Status: live
 
-1. Review the migration, confirm the four `[CONFIRM]` business choices (attribution
-   window, `leads.source`, company-name fallback, extra-fields mapping), then apply
-   it with explicit approval (no new tables; two functions granted to `service_role`).
-2. Set the env vars from [`.env.example`](../.env.example) in Vercel
-   (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WEBSITE_LEAD_RPC`,
-   `AFFILIATE_CLICK_RPC`, and the `VITE_CONTACT_API` / `VITE_TRACK_API` paths).
-   Server vars must **not** be prefixed `VITE_`.
-3. Deploy. With the env vars set the form captures into the CRM; without them it
-   falls back to the existing mailto draft (no behavioural change).
+The RPCs are applied and the integration is in production. Env vars are set in
+Vercel (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WEBSITE_LEAD_RPC`,
+`AFFILIATE_CLICK_RPC`, `AFFILIATE_INTENT_RPC`, the `VITE_*_API` paths, and the
+optional `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` for rate limiting).
+Server vars must **not** be prefixed `VITE_`. Without the API vars the form falls
+back to the mailto draft (no behavioural change).
 
 ## Privacy
 
@@ -63,14 +60,14 @@ stored): client-side we persist only the opaque affiliate code, a timestamp, the
 source param, and a random session uuid. No PII, IP, or fingerprint — client or
 server. The migration writes no IP/UA to `click_events` either.
 
-## Decisions outstanding (before applying the migration)
+## Decisions (resolved)
 
-- **CRM access** — RESOLVED. The CRM is `lakisdthcuejvazgsbxz` = "RRAI-Internal-Tools"
-  (org `therandomneon@gmail.com's Org`); access granted via org invite + MCP reconnect.
-- **Attribution window** — migration uses 30 days (per brief); the one existing live
-  referral session has a ~90-day window. Confirm which is canonical.
-- **`leads.source`** value (`'Website Contact Form'`), **company-name fallback** (person's
-  name when no business given), and **extra-fields → `pain_points`** mapping — see the
-  `[CONFIRM]` markers in the migration.
+- **CRM access** — `lakisdthcuejvazgsbxz` = "RRAI-Internal-Tools" (the shared
+  Supabase project / migration owner).
+- **Attribution window** — **90 days**, canonical across client + server. The
+  website localStorage TTL now matches the server referral-session window.
+- **`leads.source`**, **company-name fallback**, **extra-fields → `pain_points`**
+  mapping — applied as in the live RPCs (`submit_website_lead`,
+  `record_website_referral_intent`).
 - **Affiliate code format** — `isValidAffiliateCode` accepts the live format
-  (`jakie-brakie-9c6480`); tighten only if you want stricter pre-filtering.
+  (`jakie-brakie-9c6480`); tighten only if stricter pre-filtering is wanted.
