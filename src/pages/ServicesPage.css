@@ -252,21 +252,17 @@
 /* ── Mobile (phones): card sets become compact side-swipe rows — same strategy
    as the home page, so they read as browsable cards instead of a tall stack. ── */
 @media (max-width: 760px) {
-  .svc-section { padding: clamp(40px, 6vh, 64px) 6vw; }
+  .svc-section { padding: clamp(40px, 6vh, 64px) 0; }
   .svc-price-grid, .svc-grid, .svc-guide-grid {
-    display: flex;
-    grid-template-columns: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: flex-start;   /* cards size to their content — no empty bottoms */
-    gap: 12px;
-    overflow-x: auto;
+    gap: 14px;
+    overflow-x: visible;
     overflow-y: visible;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 6vw;
-    margin: 0 -6vw;
-    padding: 16px 6vw 22px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
+    scroll-snap-type: none;
+    margin: 0;
+    padding: 0;
   }
   .svc-price-grid::-webkit-scrollbar,
   .svc-grid::-webkit-scrollbar,
@@ -305,4 +301,17 @@
   .svc-guide-ic { margin-bottom: 12px; }
   .svc-guide-title { font-size: 1rem; }
   .svc-guide-text { font-size: 0.84rem; margin-bottom: 14px; }
+
+  .svc-price-grid, .svc-grid, .svc-guide-grid {
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+  .svc-price-grid > *, .svc-grid > *, .svc-guide-grid > * {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    scroll-snap-align: none;
+  }
+  .svc-wrap .swipe-hint { display: none; }
 }
