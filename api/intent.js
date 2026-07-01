@@ -48,11 +48,18 @@ export default async function handler(req, res) {
 
   let created = false
   let ok = false
+  let attribution = null
   try {
     const result = await callRpc(env.contactIntentRpc, { p_payload: payload })
     ok = Boolean(result.ok && result.data && result.data.ok)
+    attribution = result.data?.attribution ?? null
     created = Boolean(ok && result.data.deduped === false)
     if (!result.ok) console.warn(`intent: rpc_status_${result.status}`)
+    // Observability: a click that carried an affiliate code but did NOT attribute
+    // is a real miss — surface it at error level instead of failing silently.
+    if (code && attribution && !['linked', 'already_linked'].includes(attribution)) {
+      console.error(`intent: attribution_miss=${attribution} code=${code} reason=${result.data?.reason ?? ''}`)
+    }
   } catch {
     console.warn('intent: rpc_network_error')
   }
@@ -74,5 +81,5 @@ export default async function handler(req, res) {
     if (notify !== 'sent' && notify !== 'skipped_not_configured') console.warn(`intent: notify_${notify}`)
   }
 
-  return json(res, 200, { ok })
+  return json(res, 200, { ok, attribution })
 }

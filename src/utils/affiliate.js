@@ -42,7 +42,25 @@ function newSessionId() {
   } catch {
     /* fall through */
   }
-  return `00000000-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, '0')}`
+  // Secure fallback: build a proper v4 UUID from the CSPRNG.
+  try {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const b = crypto.getRandomValues(new Uint8Array(16))
+      b[6] = (b[6] & 0x0f) | 0x40
+      b[8] = (b[8] & 0x3f) | 0x80
+      const h = Array.from(b, (x) => x.toString(16).padStart(2, '0'))
+      return `${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
+    }
+  } catch {
+    /* fall through */
+  }
+  // Last resort (no Web Crypto at all): a VALID-format v4 so the server ::uuid
+  // cast still succeeds. Lower entropy than a CSPRNG, but a rare collision beats
+  // losing attribution entirely — and the previous fixed-prefix form was worse.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
 }
 
 // localStorage can throw (private mode, disabled storage) — never let that
@@ -67,6 +85,15 @@ function safeStorage() {
 // `tracking_code` column so legitimate codes are never rejected here.
 const AFFILIATE_CODE_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$/
 const TRACKING_TOKEN_RE = /^[A-Za-z0-9_-]{4,64}$/
+// A strict RFC-4122 UUID. The session id is the join key the server casts to
+// ::uuid; a value that fails this would be silently dropped server-side, so we
+// only ever emit/accept ids that match.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// In-memory fallback attribution record. Keeps the affiliate code usable within a
+// single page-session even when localStorage is blocked (private mode / storage
+// disabled), so a contact-intent click is never anonymised just because storage
+// failed between the /r/<code> landing and the contact click.
+let inMemoryAffiliate = null
 
 export function isValidAffiliateCode(raw) {
   if (typeof raw !== 'string') return false
@@ -194,6 +221,9 @@ export function captureAffiliateFromUrl(search) {
       /* storage full / blocked — attribution is best-effort, never fatal */
     }
   }
+  // Always keep an in-memory copy so a later intent can still attribute even when
+  // localStorage is unavailable (private mode / disabled storage).
+  inMemoryAffiliate = record
   return record
 }
 
@@ -212,6 +242,9 @@ export function captureAffiliateFromRoute(pathname, search) {
       /* best-effort campaign-token upgrade */
     }
   }
+  // Keep the in-memory fallback in sync so attribution survives even if storage
+  // is unavailable on the destination page.
+  if (record) inMemoryAffiliate = record
   return {
     record,
     destination: found.destination,
@@ -222,21 +255,24 @@ export function captureAffiliateFromRoute(pathname, search) {
 // malformed records are cleared and treated as "no attribution".
 export function getStoredAffiliate() {
   const ls = safeStorage()
-  if (!ls) return null
+  // Storage blocked → fall back to the in-memory record captured this page-session.
+  if (!ls) return inMemoryAffiliate
   let parsed
   try {
     parsed = JSON.parse(ls.getItem(AFFILIATE_KEY) || 'null')
   } catch {
-    return null
+    return inMemoryAffiliate
   }
-  if (!parsed || !isValidAffiliateCode(parsed.code) || !parsed.capturedAt) return null
+  if (!parsed || !isValidAffiliateCode(parsed.code) || !parsed.capturedAt) return inMemoryAffiliate
   const age = Date.now() - new Date(parsed.capturedAt).getTime()
   if (!Number.isFinite(age) || age < 0 || age > TTL_MS) {
     clearStoredAffiliate()
-    return null
+    return inMemoryAffiliate
   }
-  if (!parsed.sessionId) {
-    parsed.sessionId = newSessionId()
+  // Backfill a missing/invalid sessionId from the PERSISTENT visitor session
+  // rather than minting a throwaway id that was never reported to /api/track.
+  if (!parsed.sessionId || !UUID_RE.test(parsed.sessionId)) {
+    parsed.sessionId = getOrCreateVisitorSession()
     try {
       ls.setItem(AFFILIATE_KEY, JSON.stringify(parsed))
     } catch {
@@ -276,15 +312,15 @@ const INTENT_API = import.meta.env.VITE_INTENT_API || '/api/intent'
 
 export function reportAffiliateVisit(record) {
   if (!TRACK_API || !record || !record.code) return
-  let already = false
+  const guardKey = `rr-aff-reported:${record.code}:${record.trackingToken || 'default'}`
   try {
-    const k = `rr-aff-reported:${record.code}:${record.trackingToken || 'default'}`
-    already = window.sessionStorage.getItem(k) === '1'
-    if (!already) window.sessionStorage.setItem(k, '1')
+    // Only skip if a PRIOR send actually succeeded. We latch the guard after a
+    // confirmed response (below), never before — so a failed first click doesn't
+    // permanently suppress the referral-session for the whole browser session.
+    if (window.sessionStorage.getItem(guardKey) === '1') return
   } catch {
-    /* sessionStorage blocked — fall through and just send once */
+    /* sessionStorage blocked — fall through and just send */
   }
-  if (already) return
 
   try {
     const body = JSON.stringify({
@@ -301,7 +337,13 @@ export function reportAffiliateVisit(record) {
       headers: { 'Content-Type': 'application/json' },
       body,
       keepalive: true,
-    }).catch(() => {})
+    })
+      .then((res) => {
+        if (res.ok) {
+          try { window.sessionStorage.setItem(guardKey, '1') } catch { /* ignore */ }
+        }
+      })
+      .catch(() => {}) // leave the guard unset so the next navigation retries
   } catch {
     /* never throw from tracking */
   }
@@ -323,7 +365,9 @@ export function getOrCreateVisitorSession() {
   if (!ls) return newSessionId()
   try {
     let id = ls.getItem(VISITOR_KEY)
-    if (!id || !/^[0-9a-f-]{8,}$/i.test(id)) {
+    // Require a strict UUID: a loose legacy value would fail the server ::uuid
+    // cast and silently drop attribution, so regenerate it.
+    if (!id || !UUID_RE.test(id)) {
       id = newSessionId()
       ls.setItem(VISITOR_KEY, id)
     }
@@ -336,26 +380,37 @@ export function getOrCreateVisitorSession() {
 // Most reliable delivery for a click that hands the browser off to another app
 // (WhatsApp / mail / dialer): sendBeacon queues the request in the browser so it
 // completes even if the tab is frozen or closed. Falls back to a keepalive fetch.
+// Returns a Promise<boolean> resolving true when the intent was accepted by the
+// server, so callers latch their dedup guard ONLY on a confirmed send (and retry
+// otherwise). A keepalive fetch is primary because its result is observable and
+// it still survives the handoff to the mail/WhatsApp app; sendBeacon (which only
+// reports "queued", never "delivered") is the fallback if fetch itself throws.
 function sendIntent(payload) {
   const body = JSON.stringify(payload)
   try {
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' })
-      if (navigator.sendBeacon(INTENT_API, blob)) return
-    }
-  } catch {
-    /* fall through to fetch */
-  }
-  try {
-    fetch(INTENT_API, {
+    return fetch(INTENT_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
       keepalive: true,
-    }).catch(() => {})
+    })
+      .then((res) => res.ok)
+      .catch(() => beaconIntent(body))
   } catch {
-    /* never throw from tracking */
+    return Promise.resolve(beaconIntent(body))
   }
+}
+
+function beaconIntent(body) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' })
+      return navigator.sendBeacon(INTENT_API, blob)
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
 }
 
 // Record a WhatsApp/email/phone click for EVERY visitor. Affiliate code/token are
@@ -364,27 +419,54 @@ function sendIntent(payload) {
 export function reportAffiliateIntent(channel, linkUrl) {
   if (!INTENT_API || !channel) return
   const normalized = String(channel).toLowerCase()
-  const record = getStoredAffiliate()
+  let record = getStoredAffiliate()
+  // Last-resort code resolution: if there is no stored/in-memory record but the
+  // current URL still carries the affiliate code (contact clicked on the
+  // /r/<code> landing before capture persisted, or storage blocked), read it live
+  // so the intent is ATTRIBUTED instead of silently anonymised.
+  if (!record?.code && typeof window !== 'undefined') {
+    const fromUrl =
+      readCodeFromSearch(window.location.search) ||
+      readAffiliateRoute(window.location.pathname, window.location.search)
+    if (fromUrl?.code) {
+      record = {
+        code: fromUrl.code,
+        trackingToken: fromUrl.trackingToken || null,
+        sessionId: getOrCreateVisitorSession(),
+      }
+    }
+  }
   const sessionId = record?.sessionId || getOrCreateVisitorSession()
+
+  // Short (60s) client guard to avoid an accidental double-fire on one click,
+  // WITHOUT permanently suppressing retries. Latched only AFTER a confirmed send;
+  // the server dedups authoritatively per session+channel+code+day, so this guard
+  // must never be the thing that blocks the only successful send.
+  const guardKey = `rr-intent:${record?.code || 'anon'}:${record?.trackingToken || 'default'}:${normalized}`
   try {
-    const day = new Date().toISOString().slice(0, 10)
-    const k = `rr-intent:${record?.code || 'anon'}:${record?.trackingToken || 'default'}:${normalized}:${day}`
-    if (window.sessionStorage.getItem(k) === '1') return
-    window.sessionStorage.setItem(k, '1')
+    const last = Number(window.sessionStorage.getItem(guardKey) || '0')
+    if (last && Date.now() - last < 60_000) return
   } catch {
     /* sessionStorage blocked - still report best-effort */
   }
 
-  sendIntent({
-    code: record?.code || null,
-    sessionId,
-    trackingToken: record?.trackingToken || null,
-    channel: normalized,
-    pagePath: window.location.pathname,
-    pageUrl: window.location.href,
-    linkUrl: linkUrl || null,
-    serviceHint: serviceHintFromPath(window.location.pathname),
-  })
+  Promise.resolve(
+    sendIntent({
+      code: record?.code || null,
+      sessionId,
+      trackingToken: record?.trackingToken || null,
+      channel: normalized,
+      pagePath: window.location.pathname,
+      pageUrl: window.location.href,
+      linkUrl: linkUrl || null,
+      serviceHint: serviceHintFromPath(window.location.pathname),
+    }),
+  )
+    .then((ok) => {
+      if (!ok) return
+      try { window.sessionStorage.setItem(guardKey, String(Date.now())) } catch { /* ignore */ }
+    })
+    .catch(() => {})
 }
 
 // Append an affiliate reference to an outbound WhatsApp/mailto URL so the actual

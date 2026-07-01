@@ -17,7 +17,11 @@ export const env = {
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   leadRpc: process.env.WEBSITE_LEAD_RPC || 'submit_website_lead',
   clickRpc: process.env.AFFILIATE_CLICK_RPC || 'record_website_referral_click',
-  intentRpc: process.env.AFFILIATE_INTENT_RPC || 'record_website_referral_intent',
+  // Contact intents go through submit_website_contact_intent (see contactIntentRpc).
+  // Default this to the same real function so a stray reference can never resolve
+  // to a non-existent RPC (the old default 'record_website_referral_intent' does
+  // not exist and would silently no-op given the fire-and-forget beacon).
+  intentRpc: process.env.AFFILIATE_INTENT_RPC || 'submit_website_contact_intent',
   contactIntentRpc: process.env.WEBSITE_CONTACT_INTENT_RPC || 'submit_website_contact_intent',
   hmacSecret: process.env.AFFILIATE_ATTRIBUTION_HMAC_SECRET || '',
   upstashUrl: process.env.UPSTASH_REDIS_REST_URL || '',
