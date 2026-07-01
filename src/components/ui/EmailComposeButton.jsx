@@ -15,7 +15,9 @@ const EMAIL = 'team@rapidriseai.com'
 
 function composeParts() {
   const rec = getStoredAffiliate()
-  const ref = rec?.code ? `Ref: ${rec.code}${rec.trackingToken ? ` / ${rec.trackingToken}` : ''}` : ''
+  const ref = rec?.code
+    ? `— Please keep this reference so your referrer gets credited —\nRef: ${rec.code}${rec.trackingToken ? ` / ${rec.trackingToken}` : ''}`
+    : ''
   const subject = 'Project enquiry'
   const body =
     `Hi Rapid Rise AI,\n\nI'd like to start a project. Here's what I have in mind:\n\n` +

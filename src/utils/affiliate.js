@@ -393,7 +393,7 @@ export function reportAffiliateIntent(channel, linkUrl) {
 export function withAffiliateRef(url) {
   const record = getStoredAffiliate()
   if (!record?.code || !url) return url
-  const ref = `Ref: ${record.code}${record.trackingToken ? ` / ${record.trackingToken}` : ''}`
+  const ref = `— Please keep this reference so your referrer gets credited —\nRef: ${record.code}${record.trackingToken ? ` / ${record.trackingToken}` : ''}`
   try {
     if (/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url)) {
       const u = new URL(url)

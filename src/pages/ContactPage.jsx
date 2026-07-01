@@ -315,6 +315,12 @@ export default function ContactPage() {
             </a>
             <EmailComposeButton className="pg-btn-ghost">Email {CONTACT_EMAIL}</EmailComposeButton>
           </div>
+          {waHref !== WHATSAPP_URL ? (
+            <p role="note" style={{ marginTop: '0.75rem', fontSize: '0.85rem', opacity: 0.75, maxWidth: '38rem' }}>
+              You were referred by a partner — please keep the reference line in your WhatsApp
+              message or email so they get credited.
+            </p>
+          ) : null}
         </header>
 
         {/* Contact method cards */}
