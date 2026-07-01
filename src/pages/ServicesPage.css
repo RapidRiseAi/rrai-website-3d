@@ -259,10 +259,11 @@
     align-items: flex-start;   /* cards size to their content — no empty bottoms */
     gap: 12px;
     overflow-x: auto;
+    overflow-y: visible;
     scroll-snap-type: x mandatory;
-    scroll-padding-left: 6vw;
+    scroll-padding-inline: 6vw;
     margin: 0 -6vw;
-    padding: 4px 6vw 12px;
+    padding: 16px 6vw 22px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
@@ -270,8 +271,18 @@
   .svc-price-grid::-webkit-scrollbar,
   .svc-grid::-webkit-scrollbar,
   .svc-guide-grid::-webkit-scrollbar { display: none; }
-  .svc-price-grid > *, .svc-guide-grid > * { flex: 0 0 74%; max-width: 290px; scroll-snap-align: start; }
-  .svc-grid > * { flex: 0 0 56%; max-width: 215px; scroll-snap-align: start; }
+  .svc-price-grid > *, .svc-guide-grid > * {
+    flex: 0 0 clamp(276px, 78vw, 320px);
+    max-width: none;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+  .svc-grid > * {
+    flex: 0 0 clamp(210px, 58vw, 245px);
+    max-width: none;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
   /* service + guide cards: natural height (no empty bottom) */
   .svc-service-link, .svc-service-card, .svc-guide-card { height: auto; }
   /* PRICING cards: all match the tallest, with the CTA pinned to the bottom so

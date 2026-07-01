@@ -235,6 +235,10 @@
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 760px) {
+  .proc-journey {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
   .proc-rail { left: 19px; }
   .proc-step { grid-template-columns: 1fr; }
   .proc-step--left .proc-step-rev,
