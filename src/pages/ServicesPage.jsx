@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import PageLayout from '../components/ui/PageLayout'
 import TiltCard from '../components/ui/TiltCard'
@@ -67,6 +68,8 @@ const ArrowIcon = () => (
 
 /* Per-guidance-row decorative icon (matches the symptom, not the service slug) */
 const GUIDANCE_ICONS = ['enquiry', 'clock', 'insight', 'chat', 'link', 'bulb']
+const MOBILE_CAROUSEL_QUERY = '(max-width: 760px)'
+const MOBILE_CAROUSEL_RESET_DELAYS = [80, 260, 520]
 
 const PRICING = [
   {
@@ -176,7 +179,56 @@ function ServiceCard({ service }) {
   )
 }
 
+function useResetMobileCarousels() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia(MOBILE_CAROUSEL_QUERY)
+    const timers = new Set()
+    let frame = 0
+
+    const reset = () => {
+      if (!media.matches) return
+      document
+        .querySelectorAll('.svc-price-grid, .svc-grid, .svc-guide-grid')
+        .forEach((row) => {
+          row.scrollLeft = 0
+        })
+    }
+
+    const scheduleReset = () => {
+      cancelAnimationFrame(frame)
+      timers.forEach((timer) => window.clearTimeout(timer))
+      timers.clear()
+      frame = requestAnimationFrame(reset)
+      MOBILE_CAROUSEL_RESET_DELAYS.forEach((delay) => {
+        const timer = window.setTimeout(() => {
+          timers.delete(timer)
+          reset()
+        }, delay)
+        timers.add(timer)
+      })
+    }
+
+    scheduleReset()
+    window.addEventListener('pageshow', scheduleReset)
+    window.addEventListener('resize', scheduleReset)
+    if (media.addEventListener) media.addEventListener('change', scheduleReset)
+    else media.addListener(scheduleReset)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      timers.forEach((timer) => window.clearTimeout(timer))
+      window.removeEventListener('pageshow', scheduleReset)
+      window.removeEventListener('resize', scheduleReset)
+      if (media.removeEventListener) media.removeEventListener('change', scheduleReset)
+      else media.removeListener(scheduleReset)
+    }
+  }, [])
+}
+
 export default function ServicesPage() {
+  useResetMobileCarousels()
   usePageMeta(
     'Services & Pricing | Rapid Rise AI',
     'Fixed price websites, client portals, smart dashboards and AI agents, plus custom software, automations, integrations, IoT and marketing. All prices in ZAR.',
