@@ -312,38 +312,103 @@ function serviceHintFromPath(pathname) {
   return null
 }
 
+// Persistent anonymous visitor session id — for EVERY visitor, not only affiliate
+// arrivals — so a contact-intent click is always tied to one visitor even with no
+// affiliate code present.
+const VISITOR_KEY = 'rr-visitor'
+export function getOrCreateVisitorSession() {
+  const ls = safeStorage()
+  if (!ls) return newSessionId()
+  try {
+    let id = ls.getItem(VISITOR_KEY)
+    if (!id || !/^[0-9a-f-]{8,}$/i.test(id)) {
+      id = newSessionId()
+      ls.setItem(VISITOR_KEY, id)
+    }
+    return id
+  } catch {
+    return newSessionId()
+  }
+}
+
+// Most reliable delivery for a click that hands the browser off to another app
+// (WhatsApp / mail / dialer): sendBeacon queues the request in the browser so it
+// completes even if the tab is frozen or closed. Falls back to a keepalive fetch.
+function sendIntent(payload) {
+  const body = JSON.stringify(payload)
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' })
+      if (navigator.sendBeacon(INTENT_API, blob)) return
+    }
+  } catch {
+    /* fall through to fetch */
+  }
+  try {
+    fetch(INTENT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    /* never throw from tracking */
+  }
+}
+
+// Record a WhatsApp/email/phone click for EVERY visitor. Affiliate code/token are
+// included when present (attribution); anonymous visitors are still captured so no
+// contact attempt is lost. Deduped per visitor+channel+day.
 export function reportAffiliateIntent(channel, linkUrl) {
   if (!INTENT_API || !channel) return
-  const record = getStoredAffiliate()
-  if (!record?.code || !record?.sessionId) return
-
   const normalized = String(channel).toLowerCase()
+  const record = getStoredAffiliate()
+  const sessionId = record?.sessionId || getOrCreateVisitorSession()
   try {
     const day = new Date().toISOString().slice(0, 10)
-    const k = `rr-aff-intent:${record.code}:${record.trackingToken || 'default'}:${normalized}:${day}`
+    const k = `rr-intent:${record?.code || 'anon'}:${record?.trackingToken || 'default'}:${normalized}:${day}`
     if (window.sessionStorage.getItem(k) === '1') return
     window.sessionStorage.setItem(k, '1')
   } catch {
     /* sessionStorage blocked - still report best-effort */
   }
 
+  sendIntent({
+    code: record?.code || null,
+    sessionId,
+    trackingToken: record?.trackingToken || null,
+    channel: normalized,
+    pagePath: window.location.pathname,
+    pageUrl: window.location.href,
+    linkUrl: linkUrl || null,
+    serviceHint: serviceHintFromPath(window.location.pathname),
+  })
+}
+
+// Append an affiliate reference to an outbound WhatsApp/mailto URL so the actual
+// message/email a visitor sends carries attribution — the ultimate backstop if
+// every client-side beacon fails. No-op for non-affiliate visitors and tel: links.
+export function withAffiliateRef(url) {
+  const record = getStoredAffiliate()
+  if (!record?.code || !url) return url
+  const ref = `Ref: ${record.code}${record.trackingToken ? ` / ${record.trackingToken}` : ''}`
   try {
-    fetch(INTENT_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: record.code,
-        sessionId: record.sessionId,
-        trackingToken: record.trackingToken || null,
-        channel: normalized,
-        pagePath: window.location.pathname,
-        pageUrl: window.location.href,
-        linkUrl: linkUrl || null,
-        serviceHint: serviceHintFromPath(window.location.pathname),
-      }),
-      keepalive: true,
-    }).catch(() => {})
+    if (/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url)) {
+      const u = new URL(url)
+      const existing = u.searchParams.get('text') || ''
+      u.searchParams.set('text', existing ? `${existing}\n\n${ref}` : `Hi Rapid Rise AI, I'd like to start a project.\n\n${ref}`)
+      return u.toString()
+    }
+    if (/^mailto:/i.test(url)) {
+      const [addr, qs = ''] = url.slice('mailto:'.length).split('?')
+      const params = new URLSearchParams(qs)
+      if (!params.get('subject')) params.set('subject', 'Project enquiry')
+      const existingBody = params.get('body') || ''
+      params.set('body', existingBody ? `${existingBody}\n\n${ref}` : `Hi Rapid Rise AI,\n\nI'd like to start a project.\n\n${ref}`)
+      return `mailto:${addr}?${params.toString()}`
+    }
   } catch {
-    /* never throw from intent tracking */
+    /* return original on any parse issue */
   }
+  return url
 }

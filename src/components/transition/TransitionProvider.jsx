@@ -353,7 +353,10 @@ export default function TransitionProvider({ children }) {
       const path = internalPath(a)
       if (!path) return
       const toPathname = new URL(path, window.location.origin).pathname
-      if (toPathname === window.location.pathname && !path.includes('?')) return
+      // Never transition a page to itself — normalise trailing slashes so
+      // "/contact" and "/contact/" (and any same-page query) are treated as equal.
+      const norm = (p) => (p || '/').replace(/\/+$/, '') || '/'
+      if (norm(toPathname) === norm(window.location.pathname)) return
       e.preventDefault()
       if (runningRef.current) return
       transitionTo(path)

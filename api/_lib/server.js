@@ -18,6 +18,7 @@ export const env = {
   leadRpc: process.env.WEBSITE_LEAD_RPC || 'submit_website_lead',
   clickRpc: process.env.AFFILIATE_CLICK_RPC || 'record_website_referral_click',
   intentRpc: process.env.AFFILIATE_INTENT_RPC || 'record_website_referral_intent',
+  contactIntentRpc: process.env.WEBSITE_CONTACT_INTENT_RPC || 'submit_website_contact_intent',
   hmacSecret: process.env.AFFILIATE_ATTRIBUTION_HMAC_SECRET || '',
   upstashUrl: process.env.UPSTASH_REDIS_REST_URL || '',
   upstashToken: process.env.UPSTASH_REDIS_REST_TOKEN || '',

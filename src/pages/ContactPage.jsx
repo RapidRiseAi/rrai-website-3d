@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { withAffiliateRef } from '../utils/affiliate'
 import PageLayout from '../components/ui/PageLayout'
 import TiltCard from '../components/ui/TiltCard'
 import Reveal from '../components/ui/Reveal'
@@ -157,6 +158,24 @@ export default function ContactPage() {
   // Stable across re-renders / retries of the same enquiry; reset after success.
   const submissionIdRef = useRef(newSubmissionId())
 
+  // WhatsApp / email links carry an affiliate reference in the message body when
+  // the visitor arrived via an affiliate link, so the conversation itself is
+  // attributable even if client-side tracking never lands. Computed after mount
+  // (once the affiliate code is captured/available in storage).
+  const [waHref, setWaHref] = useState(WHATSAPP_URL)
+  const [emailHref, setEmailHref] = useState(`mailto:${CONTACT_EMAIL}`)
+  useEffect(() => {
+    setWaHref(withAffiliateRef(WHATSAPP_URL))
+    setEmailHref(withAffiliateRef(`mailto:${CONTACT_EMAIL}`))
+  }, [])
+
+  // Smooth-scroll to the request form without navigating (no hash in the URL, no
+  // page transition). Used by every "go to the form" affordance.
+  const scrollToForm = (e) => {
+    if (e) e.preventDefault()
+    document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }))
     setErrors((er) => ({ ...er, [key]: undefined, contact: undefined }))
@@ -201,7 +220,7 @@ export default function ContactPage() {
       text: (
         <>The fastest way to reach us. Message {WHATSAPP_DISPLAY} and we will reply during business hours.</>
       ),
-      link: { href: WHATSAPP_URL, label: 'Open WhatsApp', external: true },
+      link: { href: waHref, label: 'Open WhatsApp', external: true },
     },
     {
       icon: <MailIcon />,
@@ -209,7 +228,7 @@ export default function ContactPage() {
       text: (
         <>Prefer writing it out? Email us directly and attach any documents, examples, or briefs.</>
       ),
-      link: { href: `mailto:${CONTACT_EMAIL}`, label: CONTACT_EMAIL, external: false },
+      link: { href: emailHref, label: CONTACT_EMAIL, external: false },
     },
     {
       icon: <FormIcon />,
@@ -217,7 +236,7 @@ export default function ContactPage() {
       text: (
         <>The form below gives us everything we need to come back with a useful recommendation, not a generic reply.</>
       ),
-      link: { href: '#project-form', label: 'Jump to the form', external: false },
+      link: { href: '#project-form', label: 'Jump to the form', external: false, onClick: scrollToForm },
     },
   ]
 
@@ -281,22 +300,15 @@ export default function ContactPage() {
             <li><CheckIcon />Tailored recommendation</li>
           </ul>
           <div className="pg-hero-actions">
-            <a className="pg-btn-primary" href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+            <a className="pg-btn-primary" href={waHref} target="_blank" rel="noreferrer">
               <WhatsAppIcon />
               Message Us on WhatsApp
             </a>
             {/* Mobile-only: jump straight to the request form (CSS hides it on desktop) */}
-            <a
-              className="pg-btn-ghost pg-btn--to-form"
-              href="#project-form"
-              onClick={(e) => {
-                e.preventDefault()
-                document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
-            >
+            <a className="pg-btn-ghost pg-btn--to-form" href="#project-form" onClick={scrollToForm}>
               Fill in the Form
             </a>
-            <a className="pg-btn-ghost" href={`mailto:${CONTACT_EMAIL}`}>Email {CONTACT_EMAIL}</a>
+            <a className="pg-btn-ghost" href={emailHref}>Email {CONTACT_EMAIL}</a>
           </div>
         </header>
 
@@ -323,7 +335,7 @@ export default function ContactPage() {
                       {m.link.label} <ArrowIcon />
                     </a>
                   ) : (
-                    <a className="ct2-card-link" href={m.link.href}>
+                    <a className="ct2-card-link" href={m.link.href} onClick={m.link.onClick}>
                       {m.link.label} <ArrowIcon />
                     </a>
                   )}
